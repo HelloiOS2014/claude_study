@@ -1,7 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense, type ComponentType } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getChapter, getTierColor, getTierLabel, allChapters } from '../data/toc'
 import { useProgress } from '../hooks/useProgress'
+
+// Lazy-load chapter content components
+const chapterModules: Record<string, () => Promise<{ default: ComponentType }>> = {
+  ch00: () => import('../chapters/ch00/index'),
+  ch01: () => import('../chapters/ch01/index'),
+  ch02: () => import('../chapters/ch02/index'),
+}
 
 export function ChapterPage() {
   const { chapterId } = useParams<{ chapterId: string }>()
@@ -121,21 +128,8 @@ export function ChapterPage() {
         </div>
       </header>
 
-      {/* Chapter content placeholder */}
-      <div
-        className="rounded-xl p-8 text-center"
-        style={{
-          background: 'var(--color-bg-secondary)',
-          border: '1px dashed var(--color-border)',
-        }}
-      >
-        <div className="font-mono text-sm mb-2" style={{ color: 'var(--color-text-muted)' }}>
-          &lt;ChapterContent /&gt;
-        </div>
-        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          章节内容将在 Phase 5-6 实现
-        </p>
-      </div>
+      {/* Chapter content */}
+      <ChapterContent chapterId={chapterId!} />
 
       {/* Mark complete button */}
       <div className="mt-12 flex justify-center">
@@ -163,5 +157,50 @@ export function ChapterPage() {
         </button>
       </div>
     </article>
+  )
+}
+
+/* ─── Dynamic Chapter Content Loader ─── */
+
+function ChapterContent({ chapterId }: { chapterId: string }) {
+  const loader = chapterModules[chapterId]
+
+  if (!loader) {
+    return (
+      <div
+        className="rounded-xl p-8 text-center"
+        style={{
+          background: 'var(--color-bg-secondary)',
+          border: '1px dashed var(--color-border)',
+        }}
+      >
+        <div className="font-mono text-sm mb-2" style={{ color: 'var(--color-text-muted)' }}>
+          &lt;ChapterContent /&gt;
+        </div>
+        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          章节内容开发中...
+        </p>
+      </div>
+    )
+  }
+
+  const LazyChapter = lazy(loader)
+
+  return (
+    <Suspense
+      fallback={
+        <div className="py-12 text-center">
+          <div
+            className="inline-block w-6 h-6 rounded-full border-2 animate-spin"
+            style={{
+              borderColor: 'var(--color-border)',
+              borderTopColor: 'var(--color-accent)',
+            }}
+          />
+        </div>
+      }
+    >
+      <LazyChapter />
+    </Suspense>
   )
 }

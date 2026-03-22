@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 
 /* ─── Types ─── */
 
-interface TreeNode {
+export interface TreeNode {
   id: string
   question: string
   description?: string
@@ -12,7 +12,7 @@ interface TreeNode {
   }[]
   result?: {
     text: string
-    tier?: 'l1' | 'l2' | 'l3'
+    tier?: string
   }
 }
 
