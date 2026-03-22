@@ -3,9 +3,7 @@ import { z } from 'zod'
 import {
   AbsoluteFill,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
-  spring,
 } from 'remotion'
 
 export const VibeCodingCurveSchema = z.object({
@@ -44,7 +42,6 @@ const MARKERS = [
 
 export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
 
   // How far along the curve we've drawn (0 to 1)
   const drawProgress = interpolate(frame, [20, 140], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
@@ -152,7 +149,7 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
 
       {/* Markers */}
       {MARKERS.map((marker, i) => {
-        const [mx, my] = toScreen(marker.x, 0)
+        const [mx] = toScreen(marker.x, 0)
         const markerVisible = drawProgress >= marker.x / 100
         const markerOpacity = markerVisible
           ? interpolate(frame - (20 + (marker.x / 100) * 120), [0, 15], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })

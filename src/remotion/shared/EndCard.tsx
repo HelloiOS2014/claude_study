@@ -7,12 +7,7 @@ import {
   interpolate,
   spring,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/NotoSansSC";
-
-const { fontFamily } = loadFont("normal", {
-  weights: ["400", "700"],
-  subsets: ["chinese-simplified", "latin"],
-});
+const fontFamily = "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'SF Pro Display', sans-serif";
 
 const SocialLinkSchema = z.object({
   platform: z.string(),

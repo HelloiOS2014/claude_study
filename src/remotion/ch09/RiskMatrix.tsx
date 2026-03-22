@@ -41,7 +41,7 @@ const DotGrid: React.FC = () => (
   />
 )
 
-const GaugeBar: React.FC<{ progress: number; color: string }> = ({ progress, color }) => {
+const GaugeBar: React.FC<{ progress: number; color: string }> = ({ progress }) => {
   const width = interpolate(progress, [0, 1], [0, 100])
   // Color transitions from red to yellow to green
   const r = Math.round(interpolate(progress, [0, 0.5, 1], [239, 250, 74]))
