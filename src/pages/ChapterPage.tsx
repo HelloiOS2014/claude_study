@@ -8,6 +8,13 @@ const chapterModules: Record<string, () => Promise<{ default: ComponentType }>> 
   ch00: () => import('../chapters/ch00/index'),
   ch01: () => import('../chapters/ch01/index'),
   ch02: () => import('../chapters/ch02/index'),
+  ch03: () => import('../chapters/ch03/index'),
+  ch04: () => import('../chapters/ch04/index'),
+  ch05: () => import('../chapters/ch05/index'),
+  ch06: () => import('../chapters/ch06/index'),
+  ch07: () => import('../chapters/ch07/index'),
+  ch08: () => import('../chapters/ch08/index'),
+  ch09: () => import('../chapters/ch09/index'),
 }
 
 export function ChapterPage() {
