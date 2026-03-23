@@ -21,6 +21,17 @@ Fix all 35 issues identified in the audit, organized into 6 work streams:
 }
 ```
 
+Also apply the same fix to `.animate-fade-in` and `.animate-slide-in` which use the same broken pattern:
+
+```css
+.animate-fade-in {
+  animation: fadeIn 400ms ease-out forwards;
+}
+.animate-slide-in {
+  animation: slideInLeft 400ms ease-out forwards;
+}
+```
+
 Also add an `nth-child` fallback for 11+ children (future-proofing):
 
 ```css
@@ -43,15 +54,16 @@ Also add an `nth-child` fallback for 11+ children (future-proofing):
 5. For homepage: replace the placeholder text with `<AnimationWrapper component={LazyClaudeCodeIntro} ...>`
 
 **Remotion internal bugs to fix first:**
-- `ClaudeCodeIntro.tsx`: Remove `useCurrentFrame()` calls from JSX props; let sub-components call the hook internally
-- `DataChart.tsx`: Add `.default([])` to `data` Zod schema
+- `ClaudeCodeIntro.tsx`: Refactor so sub-components call `useCurrentFrame()` internally instead of receiving it as a JSX prop from the parent — current pattern works but sub-components receive global frame rather than sequence-relative frame, causing timing mismatches in GlitchFlash and TitleReveal
+- `DataChart.tsx`: Add `.default([])` to `data` Zod schema, and add empty-array guard: `const maxValue = data.length > 0 ? Math.max(...data.map(d => d.value)) : 1`
 - `CodeShowcase.tsx`: Add `.default("")` to `code` Zod schema
 - `RiskMatrix.tsx`: Destructure and use `color` prop in `GaugeBar`
-- `AgentTeamsTopology.tsx`: Use `accentColor` prop instead of ignoring it
-- `VibeCodingCurve.tsx`: Move `<defs>` before filter references in SVG
-- `ChapterCard.tsx`: Add Zod defaults for `chapterNumber` and `chapterTitle`
+- `AgentTeamsTopology.tsx`: The hardcoded colors for star/mesh topologies are intentional (semantic distinction). Remove the unused `_accentColor` rename — either use `accentColor` for non-topology elements (title, labels) or remove it from Props entirely
+- `ChapterCard.tsx`: Add Zod defaults for `chapterNumber` (.default(0)) and `chapterTitle` (.default(""))
 - `AnimationWrapper.tsx`: Fix loading indicator background color from `--color-accent-glow` (15% opacity) to `--color-accent` with lower opacity
 - Add `zod` as direct dependency in `package.json`
+
+**Note:** `VibeCodingCurve.tsx` SVG `<defs>` placement is a style preference, not a functional bug — SVG spec allows forward references. Moved to P4.
 
 **Animation placement map:**
 
@@ -77,9 +89,11 @@ Also add an `nth-child` fallback for 11+ children (future-proofing):
 
 **Homepage placeholder (#4):** Handled by Work Stream 2 (ClaudeCodeIntro animation replaces the placeholder).
 
-**404 route (#6):** Add a catch-all route in `App.tsx`:
+**404 route (#6):** Add a catch-all route in `App.tsx`. Requires adding `Navigate` to the import:
 
 ```tsx
+import { Routes, Route, Navigate } from 'react-router-dom'
+// ...
 <Route path="*" element={<Navigate to="/" replace />} />
 ```
 
@@ -106,7 +120,7 @@ All are line number corrections in annotation arrays. No structural changes.
 | # | File | Fixes |
 |---|------|-------|
 | 23 | ch01:510-517 | line 4→5, 14→15, 33→34, 39→41 |
-| 24 | ch05:707 | line 26→25 |
+| 24 | ch05:706-707 | line 25 and 26 both annotate the same logical concept (prompt hook). Merge into a single annotation on line 25: combine texts "Prompt hook 不需要 matcher，Stop 事件全局触发。prompt 内容直接发送给 LLM 做单轮判断，消耗约 200-500 token。" and remove the line 26 entry. (ConfigExample uses a Map keyed on line number — two entries for the same line would overwrite.) |
 | 25 | ch05:1019-1026 | line 36→37, 42→43 |
 | 26 | ch05:1537-1542 | line 31→33 |
 | 27 | ch08:633 | line 23→25 |
@@ -119,7 +133,7 @@ All are line number corrections in annotation arrays. No structural changes.
 | 29 | ExerciseCard.tsx:55 | Remove dead `borderLeft` line |
 | 30 | Sidebar.tsx | Remove unused `started` prop threading (or implement visual indicator) |
 | 31-32 | RiskMatrix/AgentTeams | Fix unused prop issues |
-| 33 | VibeCodingCurve | Move `<defs>` before usage |
+| 33 | VibeCodingCurve | Move `<defs>` before usage (style preference, SVG spec allows forward refs) |
 | 34 | ChapterCard | Add Zod defaults |
 | 35 | package.json | Add `zod` as direct dependency |
 
