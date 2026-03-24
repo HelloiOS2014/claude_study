@@ -10,7 +10,7 @@ interface SidebarProps {
 export function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isCompleted, isStarted, completedCount } = useProgress()
+  const { isCompleted, completedCount } = useProgress()
   const currentPath = location.pathname.replace('/', '') || ''
 
   const [expandedParts, setExpandedParts] = useState<Set<number>>(() => {
@@ -51,7 +51,6 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               onToggle={() => togglePart(part.number)}
               onChapterClick={handleChapterClick}
               isCompleted={isCompleted}
-              isStarted={isStarted}
             />
           ))}
         </div>
@@ -100,7 +99,6 @@ interface PartGroupProps {
   onToggle: () => void
   onChapterClick: (id: string) => void
   isCompleted: (id: string) => boolean
-  isStarted: (id: string) => boolean
 }
 
 function PartGroup({
@@ -110,7 +108,6 @@ function PartGroup({
   onToggle,
   onChapterClick,
   isCompleted,
-  isStarted,
 }: PartGroupProps) {
   return (
     <div className="mb-1">
@@ -162,7 +159,6 @@ function PartGroup({
               chapter={chapter}
               isCurrent={chapter.id === currentChapterId}
               completed={isCompleted(chapter.id)}
-              started={isStarted(chapter.id)}
               onClick={() => onChapterClick(chapter.id)}
             />
           ))}
@@ -178,7 +174,6 @@ interface ChapterItemProps {
   chapter: Chapter
   isCurrent: boolean
   completed: boolean
-  started: boolean
   onClick: () => void
 }
 

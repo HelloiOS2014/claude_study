@@ -52,7 +52,6 @@ export function ExerciseCard({
     <div
       className="rounded-lg overflow-hidden my-4 transition-all"
       style={{
-        borderLeft: `3px solid ${color}`,
         border: `1px solid var(--color-border)`,
         borderLeftWidth: '3px',
         borderLeftColor: color,
