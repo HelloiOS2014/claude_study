@@ -154,17 +154,17 @@ code, pre, .font-mono {
 }
 
 .animate-fade-in {
-  animation: fadeIn var(--transition-slow) ease-out forwards;
+  animation: fadeIn 400ms ease-out forwards;
 }
 
 .animate-slide-in {
-  animation: slideInLeft var(--transition-slow) ease-out forwards;
+  animation: slideInLeft 400ms ease-out forwards;
 }
 
 /* Staggered children */
 .stagger-children > * {
   opacity: 0;
-  animation: fadeIn var(--transition-slow) ease-out forwards;
+  animation: fadeIn 400ms ease-out forwards;
 }
 .stagger-children > *:nth-child(1) { animation-delay: 50ms; }
 .stagger-children > *:nth-child(2) { animation-delay: 100ms; }
@@ -176,3 +176,4 @@ code, pre, .font-mono {
 .stagger-children > *:nth-child(8) { animation-delay: 400ms; }
 .stagger-children > *:nth-child(9) { animation-delay: 450ms; }
 .stagger-children > *:nth-child(10) { animation-delay: 500ms; }
+.stagger-children > *:nth-child(n+11) { animation-delay: 550ms; }
