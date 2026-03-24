@@ -68,31 +68,6 @@ export function Header({ onMenuToggle, isMobileMenuOpen }: HeaderProps) {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Search placeholder */}
-      <div
-        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-all"
-        style={{
-          background: 'var(--color-bg-surface)',
-          border: '1px solid var(--color-border)',
-          color: 'var(--color-text-muted)',
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
-        <span>搜索...</span>
-        <kbd
-          className="ml-4 px-1.5 py-0.5 rounded text-[10px] font-mono"
-          style={{
-            background: 'var(--color-bg-tertiary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          ⌘K
-        </kbd>
-      </div>
-
       {/* Theme toggle */}
       <button
         onClick={toggle}
