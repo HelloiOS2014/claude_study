@@ -1,9 +1,13 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
 import { DecisionTree } from '../../components/content/DecisionTree'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazyHookEventFlow = lazy(() => import('../../remotion/ch05/HookEventFlow'))
 
 /* ═══════════════════════════════════════════════
    Decision Tree Data: Hook Type Selection
@@ -140,6 +144,12 @@ export default function Ch05() {
         >
           5.1 Hook 事件模型
         </h2>
+
+        <AnimationWrapper
+          component={LazyHookEventFlow}
+          durationInFrames={210}
+          fallbackText="Hook 事件流动画加载失败"
+        />
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           Hook 的本质是事件驱动的拦截器。Claude Code 在执行过程中会触发一系列生命周期事件，

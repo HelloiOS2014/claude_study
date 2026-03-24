@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
@@ -5,6 +6,9 @@ import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
 import { DecisionTree } from '../../components/content/DecisionTree'
 import type { TreeNode } from '../../components/content/DecisionTree'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazySubagentFanout = lazy(() => import('../../remotion/ch06/SubagentFanout'))
 
 /* ═══════════════════════════════════════════════
    Decision Tree: 选择正确的 Subagent 类型
@@ -149,6 +153,12 @@ export default function Ch06() {
         >
           6.1 上下文隔离模型
         </h2>
+
+        <AnimationWrapper
+          component={LazySubagentFanout}
+          durationInFrames={180}
+          fallbackText="Subagent 扇出动画加载失败"
+        />
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           理解 Subagent 的关键在于一个词：<strong style={{ color: 'var(--color-text-primary)' }}>隔离</strong>。

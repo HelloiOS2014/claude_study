@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
@@ -5,6 +6,9 @@ import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
 import { DecisionTree } from '../../components/content/DecisionTree'
 import type { TreeNode } from '../../components/content/DecisionTree'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazyAgentTeamsTopology = lazy(() => import('../../remotion/ch07/AgentTeamsTopology'))
 
 /* ═══════════════════════════════════════════════
    Decision Tree: Subagent vs Teams 选择
@@ -138,6 +142,12 @@ export default function Ch07() {
         >
           7.1 Agent Teams 架构
         </h2>
+
+        <AnimationWrapper
+          component={LazyAgentTeamsTopology}
+          durationInFrames={180}
+          fallbackText="Agent Teams 拓扑动画加载失败"
+        />
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           Subagent 是<strong style={{ color: 'var(--color-text-primary)' }}>星型拓扑</strong>：

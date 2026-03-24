@@ -1,9 +1,13 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
 import { DecisionTree } from '../../components/content/DecisionTree'
 import type { TreeNode } from '../../components/content/DecisionTree'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazyMcpArchitecture = lazy(() => import('../../remotion/ch08/McpArchitecture'))
 
 /* ═══════════════════════════════════════════════
    Decision Tree: 方法论选择
@@ -126,6 +130,12 @@ export default function Ch08() {
         >
           8.1 社区方法论深度拆解
         </h2>
+
+        <AnimationWrapper
+          component={LazyMcpArchitecture}
+          durationInFrames={180}
+          fallbackText="MCP 架构动画加载失败"
+        />
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           Claude Code 的开放生态催生了大量社区方法论。它们不是"最佳实践集锦"——每一个都有明确的适用场景、成本模型和局限性。

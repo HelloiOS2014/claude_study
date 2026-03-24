@@ -1,9 +1,13 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
 import { DecisionTree } from '../../components/content/DecisionTree'
 import type { TreeNode } from '../../components/content/DecisionTree'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazyRiskMatrix = lazy(() => import('../../remotion/ch09/RiskMatrix'))
 
 /* ═══════════════════════════════════════════════
    Decision Tree: 权限分级
@@ -1111,6 +1115,12 @@ Phase 3: 深化 (持续)
         >
           9.7 风险矩阵总览
         </h2>
+
+        <AnimationWrapper
+          component={LazyRiskMatrix}
+          durationInFrames={210}
+          fallbackText="风险矩阵动画加载失败"
+        />
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           这张表汇总了全教程中所有风险点和对应的防范措施，方便你快速查阅和检查。
