@@ -224,3 +224,5 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default PromptComparison

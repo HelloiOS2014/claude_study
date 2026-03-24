@@ -252,3 +252,5 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default McpArchitecture

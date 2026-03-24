@@ -132,3 +132,5 @@ export const PlanModeFlow: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default PlanModeFlow

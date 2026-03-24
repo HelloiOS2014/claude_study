@@ -266,3 +266,5 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default SubagentFanout

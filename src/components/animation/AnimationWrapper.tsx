@@ -121,7 +121,7 @@ function LoadingPlaceholder({ text }: { text: string }) {
         <div
           className="mx-auto mb-3 w-8 h-8 rounded-full"
           style={{
-            background: 'var(--color-accent-glow)',
+            background: 'rgba(217, 119, 87, 0.4)',
             animation: 'pulse-glow 2s ease-in-out infinite',
           }}
         />

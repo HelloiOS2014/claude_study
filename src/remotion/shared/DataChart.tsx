@@ -16,8 +16,8 @@ const DataItemSchema = z.object({
 });
 
 export const ChartSchema = z.object({
-  title: z.string(),
-  data: z.array(DataItemSchema),
+  title: z.string().default(""),
+  data: z.array(DataItemSchema).default([]),
 });
 
 type ChartProps = z.infer<typeof ChartSchema>;
@@ -121,7 +121,7 @@ export const DataChart: React.FC<ChartProps> = ({ title, data }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const maxValue = Math.max(...data.map((d) => d.value));
+  const maxValue = data.length > 0 ? Math.max(...data.map((d) => d.value)) : 1;
 
   // Title animation
   const titleProgress = spring({
@@ -252,3 +252,5 @@ export const DataChart: React.FC<ChartProps> = ({ title, data }) => {
     </AbsoluteFill>
   );
 };
+
+export default DataChart

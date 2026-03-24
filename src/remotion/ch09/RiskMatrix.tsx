@@ -41,7 +41,7 @@ const DotGrid: React.FC = () => (
   />
 )
 
-const GaugeBar: React.FC<{ progress: number; color: string }> = ({ progress }) => {
+const GaugeBar: React.FC<{ progress: number; color: string }> = ({ progress, color }) => {
   const width = interpolate(progress, [0, 1], [0, 100])
   // Color transitions from red to yellow to green
   const r = Math.round(interpolate(progress, [0, 0.5, 1], [239, 250, 74]))
@@ -64,7 +64,7 @@ const GaugeBar: React.FC<{ progress: number; color: string }> = ({ progress }) =
           width: `${width}%`,
           height: '100%',
           borderRadius: 3,
-          background: `linear-gradient(90deg, #ef4444, ${gaugeColor})`,
+          background: `linear-gradient(90deg, ${color}40, ${gaugeColor})`,
           boxShadow: `0 0 8px ${gaugeColor}40`,
         }}
       />
@@ -241,3 +241,5 @@ export const RiskMatrix: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default RiskMatrix

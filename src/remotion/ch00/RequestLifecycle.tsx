@@ -172,3 +172,5 @@ export const RequestLifecycle: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default RequestLifecycle

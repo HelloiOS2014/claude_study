@@ -188,3 +188,5 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default VibeCodingCurve

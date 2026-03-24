@@ -157,3 +157,5 @@ export const LowerThird: React.FC<LowerThirdProps> = ({
     </AbsoluteFill>
   );
 };
+
+export default LowerThird

@@ -216,3 +216,5 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     </AbsoluteFill>
   );
 };
+
+export default ProductCard

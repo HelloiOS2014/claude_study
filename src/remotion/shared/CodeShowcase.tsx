@@ -11,7 +11,7 @@ import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/prism";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 export const CodeShowcaseSchema = z.object({
-  code: z.string(),
+  code: z.string().default(""),
   language: z.string().default("typescript"),
   highlightLines: z.array(z.number()).default([]),
   title: z.string().optional(),
@@ -206,3 +206,5 @@ export const CodeShowcase: React.FC<CodeShowcaseProps> = ({
     </AbsoluteFill>
   );
 };
+
+export default CodeShowcase

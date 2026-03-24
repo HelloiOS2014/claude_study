@@ -193,3 +193,5 @@ export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default TokenEconomy

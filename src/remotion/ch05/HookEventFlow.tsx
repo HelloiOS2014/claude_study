@@ -276,3 +276,5 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default HookEventFlow

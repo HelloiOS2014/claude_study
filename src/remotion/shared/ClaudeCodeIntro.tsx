@@ -41,10 +41,10 @@ const DotGridBackground: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-const ScanLine: React.FC<{ frame: number; accentColor: string }> = ({
-  frame,
+const ScanLine: React.FC<{ accentColor: string }> = ({
   accentColor,
 }) => {
+  const frame = useCurrentFrame();
   const top = interpolate(frame, [0, 30], [-10, 110], {
     extrapolateRight: "clamp",
   });
@@ -71,10 +71,10 @@ const ScanLine: React.FC<{ frame: number; accentColor: string }> = ({
 };
 
 const TerminalTyping: React.FC<{
-  frame: number;
   command: string;
   accentColor: string;
-}> = ({ frame, command, accentColor }) => {
+}> = ({ command, accentColor }) => {
+  const frame = useCurrentFrame();
   const CHAR_FRAMES = 3;
   const fullText = `$ ${command}`;
 
@@ -132,9 +132,9 @@ const TerminalTyping: React.FC<{
 };
 
 const GlitchFlash: React.FC<{
-  frame: number;
   accentColor: string;
-}> = ({ frame, accentColor }) => {
+}> = ({ accentColor }) => {
+  const frame = useCurrentFrame();
   // Multi-pulse flash pattern over 15 frames
   const flashOpacity = interpolate(
     frame,
@@ -164,12 +164,12 @@ const GlitchFlash: React.FC<{
 };
 
 const TitleReveal: React.FC<{
-  frame: number;
   fps: number;
   title: string;
   subtitle: string;
   accentColor: string;
-}> = ({ frame, fps, title, subtitle, accentColor }) => {
+}> = ({ fps, title, subtitle, accentColor }) => {
+  const frame = useCurrentFrame();
   const [titlePart1, titlePart2] = (() => {
     const parts = title.split(" ");
     if (parts.length >= 2) {
@@ -319,7 +319,6 @@ export const ClaudeCodeIntro: React.FC<ClaudeCodeIntroProps> = ({
       {/* Stage 1: CRT scan line (0-30) */}
       <Sequence from={0} durationInFrames={30}>
         <ScanLine
-          frame={useCurrentFrame()}
           accentColor={accentColor}
         />
       </Sequence>
@@ -327,7 +326,6 @@ export const ClaudeCodeIntro: React.FC<ClaudeCodeIntroProps> = ({
       {/* Stage 2: Terminal typing (15-90) */}
       <Sequence from={15} durationInFrames={75}>
         <TerminalTyping
-          frame={useCurrentFrame()}
           command={terminalCommand}
           accentColor={accentColor}
         />
@@ -336,7 +334,6 @@ export const ClaudeCodeIntro: React.FC<ClaudeCodeIntroProps> = ({
       {/* Stage 3: Glitch flash transition (85-100) */}
       <Sequence from={85} durationInFrames={15}>
         <GlitchFlash
-          frame={useCurrentFrame()}
           accentColor={accentColor}
         />
       </Sequence>
@@ -344,7 +341,6 @@ export const ClaudeCodeIntro: React.FC<ClaudeCodeIntroProps> = ({
       {/* Stage 4 & 5: Title + subtitle reveal (95-210) */}
       <Sequence from={95}>
         <TitleReveal
-          frame={useCurrentFrame()}
           fps={fps}
           title={title}
           subtitle={subtitle}
@@ -354,3 +350,5 @@ export const ClaudeCodeIntro: React.FC<ClaudeCodeIntroProps> = ({
     </AbsoluteFill>
   );
 };
+
+export default ClaudeCodeIntro

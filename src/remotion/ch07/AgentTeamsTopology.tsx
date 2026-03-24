@@ -45,7 +45,7 @@ const MESH_NODES = [
   { x: 1280, y: 520, label: '协调者' },
 ]
 
-export const AgentTeamsTopology: React.FC<Props> = ({ accentColor: _accentColor }) => {
+export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
 
@@ -85,7 +85,7 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor: _accentColor 
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
           }),
-          backgroundColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: `${accentColor}30`,
         }}
       />
 
@@ -302,3 +302,5 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor: _accentColor 
     </AbsoluteFill>
   )
 }
+
+export default AgentTeamsTopology

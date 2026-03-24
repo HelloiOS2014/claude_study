@@ -181,3 +181,5 @@ export const EndCard: React.FC<EndCardProps> = ({
     </AbsoluteFill>
   );
 };
+
+export default EndCard

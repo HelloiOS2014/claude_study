@@ -154,3 +154,5 @@ export const HelloWorld: React.FC = () => {
     </AbsoluteFill>
   );
 };
+
+export default HelloWorld

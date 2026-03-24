@@ -229,3 +229,5 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default ClaudeMdHierarchy

@@ -151,3 +151,5 @@ export const PromptDissection: React.FC<Props> = ({ accentColor }) => {
     </AbsoluteFill>
   )
 }
+
+export default PromptDissection

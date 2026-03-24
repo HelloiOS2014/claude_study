@@ -9,8 +9,8 @@ import {
 } from "remotion";
 
 export const ChapterCardSchema = z.object({
-  chapterNumber: z.number(),
-  chapterTitle: z.string(),
+  chapterNumber: z.number().default(0),
+  chapterTitle: z.string().default(""),
   accentColor: z.string().default("#D97757"),
 });
 
@@ -148,3 +148,5 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({
     </AbsoluteFill>
   );
 };
+
+export default ChapterCard
