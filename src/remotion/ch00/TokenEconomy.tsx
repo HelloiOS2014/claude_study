@@ -3,10 +3,10 @@ import { z } from 'zod'
 import {
   AbsoluteFill,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const TokenEconomySchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -23,30 +23,31 @@ const BARS = [
 ]
 
 const MAX_VALUE = 10000
-const BAR_WIDTH = 120
-const BAR_GAP = 60
-const CHART_HEIGHT = 500
-const CHART_BOTTOM = 700
-const CHART_LEFT = 360
 
 export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const { fps, height, px, fs } = useScale()
+
+  const BAR_WIDTH = px(120)
+  const BAR_GAP = px(60)
+  const CHART_HEIGHT = px(500)
+  const CHART_BOTTOM = px(700)
+  const CHART_LEFT = px(360)
 
   return (
     <AbsoluteFill style={{
       backgroundColor: '#0a0a1a',
       backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
+      backgroundSize: `${px(32)}px ${px(32)}px`,
     }}>
       {/* Title */}
       <div style={{
         position: 'absolute',
-        top: 80,
+        top: px(80),
         width: '100%',
         textAlign: 'center',
         fontFamily: "'SF Pro Display', sans-serif",
-        fontSize: 42,
+        fontSize: fs(42),
         fontWeight: 700,
         color: '#e2e8f0',
         opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -57,10 +58,10 @@ export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
       {/* Y-axis label */}
       <div style={{
         position: 'absolute',
-        left: CHART_LEFT - 60,
-        top: CHART_BOTTOM - CHART_HEIGHT - 10,
+        left: CHART_LEFT - px(60),
+        top: CHART_BOTTOM - CHART_HEIGHT - px(10),
         fontFamily: "'SF Mono', monospace",
-        fontSize: 12,
+        fontSize: fs(12),
         color: '#4a5068',
         transform: 'rotate(-90deg)',
         transformOrigin: 'center',
@@ -83,22 +84,22 @@ export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
             <div style={{
               position: 'absolute',
               left: x,
-              bottom: 1080 - CHART_BOTTOM,
+              bottom: height - CHART_BOTTOM,
               width: BAR_WIDTH,
               height: barHeight,
-              borderRadius: '8px 8px 0 0',
+              borderRadius: `${px(8)}px ${px(8)}px 0 0`,
               background: `linear-gradient(180deg, ${bar.color}, ${bar.color}88)`,
-              boxShadow: `0 0 20px ${bar.color}33`,
+              boxShadow: `0 0 ${px(20)}px ${bar.color}33`,
             }} />
 
             {/* Value label */}
             <div style={{
               position: 'absolute',
               left: x + BAR_WIDTH / 2,
-              bottom: 1080 - CHART_BOTTOM + barHeight + 8,
+              bottom: height - CHART_BOTTOM + barHeight + px(8),
               transform: 'translateX(-50%)',
               fontFamily: "'SF Mono', monospace",
-              fontSize: 16,
+              fontSize: fs(16),
               fontWeight: 700,
               color: bar.color,
               opacity: interpolate(frame - barStart, [10, 20], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
@@ -110,10 +111,10 @@ export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
             <div style={{
               position: 'absolute',
               left: x + BAR_WIDTH / 2,
-              top: CHART_BOTTOM + 16,
+              top: CHART_BOTTOM + px(16),
               transform: 'translateX(-50%)',
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 14,
+              fontSize: fs(14),
               color: '#7c86a0',
               opacity: interpolate(frame - barStart, [0, 10], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
             }}>
@@ -130,7 +131,7 @@ export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
         return (
           <div style={{
             position: 'absolute',
-            left: CHART_LEFT - 20,
+            left: CHART_LEFT - px(20),
             top: lineY,
             width: BARS.length * (BAR_WIDTH + BAR_GAP),
             height: 2,
@@ -139,10 +140,10 @@ export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
           }}>
             <div style={{
               position: 'absolute',
-              right: -180,
-              top: -10,
+              right: -px(180),
+              top: -px(10),
               fontFamily: "'SF Mono', monospace",
-              fontSize: 13,
+              fontSize: fs(13),
               color: accentColor,
               whiteSpace: 'nowrap',
             }}>
@@ -159,7 +160,7 @@ export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
         return (
           <div style={{
             position: 'absolute',
-            left: CHART_LEFT - 20,
+            left: CHART_LEFT - px(20),
             top: lineY,
             width: BARS.length * (BAR_WIDTH + BAR_GAP),
             height: 2,
@@ -168,10 +169,10 @@ export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
           }}>
             <div style={{
               position: 'absolute',
-              right: -220,
-              top: -10,
+              right: -px(220),
+              top: -px(10),
               fontFamily: "'SF Mono', monospace",
-              fontSize: 13,
+              fontSize: fs(13),
               color: '#f87171',
               whiteSpace: 'nowrap',
             }}>
@@ -184,7 +185,7 @@ export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
       {/* Baseline */}
       <div style={{
         position: 'absolute',
-        left: CHART_LEFT - 20,
+        left: CHART_LEFT - px(20),
         top: CHART_BOTTOM,
         width: BARS.length * (BAR_WIDTH + BAR_GAP),
         height: 1,

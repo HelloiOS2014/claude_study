@@ -4,10 +4,10 @@ import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const RequestLifecycleSchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -28,38 +28,39 @@ const NODES = [
 ]
 
 const NODE_INTERVAL = 16
-const NODE_WIDTH = 160
-const NODE_HEIGHT = 56
-const GAP = 24
 
-const DotGrid: React.FC = () => (
+const DotGrid: React.FC<{ dotSize: string }> = ({ dotSize }) => (
   <AbsoluteFill
     style={{
       backgroundColor: '#0a0a1a',
       backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
+      backgroundSize: dotSize,
     }}
   />
 )
 
 export const RequestLifecycle: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const { fps, height, px, fs, centerX } = useScale()
+
+  const NODE_WIDTH = px(160)
+  const NODE_HEIGHT = px(56)
+  const GAP = px(24)
 
   const totalWidth = NODES.length * NODE_WIDTH + (NODES.length - 1) * GAP
-  const startX = (1920 - totalWidth) / 2
-  const centerY = 540
+  const startX = centerX(totalWidth)
+  const centerYPos = height / 2
 
   return (
     <AbsoluteFill>
-      <DotGrid />
+      <DotGrid dotSize={`${px(32)}px ${px(32)}px`} />
 
       {/* Title */}
       <Sequence from={0} durationInFrames={180}>
-        <AbsoluteFill style={{ justifyContent: 'flex-start', alignItems: 'center', paddingTop: 80 }}>
+        <AbsoluteFill style={{ justifyContent: 'flex-start', alignItems: 'center', paddingTop: px(80) }}>
           <div style={{
             fontFamily: "'SF Pro Display', sans-serif",
-            fontSize: 42,
+            fontSize: fs(42),
             fontWeight: 700,
             color: '#e2e8f0',
             opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -75,7 +76,7 @@ export const RequestLifecycle: React.FC<Props> = ({ accentColor }) => {
         const progress = spring({ frame: frame - nodeStart, fps, config: { damping: 15, stiffness: 120 } })
         const isActive = frame >= nodeStart
         const x = startX + i * (NODE_WIDTH + GAP)
-        const y = centerY - NODE_HEIGHT / 2
+        const y = centerYPos - NODE_HEIGHT / 2
 
         // Token counter
         let cumulativeTokens = 0
@@ -95,7 +96,7 @@ export const RequestLifecycle: React.FC<Props> = ({ accentColor }) => {
               <div style={{
                 position: 'absolute',
                 left: x - GAP,
-                top: centerY - 1,
+                top: centerYPos - 1,
                 width: GAP,
                 height: 2,
                 background: isActive ? accentColor : 'rgba(255,255,255,0.1)',
@@ -111,7 +112,7 @@ export const RequestLifecycle: React.FC<Props> = ({ accentColor }) => {
               top: y,
               width: NODE_WIDTH,
               height: NODE_HEIGHT,
-              borderRadius: 12,
+              borderRadius: px(12),
               border: `2px solid ${isActive ? accentColor : 'rgba(255,255,255,0.1)'}`,
               background: isActive ? 'rgba(217, 119, 87, 0.08)' : 'rgba(255,255,255,0.02)',
               display: 'flex',
@@ -119,11 +120,11 @@ export const RequestLifecycle: React.FC<Props> = ({ accentColor }) => {
               justifyContent: 'center',
               transform: `scale(${interpolate(progress, [0, 1], [0.8, 1])})`,
               opacity: interpolate(progress, [0, 1], [0, 1]),
-              boxShadow: isActive ? `0 0 20px rgba(217,119,87,0.15)` : 'none',
+              boxShadow: isActive ? `0 0 ${px(20)}px rgba(217,119,87,0.15)` : 'none',
             }}>
               <span style={{
                 fontFamily: "'SF Pro Display', sans-serif",
-                fontSize: 14,
+                fontSize: fs(14),
                 fontWeight: 600,
                 color: isActive ? '#e2e8f0' : '#4a5068',
                 textAlign: 'center',
@@ -137,10 +138,10 @@ export const RequestLifecycle: React.FC<Props> = ({ accentColor }) => {
               <div style={{
                 position: 'absolute',
                 left: x + NODE_WIDTH / 2,
-                top: y + NODE_HEIGHT + 12,
+                top: y + NODE_HEIGHT + px(12),
                 transform: 'translateX(-50%)',
                 fontFamily: "'SF Mono', monospace",
-                fontSize: 11,
+                fontSize: fs(11),
                 color: accentColor,
                 opacity: interpolate(frame - nodeStart, [5, 15], [0, 0.8], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
               }}>
@@ -153,10 +154,10 @@ export const RequestLifecycle: React.FC<Props> = ({ accentColor }) => {
 
       {/* Total counter */}
       <Sequence from={10 + NODES.length * NODE_INTERVAL}>
-        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 120 }}>
+        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: px(120) }}>
           <div style={{
             fontFamily: "'SF Mono', monospace",
-            fontSize: 24,
+            fontSize: fs(24),
             color: accentColor,
             opacity: interpolate(
               frame - (10 + NODES.length * NODE_INTERVAL),

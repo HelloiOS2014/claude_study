@@ -4,10 +4,10 @@ import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const ClaudeMdHierarchySchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -23,25 +23,28 @@ const FILES = [
 ]
 
 const STEP_INTERVAL = 28
-const ROW_HEIGHT = 80
-const INDENT_PX = 60
 
-const DotGrid: React.FC = () => (
-  <AbsoluteFill
-    style={{
-      backgroundColor: '#0a0a1a',
-      backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
-    }}
-  />
-)
+const DotGrid: React.FC = () => {
+  const { px } = useScale()
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: '#0a0a1a',
+        backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
+        backgroundSize: `${px(32)}px ${px(32)}px`,
+      }}
+    />
+  )
+}
 
 export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const { px, fs, fps } = useScale()
 
-  const startY = 280
-  const baseX = 340
+  const ROW_HEIGHT = px(80)
+  const INDENT_PX = px(60)
+  const startY = px(280)
+  const baseX = px(340)
 
   return (
     <AbsoluteFill>
@@ -51,11 +54,11 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          top: 80,
+          top: px(80),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 42,
+          fontSize: fs(42),
           fontWeight: 700,
           color: '#e2e8f0',
           opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -68,11 +71,11 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          top: 140,
+          top: px(140),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 22,
+          fontSize: fs(22),
           color: '#7c86a0',
           opacity: interpolate(frame, [5, 20], [0, 1], {
             extrapolateLeft: 'clamp',
@@ -96,7 +99,7 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
         const y = startY + i * ROW_HEIGHT
 
         // Slide from left
-        const slideX = interpolate(p, [0, 1], [-80, 0])
+        const slideX = interpolate(p, [0, 1], [-px(80), 0])
         const opacity = interpolate(p, [0, 1], [0, 1])
 
         // Connector line to parent
@@ -111,10 +114,10 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
                 <div
                   style={{
                     position: 'absolute',
-                    left: x - INDENT_PX / 2 + 8,
-                    top: y - ROW_HEIGHT + 40,
-                    width: 2,
-                    height: ROW_HEIGHT - 10,
+                    left: x - INDENT_PX / 2 + px(8),
+                    top: y - ROW_HEIGHT + px(40),
+                    width: px(2),
+                    height: ROW_HEIGHT - px(10),
                     backgroundColor: 'rgba(255,255,255,0.1)',
                     opacity: interpolate(frame - stepStart, [0, 10], [0, 1], {
                       extrapolateLeft: 'clamp',
@@ -126,10 +129,10 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
                 <div
                   style={{
                     position: 'absolute',
-                    left: x - INDENT_PX / 2 + 8,
-                    top: y + 28,
-                    width: INDENT_PX / 2 - 8,
-                    height: 2,
+                    left: x - INDENT_PX / 2 + px(8),
+                    top: y + px(28),
+                    width: INDENT_PX / 2 - px(8),
+                    height: px(2),
                     backgroundColor: 'rgba(255,255,255,0.1)',
                     opacity: interpolate(frame - stepStart, [0, 10], [0, 1], {
                       extrapolateLeft: 'clamp',
@@ -148,7 +151,7 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
                 top: y,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 16,
+                gap: px(16),
                 opacity,
                 transform: `translateX(${slideX}px)`,
               }}
@@ -156,11 +159,11 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
               {/* File icon dot */}
               <div
                 style={{
-                  width: 14,
-                  height: 14,
+                  width: px(14),
+                  height: px(14),
                   borderRadius: '50%',
                   backgroundColor: file.color,
-                  boxShadow: `0 0 12px ${file.color}60`,
+                  boxShadow: `0 0 ${px(12)}px ${file.color}60`,
                   flexShrink: 0,
                 }}
               />
@@ -169,7 +172,7 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
               <span
                 style={{
                   fontFamily: "'SF Mono', monospace",
-                  fontSize: 24,
+                  fontSize: fs(24),
                   color: '#e2e8f0',
                   fontWeight: 600,
                 }}
@@ -180,12 +183,12 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
               {/* Priority badge */}
               <div
                 style={{
-                  padding: '4px 14px',
-                  borderRadius: 8,
+                  padding: `${px(4)}px ${px(14)}px`,
+                  borderRadius: px(8),
                   backgroundColor: `${file.color}18`,
                   border: `1px solid ${file.color}40`,
                   fontFamily: "'SF Pro Display', sans-serif",
-                  fontSize: 15,
+                  fontSize: fs(15),
                   fontWeight: 600,
                   color: file.color,
                   whiteSpace: 'nowrap',
@@ -201,15 +204,15 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
       {/* Arrow showing override direction */}
       <Sequence from={20 + FILES.length * STEP_INTERVAL + 10}>
         <AbsoluteFill
-          style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 100 }}
+          style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: px(100) }}
         >
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
+              gap: px(12),
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 22,
+              fontSize: fs(22),
               color: accentColor,
               fontWeight: 600,
               opacity: interpolate(
@@ -221,7 +224,7 @@ export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
             }}
           >
             <span>覆盖方向</span>
-            <span style={{ fontSize: 28 }}>↓</span>
+            <span style={{ fontSize: fs(28) }}>↓</span>
             <span>近距离文件 &gt; 全局文件</span>
           </div>
         </AbsoluteFill>

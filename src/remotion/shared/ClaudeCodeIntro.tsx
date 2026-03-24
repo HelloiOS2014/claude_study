@@ -4,10 +4,10 @@ import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from "remotion";
+import { useScale } from "./useScale";
 
 export const ClaudeCodeIntroSchema = z.object({
   title: z.string().default("Claude Code"),
@@ -21,6 +21,7 @@ type ClaudeCodeIntroProps = z.infer<typeof ClaudeCodeIntroSchema>;
 // ─── Sub-components ──────────────────────────────────────────
 
 const DotGridBackground: React.FC<{ frame: number }> = ({ frame }) => {
+  const { px } = useScale();
   const opacity = interpolate(frame, [0, 30], [0, 1], {
     extrapolateRight: "clamp",
   });
@@ -33,7 +34,7 @@ const DotGridBackground: React.FC<{ frame: number }> = ({ frame }) => {
         backgroundColor: "#0a0a1a",
         backgroundImage:
           "radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
+        backgroundSize: `${px(40)}px ${px(40)}px`,
         backgroundPosition: `${offsetX}px ${offsetY}px`,
         opacity,
       }}
@@ -45,6 +46,7 @@ const ScanLine: React.FC<{ accentColor: string }> = ({
   accentColor,
 }) => {
   const frame = useCurrentFrame();
+  const { px } = useScale();
   const top = interpolate(frame, [0, 30], [-10, 110], {
     extrapolateRight: "clamp",
   });
@@ -60,7 +62,7 @@ const ScanLine: React.FC<{ accentColor: string }> = ({
         top: `${top}%`,
         left: 0,
         width: "100%",
-        height: 3,
+        height: px(3),
         background: accentColor,
         boxShadow: `0 0 20px ${accentColor}, 0 0 60px ${accentColor}, 0 0 100px ${accentColor}`,
         opacity,
@@ -75,6 +77,7 @@ const TerminalTyping: React.FC<{
   accentColor: string;
 }> = ({ command, accentColor }) => {
   const frame = useCurrentFrame();
+  const { fs } = useScale();
   const CHAR_FRAMES = 3;
   const fullText = `$ ${command}`;
 
@@ -111,7 +114,7 @@ const TerminalTyping: React.FC<{
       <div
         style={{
           fontFamily: "'SF Mono', 'Fira Code', 'Courier New', monospace",
-          fontSize: 64,
+          fontSize: fs(64),
           color: "#4ade80",
           textShadow: "0 0 10px rgba(74,222,128,0.5)",
         }}
@@ -170,6 +173,7 @@ const TitleReveal: React.FC<{
   accentColor: string;
 }> = ({ fps, title, subtitle, accentColor }) => {
   const frame = useCurrentFrame();
+  const { px, fs } = useScale();
   const [titlePart1, titlePart2] = (() => {
     const parts = title.split(" ");
     if (parts.length >= 2) {
@@ -226,7 +230,7 @@ const TitleReveal: React.FC<{
     fps,
     config: { damping: 200, stiffness: 180 },
   });
-  const lineWidth = interpolate(lineProgress, [0, 1], [0, 500]);
+  const lineWidth = interpolate(lineProgress, [0, 1], [0, px(500)]);
 
   return (
     <AbsoluteFill
@@ -239,14 +243,14 @@ const TitleReveal: React.FC<{
       <div
         style={{
           display: "flex",
-          gap: 30,
-          marginBottom: 30,
+          gap: px(30),
+          marginBottom: px(30),
         }}
       >
         <span
           style={{
             fontFamily: "'SF Pro Display', Helvetica, Arial, sans-serif",
-            fontSize: 130,
+            fontSize: fs(130),
             fontWeight: 800,
             color: "#ffffff",
             opacity: part1Opacity,
@@ -259,7 +263,7 @@ const TitleReveal: React.FC<{
         <span
           style={{
             fontFamily: "'SF Pro Display', Helvetica, Arial, sans-serif",
-            fontSize: 130,
+            fontSize: fs(130),
             fontWeight: 800,
             color: accentColor,
             opacity: part2Opacity,
@@ -274,11 +278,11 @@ const TitleReveal: React.FC<{
       {/* Decorative underline */}
       <div
         style={{
-          height: 3,
+          height: px(3),
           width: lineWidth,
           background: `linear-gradient(90deg, transparent, ${accentColor}, #E8845C, transparent)`,
-          borderRadius: 2,
-          marginBottom: 40,
+          borderRadius: px(2),
+          marginBottom: px(40),
         }}
       />
 
@@ -286,7 +290,7 @@ const TitleReveal: React.FC<{
       <div
         style={{
           fontFamily: "'SF Pro Display', Helvetica, Arial, sans-serif",
-          fontSize: 52,
+          fontSize: fs(52),
           fontWeight: 300,
           color: "rgba(255,255,255,0.8)",
           letterSpacing: 8,
@@ -309,7 +313,7 @@ export const ClaudeCodeIntro: React.FC<ClaudeCodeIntroProps> = ({
   accentColor,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps } = useScale();
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a1a" }}>

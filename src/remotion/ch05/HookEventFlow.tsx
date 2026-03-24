@@ -4,10 +4,10 @@ import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const HookEventFlowSchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -29,42 +29,43 @@ const HOOKS: Record<string, string[]> = {
   Stop: ['Allow', 'Deny'],
 }
 
-const BOX_W = 180
-const BOX_H = 64
-const GAP = 70
 const STEP_INTERVAL = 30
 
-const DotGrid: React.FC = () => (
+const DotGrid: React.FC<{ bgSize: string }> = ({ bgSize }) => (
   <AbsoluteFill
     style={{
       backgroundColor: '#0a0a1a',
       backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
+      backgroundSize: bgSize,
     }}
   />
 )
 
 export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const { px, fs, fps, width, height } = useScale()
+
+  const BOX_W = px(180)
+  const BOX_H = px(64)
+  const GAP = px(70)
 
   const totalW = STAGES.length * BOX_W + (STAGES.length - 1) * GAP
-  const startX = (1920 - totalW) / 2
-  const centerY = 440
+  const startX = (width - totalW) / 2
+  const centerY = height * 0.41
 
   return (
     <AbsoluteFill>
-      <DotGrid />
+      <DotGrid bgSize={`${px(32)}px ${px(32)}px`} />
 
       {/* Title */}
       <div
         style={{
           position: 'absolute',
-          top: 80,
+          top: px(80),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 42,
+          fontSize: fs(42),
           fontWeight: 700,
           color: '#e2e8f0',
           opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -77,11 +78,11 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          top: 140,
+          top: px(140),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 22,
+          fontSize: fs(22),
           color: '#7c86a0',
           opacity: interpolate(frame, [5, 20], [0, 1], {
             extrapolateLeft: 'clamp',
@@ -109,9 +110,9 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
               <div
                 style={{
                   position: 'absolute',
-                  left: x - GAP + 5,
+                  left: x - GAP + px(5),
                   top: centerY + BOX_H / 2 - 1,
-                  width: GAP - 10,
+                  width: GAP - px(10),
                   height: 2,
                   background: frame >= stepStart ? accentColor : 'rgba(255,255,255,0.08)',
                   opacity: interpolate(frame - stepStart, [0, 10], [0, 1], {
@@ -123,13 +124,13 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
                 <div
                   style={{
                     position: 'absolute',
-                    right: -5,
-                    top: -4,
+                    right: px(-5),
+                    top: px(-4),
                     width: 0,
                     height: 0,
-                    borderTop: '5px solid transparent',
-                    borderBottom: '5px solid transparent',
-                    borderLeft: `8px solid ${frame >= stepStart ? accentColor : 'rgba(255,255,255,0.08)'}`,
+                    borderTop: `${px(5)}px solid transparent`,
+                    borderBottom: `${px(5)}px solid transparent`,
+                    borderLeft: `${px(8)}px solid ${frame >= stepStart ? accentColor : 'rgba(255,255,255,0.08)'}`,
                   }}
                 />
               </div>
@@ -143,7 +144,7 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
                 top: centerY,
                 width: BOX_W,
                 height: BOX_H,
-                borderRadius: 14,
+                borderRadius: px(14),
                 border: `2px solid ${isHook ? '#818cf8' : (frame >= stepStart ? accentColor : 'rgba(255,255,255,0.08)')}`,
                 background: isHook
                   ? 'rgba(129,140,248,0.08)'
@@ -161,7 +162,7 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
               <span
                 style={{
                   fontFamily: "'SF Mono', monospace",
-                  fontSize: 17,
+                  fontSize: fs(17),
                   fontWeight: 700,
                   color: isHook ? '#a5b4fc' : '#e2e8f0',
                   textAlign: 'center',
@@ -177,11 +178,11 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
                 style={{
                   position: 'absolute',
                   left: x,
-                  top: centerY - 28,
+                  top: centerY - px(28),
                   width: BOX_W,
                   textAlign: 'center',
                   fontFamily: "'SF Mono', monospace",
-                  fontSize: 12,
+                  fontSize: fs(12),
                   color: '#818cf8',
                   letterSpacing: 1,
                   opacity: interpolate(p, [0, 1], [0, 0.7]),
@@ -200,7 +201,7 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
               })
               const isAllow = branch === 'Allow' || branch === '通过'
               const branchColor = isAllow ? '#4ade80' : '#f87171'
-              const yOffset = bi === 0 ? -80 : 80
+              const yOffset = bi === 0 ? -px(80) : px(80)
 
               return (
                 <React.Fragment key={`${i}-${bi}`}>
@@ -209,9 +210,9 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
                     style={{
                       position: 'absolute',
                       left: x + BOX_W / 2 - 1,
-                      top: yOffset < 0 ? centerY + yOffset + 36 : centerY + BOX_H,
+                      top: yOffset < 0 ? centerY + yOffset + px(36) : centerY + BOX_H,
                       width: 2,
-                      height: Math.abs(yOffset) - (yOffset < 0 ? 36 : 0),
+                      height: Math.abs(yOffset) - (yOffset < 0 ? px(36) : 0),
                       backgroundColor: `${branchColor}40`,
                       opacity: interpolate(bp, [0, 1], [0, 1]),
                     }}
@@ -220,11 +221,11 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
                   <div
                     style={{
                       position: 'absolute',
-                      left: x + BOX_W / 2 - 40,
-                      top: centerY + BOX_H / 2 + yOffset - 16,
-                      width: 80,
-                      height: 32,
-                      borderRadius: 16,
+                      left: x + BOX_W / 2 - px(40),
+                      top: centerY + BOX_H / 2 + yOffset - px(16),
+                      width: px(80),
+                      height: px(32),
+                      borderRadius: px(16),
                       border: `1.5px solid ${branchColor}60`,
                       background: `${branchColor}12`,
                       display: 'flex',
@@ -237,7 +238,7 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
                     <span
                       style={{
                         fontFamily: "'SF Pro Display', sans-serif",
-                        fontSize: 13,
+                        fontSize: fs(13),
                         fontWeight: 600,
                         color: branchColor,
                       }}
@@ -254,11 +255,11 @@ export const HookEventFlow: React.FC<Props> = ({ accentColor }) => {
 
       {/* Bottom note */}
       <Sequence from={20 + STAGES.length * STEP_INTERVAL + 20}>
-        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 80 }}>
+        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: px(80) }}>
           <div
             style={{
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 22,
+              fontSize: fs(22),
               color: accentColor,
               fontWeight: 600,
               opacity: interpolate(

@@ -6,6 +6,7 @@ import {
   useCurrentFrame,
   interpolate,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const PromptDissectionSchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -36,21 +37,22 @@ const ANNOTATION_DELAY = 20
 
 export const PromptDissection: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
+  const { px, fs } = useScale()
 
   return (
     <AbsoluteFill style={{
       backgroundColor: '#0a0a1a',
       backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
+      backgroundSize: `${px(32)}px ${px(32)}px`,
     }}>
       {/* Title */}
       <div style={{
         position: 'absolute',
-        top: 80,
+        top: px(80),
         width: '100%',
         textAlign: 'center',
         fontFamily: "'SF Pro Display', sans-serif",
-        fontSize: 42,
+        fontSize: fs(42),
         fontWeight: 700,
         color: '#e2e8f0',
         opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -61,9 +63,9 @@ export const PromptDissection: React.FC<Props> = ({ accentColor }) => {
       {/* Prompt card */}
       <div style={{
         position: 'absolute',
-        left: 200,
-        top: 200,
-        width: 1520,
+        left: px(200),
+        top: px(200),
+        width: px(1520),
       }}>
         {LINES.map((line, i) => {
           const lineStart = 20 + i * LINE_INTERVAL
@@ -75,20 +77,20 @@ export const PromptDissection: React.FC<Props> = ({ accentColor }) => {
           const annotationX = interpolate(frame - annotationStart, [0, 15], [-20, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
 
           return (
-            <div key={i} style={{ marginBottom: 48 }}>
+            <div key={i} style={{ marginBottom: px(48) }}>
               {/* Prompt line */}
               <div style={{
                 fontFamily: "'SF Mono', 'Fira Code', monospace",
-                fontSize: 28,
+                fontSize: fs(28),
                 color: '#e2e8f0',
-                padding: '16px 24px',
-                borderRadius: 12,
+                padding: `${px(16)}px ${px(24)}px`,
+                borderRadius: px(12),
                 background: 'rgba(255,255,255,0.03)',
                 border: `1px solid ${frame >= annotationStart ? accentColor + '40' : 'rgba(255,255,255,0.06)'}`,
                 opacity: lineOpacity,
                 transform: `translateY(${lineY}px)`,
               }}>
-                <span style={{ color: '#4a5068', marginRight: 12 }}>{i + 1}</span>
+                <span style={{ color: '#4a5068', marginRight: px(12) }}>{i + 1}</span>
                 {line.text}
               </div>
 
@@ -96,21 +98,21 @@ export const PromptDissection: React.FC<Props> = ({ accentColor }) => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
-                marginTop: 12,
-                marginLeft: 48,
+                gap: px(12),
+                marginTop: px(12),
+                marginLeft: px(48),
                 opacity: annotationOpacity,
                 transform: `translateX(${annotationX}px)`,
               }}>
                 <div style={{
-                  width: 24,
+                  width: px(24),
                   height: 2,
                   background: line.color,
                   borderRadius: 1,
                 }} />
                 <span style={{
                   fontFamily: "'SF Pro Display', sans-serif",
-                  fontSize: 20,
+                  fontSize: fs(20),
                   color: line.color,
                   fontWeight: 500,
                 }}>
@@ -127,14 +129,14 @@ export const PromptDissection: React.FC<Props> = ({ accentColor }) => {
         <AbsoluteFill style={{
           justifyContent: 'flex-end',
           alignItems: 'center',
-          paddingBottom: 100,
+          paddingBottom: px(100),
         }}>
           <div style={{
             fontFamily: "'SF Pro Display', sans-serif",
-            fontSize: 24,
+            fontSize: fs(24),
             color: accentColor,
-            padding: '16px 32px',
-            borderRadius: 12,
+            padding: `${px(16)}px ${px(32)}px`,
+            borderRadius: px(12),
             border: `1px solid ${accentColor}40`,
             background: `${accentColor}0a`,
             opacity: interpolate(

@@ -4,10 +4,10 @@ import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const PromptComparisonSchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -22,7 +22,7 @@ const GOOD_REACTION = 'Claude 精确定位瓶颈\n给出对比方案\n等你决�
 
 export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const { fps, px, fs } = useScale()
 
   const leftProgress = spring({ frame: frame - 15, fps, config: { damping: 15, stiffness: 100 } })
   const rightProgress = spring({ frame: frame - 40, fps, config: { damping: 15, stiffness: 100 } })
@@ -32,16 +32,16 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
     <AbsoluteFill style={{
       backgroundColor: '#0a0a1a',
       backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
+      backgroundSize: `${px(32)}px ${px(32)}px`,
     }}>
       {/* Title */}
       <div style={{
         position: 'absolute',
-        top: 60,
+        top: px(60),
         width: '100%',
         textAlign: 'center',
         fontFamily: "'SF Pro Display', sans-serif",
-        fontSize: 42,
+        fontSize: fs(42),
         fontWeight: 700,
         color: '#e2e8f0',
         opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -52,34 +52,34 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
       {/* Left — Bad */}
       <div style={{
         position: 'absolute',
-        left: 120,
-        top: 180,
-        width: 760,
+        left: px(120),
+        top: px(180),
+        width: px(760),
         opacity: leftProgress,
         transform: `translateX(${interpolate(leftProgress, [0, 1], [-40, 0])}px)`,
       }}>
         <div style={{
-          padding: '12px 20px',
-          borderRadius: '12px 12px 0 0',
+          padding: `${px(12)}px ${px(20)}px`,
+          borderRadius: `${px(12)}px ${px(12)}px 0 0`,
           background: 'rgba(248, 113, 113, 0.1)',
           borderBottom: '2px solid rgba(248, 113, 113, 0.3)',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 20,
+          fontSize: fs(20),
           fontWeight: 600,
           color: '#f87171',
         }}>
           ❌ 低效
         </div>
         <div style={{
-          padding: '24px',
-          borderRadius: '0 0 12px 12px',
+          padding: px(24),
+          borderRadius: `0 0 ${px(12)}px ${px(12)}px`,
           background: 'rgba(255,255,255,0.02)',
           border: '1px solid rgba(248, 113, 113, 0.15)',
           borderTop: 'none',
         }}>
           <div style={{
             fontFamily: "'SF Mono', monospace",
-            fontSize: 24,
+            fontSize: fs(24),
             color: '#e2e8f0',
             lineHeight: 1.6,
             whiteSpace: 'pre-wrap',
@@ -91,22 +91,22 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
         {/* Bad reaction */}
         <Sequence from={70}>
           <div style={{
-            marginTop: 20,
-            padding: '16px 20px',
-            borderRadius: 10,
+            marginTop: px(20),
+            padding: `${px(16)}px ${px(20)}px`,
+            borderRadius: px(10),
             background: 'rgba(248, 113, 113, 0.05)',
             border: '1px solid rgba(248, 113, 113, 0.1)',
             opacity: interpolate(frame - 70, [0, 15], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
           }}>
             <div style={{
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 13,
+              fontSize: fs(13),
               color: '#4a5068',
-              marginBottom: 8,
+              marginBottom: px(8),
             }}>Claude 的反应</div>
             <div style={{
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 18,
+              fontSize: fs(18),
               color: '#f87171',
               whiteSpace: 'pre-wrap',
               lineHeight: 1.5,
@@ -120,9 +120,9 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
       {/* Center arrow */}
       <div style={{
         position: 'absolute',
-        left: 920,
-        top: 340,
-        fontSize: 36,
+        left: px(920),
+        top: px(340),
+        fontSize: fs(36),
         color: accentColor,
         opacity: interpolate(frame, [35, 50], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
       }}>
@@ -132,34 +132,34 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
       {/* Right — Good */}
       <div style={{
         position: 'absolute',
-        right: 120,
-        top: 180,
-        width: 760,
+        right: px(120),
+        top: px(180),
+        width: px(760),
         opacity: rightProgress,
         transform: `translateX(${interpolate(rightProgress, [0, 1], [40, 0])}px)`,
       }}>
         <div style={{
-          padding: '12px 20px',
-          borderRadius: '12px 12px 0 0',
+          padding: `${px(12)}px ${px(20)}px`,
+          borderRadius: `${px(12)}px ${px(12)}px 0 0`,
           background: 'rgba(74, 222, 128, 0.1)',
           borderBottom: '2px solid rgba(74, 222, 128, 0.3)',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 20,
+          fontSize: fs(20),
           fontWeight: 600,
           color: '#4ade80',
         }}>
           ✅ 高效
         </div>
         <div style={{
-          padding: '24px',
-          borderRadius: '0 0 12px 12px',
+          padding: px(24),
+          borderRadius: `0 0 ${px(12)}px ${px(12)}px`,
           background: 'rgba(255,255,255,0.02)',
           border: '1px solid rgba(74, 222, 128, 0.15)',
           borderTop: 'none',
         }}>
           <div style={{
             fontFamily: "'SF Mono', monospace",
-            fontSize: 20,
+            fontSize: fs(20),
             color: '#e2e8f0',
             lineHeight: 1.6,
             whiteSpace: 'pre-wrap',
@@ -171,22 +171,22 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
         {/* Good reaction */}
         <Sequence from={90}>
           <div style={{
-            marginTop: 20,
-            padding: '16px 20px',
-            borderRadius: 10,
+            marginTop: px(20),
+            padding: `${px(16)}px ${px(20)}px`,
+            borderRadius: px(10),
             background: 'rgba(74, 222, 128, 0.05)',
             border: '1px solid rgba(74, 222, 128, 0.1)',
             opacity: interpolate(frame - 90, [0, 15], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
           }}>
             <div style={{
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 13,
+              fontSize: fs(13),
               color: '#4a5068',
-              marginBottom: 8,
+              marginBottom: px(8),
             }}>Claude 的反应</div>
             <div style={{
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 18,
+              fontSize: fs(18),
               color: '#4ade80',
               whiteSpace: 'pre-wrap',
               lineHeight: 1.5,
@@ -200,7 +200,7 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
       {/* Bottom verdict */}
       <div style={{
         position: 'absolute',
-        bottom: 80,
+        bottom: px(80),
         left: 0,
         right: 0,
         display: 'flex',
@@ -209,12 +209,12 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
         transform: `translateY(${interpolate(verdictProgress, [0, 1], [20, 0])}px)`,
       }}>
         <div style={{
-          padding: '16px 40px',
-          borderRadius: 16,
+          padding: `${px(16)}px ${px(40)}px`,
+          borderRadius: px(16),
           border: `1px solid ${accentColor}40`,
           background: `${accentColor}0a`,
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 22,
+          fontSize: fs(22),
           color: accentColor,
           fontWeight: 600,
         }}>

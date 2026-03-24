@@ -5,6 +5,7 @@ import {
   useCurrentFrame,
   interpolate,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const VibeCodingCurveSchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -20,20 +21,6 @@ const CURVE_POINTS = [
   [75, 22], [80, 18], [85, 15], [90, 12], [95, 8], [100, 5],
 ]
 
-const CHART_LEFT = 200
-const CHART_RIGHT = 1720
-const CHART_TOP = 200
-const CHART_BOTTOM = 800
-const CHART_W = CHART_RIGHT - CHART_LEFT
-const CHART_H = CHART_BOTTOM - CHART_TOP
-
-function toScreen(x: number, y: number): [number, number] {
-  return [
-    CHART_LEFT + (x / 100) * CHART_W,
-    CHART_BOTTOM - (y / 100) * CHART_H,
-  ]
-}
-
 const MARKERS = [
   { x: 30, label: '⚠️ 质量开始衰减', color: '#fbbf24' },
   { x: 60, label: '🔴 应该 /compact', color: '#D97757' },
@@ -42,6 +29,21 @@ const MARKERS = [
 
 export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
+  const { px, fs, width, height } = useScale()
+
+  const CHART_LEFT = px(200)
+  const CHART_RIGHT = px(1720)
+  const CHART_TOP = px(200)
+  const CHART_BOTTOM = px(800)
+  const CHART_W = CHART_RIGHT - CHART_LEFT
+  const CHART_H = CHART_BOTTOM - CHART_TOP
+
+  function toScreen(x: number, y: number): [number, number] {
+    return [
+      CHART_LEFT + (x / 100) * CHART_W,
+      CHART_BOTTOM - (y / 100) * CHART_H,
+    ]
+  }
 
   // How far along the curve we've drawn (0 to 1)
   const drawProgress = interpolate(frame, [20, 140], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
@@ -62,16 +64,16 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
     <AbsoluteFill style={{
       backgroundColor: '#0a0a1a',
       backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
+      backgroundSize: `${px(32)}px ${px(32)}px`,
     }}>
       {/* Title */}
       <div style={{
         position: 'absolute',
-        top: 60,
+        top: px(60),
         width: '100%',
         textAlign: 'center',
         fontFamily: "'SF Pro Display', sans-serif",
-        fontSize: 42,
+        fontSize: fs(42),
         fontWeight: 700,
         color: '#e2e8f0',
         opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -80,7 +82,7 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
       </div>
 
       {/* Axes */}
-      <svg width={1920} height={1080} style={{ position: 'absolute', top: 0, left: 0 }}>
+      <svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }}>
         {/* X axis */}
         <line x1={CHART_LEFT} y1={CHART_BOTTOM} x2={CHART_RIGHT} y2={CHART_BOTTOM} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
         {/* Y axis */}
@@ -96,9 +98,9 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
         {pathD && (
           <>
             {/* Glow */}
-            <path d={pathD} fill="none" stroke={accentColor} strokeWidth={4} opacity={0.3} filter="url(#glow)" />
+            <path d={pathD} fill="none" stroke={accentColor} strokeWidth={px(4)} opacity={0.3} filter="url(#glow)" />
             {/* Main line */}
-            <path d={pathD} fill="none" stroke={accentColor} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={pathD} fill="none" stroke={accentColor} strokeWidth={px(3)} strokeLinecap="round" strokeLinejoin="round" />
           </>
         )}
 
@@ -107,17 +109,17 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
           <circle
             cx={pathPoints[pathPoints.length - 1][0]}
             cy={pathPoints[pathPoints.length - 1][1]}
-            r={6}
+            r={px(6)}
             fill={accentColor}
           >
-            <animate attributeName="r" values="5;8;5" dur="1s" repeatCount="indefinite" />
+            <animate attributeName="r" values={`${px(5)};${px(8)};${px(5)}`} dur="1s" repeatCount="indefinite" />
           </circle>
         )}
 
         {/* Filter for glow */}
         <defs>
           <filter id="glow">
-            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feGaussianBlur stdDeviation={px(4)} result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
         </defs>
@@ -126,22 +128,22 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
       {/* Axis labels */}
       <div style={{
         position: 'absolute',
-        bottom: 1080 - CHART_BOTTOM - 50,
+        bottom: height - CHART_BOTTOM - px(50),
         left: CHART_LEFT + CHART_W / 2,
         transform: 'translateX(-50%)',
         fontFamily: "'SF Mono', monospace",
-        fontSize: 14,
+        fontSize: fs(14),
         color: '#4a5068',
       }}>
         上下文使用量 (%)
       </div>
       <div style={{
         position: 'absolute',
-        left: CHART_LEFT - 80,
+        left: CHART_LEFT - px(80),
         top: CHART_TOP + CHART_H / 2,
         transform: 'rotate(-90deg)',
         fontFamily: "'SF Mono', monospace",
-        fontSize: 14,
+        fontSize: fs(14),
         color: '#4a5068',
       }}>
         输出质量
@@ -171,10 +173,10 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
             <div style={{
               position: 'absolute',
               left: mx,
-              top: CHART_BOTTOM + 30 + i * 28,
+              top: CHART_BOTTOM + px(30) + i * px(28),
               transform: 'translateX(-50%)',
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 16,
+              fontSize: fs(16),
               color: marker.color,
               fontWeight: 600,
               whiteSpace: 'nowrap',

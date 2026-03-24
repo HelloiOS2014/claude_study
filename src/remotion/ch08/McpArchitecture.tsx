@@ -4,10 +4,10 @@ import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const McpArchitectureSchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -21,27 +21,36 @@ const MCP_SERVERS = [
   { label: 'Playwright', desc: '浏览器自动化', color: '#4ade80', x: 1520 },
 ]
 
-const CENTER_X = 960
-const CENTER_Y = 400
-const CENTER_W = 260
-const CENTER_H = 80
-const SERVER_Y = 700
-const SERVER_W = 200
-const SERVER_H = 100
-
-const DotGrid: React.FC = () => (
-  <AbsoluteFill
-    style={{
-      backgroundColor: '#0a0a1a',
-      backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
-    }}
-  />
-)
+const DotGrid: React.FC = () => {
+  const { px } = useScale()
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: '#0a0a1a',
+        backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
+        backgroundSize: `${px(32)}px ${px(32)}px`,
+      }}
+    />
+  )
+}
 
 export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const { fps, width, height, px, fs } = useScale()
+
+  const CENTER_X = width / 2
+  const CENTER_Y = px(400)
+  const CENTER_W = px(260)
+  const CENTER_H = px(80)
+  const SERVER_Y = px(700)
+  const SERVER_W = px(200)
+  const SERVER_H = px(100)
+
+  // Server positions scaled
+  const servers = MCP_SERVERS.map((server) => ({
+    ...server,
+    x: px(server.x),
+  }))
 
   // Center box entrance
   const centerP = spring({ frame: frame - 10, fps, config: { damping: 12, stiffness: 120 } })
@@ -54,11 +63,11 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          top: 80,
+          top: px(80),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 42,
+          fontSize: fs(42),
           fontWeight: 700,
           color: '#e2e8f0',
           opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -71,11 +80,11 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          top: 140,
+          top: px(140),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 22,
+          fontSize: fs(22),
           color: '#7c86a0',
           opacity: interpolate(frame, [5, 20], [0, 1], {
             extrapolateLeft: 'clamp',
@@ -91,10 +100,10 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
         style={{
           position: 'absolute',
           left: CENTER_X,
-          top: CENTER_Y + CENTER_H / 2 + 30,
+          top: CENTER_Y + CENTER_H / 2 + px(30),
           transform: 'translateX(-50%)',
           fontFamily: "'SF Mono', monospace",
-          fontSize: 14,
+          fontSize: fs(14),
           color: 'rgba(255,255,255,0.3)',
           letterSpacing: 2,
           opacity: interpolate(frame, [30, 45], [0, 1], {
@@ -114,21 +123,21 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
           top: CENTER_Y - CENTER_H / 2,
           width: CENTER_W,
           height: CENTER_H,
-          borderRadius: 16,
-          border: `3px solid ${accentColor}`,
+          borderRadius: px(16),
+          border: `${px(3)}px solid ${accentColor}`,
           background: 'rgba(217,119,87,0.08)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transform: `scale(${interpolate(centerP, [0, 1], [0.5, 1])})`,
           opacity: interpolate(centerP, [0, 1], [0, 1]),
-          boxShadow: `0 0 40px ${accentColor}20`,
+          boxShadow: `0 0 ${px(40)}px ${accentColor}20`,
         }}
       >
         <span
           style={{
             fontFamily: "'SF Pro Display', sans-serif",
-            fontSize: 24,
+            fontSize: fs(24),
             fontWeight: 700,
             color: '#e2e8f0',
           }}
@@ -138,7 +147,7 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
       </div>
 
       {/* MCP Server boxes + connecting lines */}
-      {MCP_SERVERS.map((server, i) => {
+      {servers.map((server, i) => {
         const delay = 35 + i * 18
         const sp = spring({ frame: frame - delay, fps, config: { damping: 14, stiffness: 100 } })
 
@@ -158,10 +167,10 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                width: 1920,
-                height: 1080,
                 pointerEvents: 'none',
               }}
+              width={width}
+              height={height}
             >
               <line
                 x1={CENTER_X}
@@ -169,8 +178,8 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
                 x2={CENTER_X + (server.x - CENTER_X) * lineProgress}
                 y2={CENTER_Y + CENTER_H / 2 + (SERVER_Y - SERVER_H / 2 - CENTER_Y - CENTER_H / 2) * lineProgress}
                 stroke={server.color}
-                strokeWidth={2}
-                strokeDasharray="6 4"
+                strokeWidth={px(2)}
+                strokeDasharray={`${px(6)} ${px(4)}`}
                 opacity={interpolate(sp, [0, 1], [0, 0.5])}
               />
               {/* Pulse dot traveling along line */}
@@ -178,7 +187,7 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
                 <circle
                   cx={CENTER_X + (server.x - CENTER_X) * pulsePhase}
                   cy={CENTER_Y + CENTER_H / 2 + (SERVER_Y - SERVER_H / 2 - CENTER_Y - CENTER_H / 2) * pulsePhase}
-                  r={4}
+                  r={px(4)}
                   fill={server.color}
                   opacity={0.8}
                 />
@@ -193,23 +202,23 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
                 top: SERVER_Y - SERVER_H / 2,
                 width: SERVER_W,
                 height: SERVER_H,
-                borderRadius: 14,
-                border: `2px solid ${server.color}`,
+                borderRadius: px(14),
+                border: `${px(2)}px solid ${server.color}`,
                 background: `${server.color}0a`,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 6,
+                gap: px(6),
                 transform: `scale(${interpolate(sp, [0, 1], [0.5, 1])})`,
                 opacity: interpolate(sp, [0, 1], [0, 1]),
-                boxShadow: `0 0 20px ${server.color}15`,
+                boxShadow: `0 0 ${px(20)}px ${server.color}15`,
               }}
             >
               <span
                 style={{
                   fontFamily: "'SF Pro Display', sans-serif",
-                  fontSize: 22,
+                  fontSize: fs(22),
                   fontWeight: 700,
                   color: '#e2e8f0',
                 }}
@@ -219,7 +228,7 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
               <span
                 style={{
                   fontFamily: "'SF Pro Display', sans-serif",
-                  fontSize: 13,
+                  fontSize: fs(13),
                   color: server.color,
                 }}
               >
@@ -232,11 +241,11 @@ export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
 
       {/* Bottom note */}
       <Sequence from={110}>
-        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 60 }}>
+        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: px(60) }}>
           <div
             style={{
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 22,
+              fontSize: fs(22),
               color: accentColor,
               fontWeight: 600,
               opacity: interpolate(frame - 110, [0, 20], [0, 1], {

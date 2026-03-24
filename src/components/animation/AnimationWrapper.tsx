@@ -144,8 +144,8 @@ export function AnimationWrapper({
   component: LazyComponent,
   durationInFrames,
   fps = 30,
-  width = 1920,
-  height = 1080,
+  width = 960,
+  height = 540,
   inputProps = {},
   fallbackText = '动画加载失败',
   className = '',
@@ -164,41 +164,19 @@ export function AnimationWrapper({
         fallback={<FallbackCard text={fallbackText} />}
       >
         <Suspense fallback={<LoadingPlaceholder text={loadingText} />}>
-          <div
-            className="w-full overflow-hidden"
-            style={{ aspectRatio: '21 / 9' }}
-          >
-            <div
-              style={{
-                width: '100%',
-                height: '0',
-                paddingBottom: '56.25%', /* 16:9 for the Player */
-                position: 'relative',
-                transform: 'scale(1.6)',
-                transformOrigin: 'center center',
-              }}
-            >
-              <Player
-                component={LazyComponent}
-                durationInFrames={durationInFrames}
-                compositionWidth={width}
-                compositionHeight={height}
-                fps={fps}
-                inputProps={inputProps}
-                autoPlay
-                loop
-                controls
-                showVolumeControls={false}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                }}
-              />
-            </div>
-          </div>
+          <Player
+            component={LazyComponent}
+            durationInFrames={durationInFrames}
+            compositionWidth={width}
+            compositionHeight={height}
+            fps={fps}
+            inputProps={inputProps}
+            autoPlay
+            loop
+            controls
+            showVolumeControls={false}
+            style={{ width: '100%' }}
+          />
         </Suspense>
       </AnimationErrorBoundary>
     </div>

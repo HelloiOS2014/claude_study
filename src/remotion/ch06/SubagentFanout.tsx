@@ -4,10 +4,10 @@ import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const SubagentFanoutSchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -21,24 +21,24 @@ const CHILDREN = [
   { label: '测试', model: 'Sonnet', angle: 40, color: '#4ade80' },
 ]
 
-const CENTER_X = 960
-const CENTER_Y = 500
-const RADIUS = 300
-const CIRCLE_R = 70
-
-const DotGrid: React.FC = () => (
+const DotGrid: React.FC<{ bgSize: string }> = ({ bgSize }) => (
   <AbsoluteFill
     style={{
       backgroundColor: '#0a0a1a',
       backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
+      backgroundSize: bgSize,
     }}
   />
 )
 
 export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const { px, fs, fps, width, height } = useScale()
+
+  const CENTER_X = width / 2
+  const CENTER_Y = height * 0.46
+  const RADIUS = px(300)
+  const CIRCLE_R = px(70)
 
   // Center circle entrance
   const centerP = spring({ frame: frame - 10, fps, config: { damping: 12, stiffness: 120 } })
@@ -47,17 +47,17 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
 
   return (
     <AbsoluteFill>
-      <DotGrid />
+      <DotGrid bgSize={`${px(32)}px ${px(32)}px`} />
 
       {/* Title */}
       <div
         style={{
           position: 'absolute',
-          top: 80,
+          top: px(80),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 42,
+          fontSize: fs(42),
           fontWeight: 700,
           color: '#e2e8f0',
           opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -70,11 +70,11 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          top: 140,
+          top: px(140),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 22,
+          fontSize: fs(22),
           color: '#7c86a0',
           opacity: interpolate(frame, [5, 20], [0, 1], {
             extrapolateLeft: 'clamp',
@@ -102,13 +102,13 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
           justifyContent: 'center',
           transform: `scale(${centerScale})`,
           opacity: centerOpacity,
-          boxShadow: `0 0 40px ${accentColor}20`,
+          boxShadow: `0 0 ${px(40)}px ${accentColor}20`,
         }}
       >
         <span
           style={{
             fontFamily: "'SF Pro Display', sans-serif",
-            fontSize: 20,
+            fontSize: fs(20),
             fontWeight: 700,
             color: '#e2e8f0',
           }}
@@ -118,9 +118,9 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
         <span
           style={{
             fontFamily: "'SF Mono', monospace",
-            fontSize: 12,
+            fontSize: fs(12),
             color: accentColor,
-            marginTop: 4,
+            marginTop: px(4),
           }}
         >
           Orchestrator
@@ -149,7 +149,7 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
           <React.Fragment key={i}>
             {/* Outgoing line */}
             <svg
-              style={{ position: 'absolute', top: 0, left: 0, width: 1920, height: 1080, pointerEvents: 'none' }}
+              style={{ position: 'absolute', top: 0, left: 0, width: width, height: height, pointerEvents: 'none' }}
             >
               <line
                 x1={CENTER_X}
@@ -166,7 +166,7 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
             {/* Return line (solid) */}
             {frame >= returnStart && (
               <svg
-                style={{ position: 'absolute', top: 0, left: 0, width: 1920, height: 1080, pointerEvents: 'none' }}
+                style={{ position: 'absolute', top: 0, left: 0, width: width, height: height, pointerEvents: 'none' }}
               >
                 <line
                   x1={childX}
@@ -184,10 +184,10 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
             <div
               style={{
                 position: 'absolute',
-                left: childX - 55,
-                top: childY - 55,
-                width: 110,
-                height: 110,
+                left: childX - px(55),
+                top: childY - px(55),
+                width: px(110),
+                height: px(110),
                 borderRadius: '50%',
                 border: `2px solid ${child.color}`,
                 background: `${child.color}0a`,
@@ -197,13 +197,13 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
                 justifyContent: 'center',
                 transform: `scale(${interpolate(fanP, [0, 1], [0.3, 1])})`,
                 opacity: interpolate(fanP, [0, 1], [0, 1]),
-                boxShadow: `0 0 20px ${child.color}15`,
+                boxShadow: `0 0 ${px(20)}px ${child.color}15`,
               }}
             >
               <span
                 style={{
                   fontFamily: "'SF Pro Display', sans-serif",
-                  fontSize: 18,
+                  fontSize: fs(18),
                   fontWeight: 700,
                   color: '#e2e8f0',
                 }}
@@ -213,9 +213,9 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
               <span
                 style={{
                   fontFamily: "'SF Mono', monospace",
-                  fontSize: 11,
+                  fontSize: fs(11),
                   color: child.color,
-                  marginTop: 4,
+                  marginTop: px(4),
                 }}
               >
                 {child.model}
@@ -227,12 +227,12 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
               <div
                 style={{
                   position: 'absolute',
-                  left: childX - 30,
-                  top: childY + 60,
-                  width: 60,
+                  left: childX - px(30),
+                  top: childY + px(60),
+                  width: px(60),
                   textAlign: 'center',
                   fontFamily: "'SF Pro Display', sans-serif",
-                  fontSize: 12,
+                  fontSize: fs(12),
                   color: child.color,
                   opacity: returnOpacity * 0.8,
                 }}
@@ -246,11 +246,11 @@ export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
 
       {/* Bottom note */}
       <Sequence from={140}>
-        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 80 }}>
+        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: px(80) }}>
           <div
             style={{
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 22,
+              fontSize: fs(22),
               color: accentColor,
               fontWeight: 600,
               opacity: interpolate(frame - 140, [0, 20], [0, 1], {

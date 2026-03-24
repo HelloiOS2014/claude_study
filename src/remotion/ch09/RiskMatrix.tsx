@@ -4,10 +4,10 @@ import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const RiskMatrixSchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -25,24 +25,23 @@ const RISKS = [
 ]
 
 const COLS = 3
-const CARD_W = 360
-const CARD_H = 200
-const GAP_X = 60
-const GAP_Y = 50
 const STEP_INTERVAL = 18
 
-const DotGrid: React.FC = () => (
-  <AbsoluteFill
-    style={{
-      backgroundColor: '#0a0a1a',
-      backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
-    }}
-  />
-)
+const DotGrid: React.FC = () => {
+  const { px } = useScale()
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: '#0a0a1a',
+        backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
+        backgroundSize: `${px(32)}px ${px(32)}px`,
+      }}
+    />
+  )
+}
 
 const GaugeBar: React.FC<{ progress: number; color: string }> = ({ progress, color }) => {
-  const width = interpolate(progress, [0, 1], [0, 100])
+  const barWidth = interpolate(progress, [0, 1], [0, 100])
   // Color transitions from red to yellow to green
   const r = Math.round(interpolate(progress, [0, 0.5, 1], [239, 250, 74]))
   const g = Math.round(interpolate(progress, [0, 0.5, 1], [68, 204, 222]))
@@ -61,7 +60,7 @@ const GaugeBar: React.FC<{ progress: number; color: string }> = ({ progress, col
     >
       <div
         style={{
-          width: `${width}%`,
+          width: `${barWidth}%`,
           height: '100%',
           borderRadius: 3,
           background: `linear-gradient(90deg, ${color}40, ${gaugeColor})`,
@@ -74,12 +73,17 @@ const GaugeBar: React.FC<{ progress: number; color: string }> = ({ progress, col
 
 export const RiskMatrix: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const { fps, px, fs, centerX, centerY } = useScale()
+
+  const CARD_W = px(360)
+  const CARD_H = px(200)
+  const GAP_X = px(60)
+  const GAP_Y = px(50)
 
   const totalW = COLS * CARD_W + (COLS - 1) * GAP_X
   const totalH = 2 * CARD_H + GAP_Y
-  const startX = (1920 - totalW) / 2
-  const startY = (1080 - totalH) / 2 + 40
+  const startX = centerX(totalW)
+  const startY = centerY(totalH) + px(40)
 
   return (
     <AbsoluteFill>
@@ -89,11 +93,11 @@ export const RiskMatrix: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          top: 70,
+          top: px(70),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 42,
+          fontSize: fs(42),
           fontWeight: 700,
           color: '#e2e8f0',
           opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -106,11 +110,11 @@ export const RiskMatrix: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          top: 130,
+          top: px(130),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 22,
+          fontSize: fs(22),
           color: '#7c86a0',
           opacity: interpolate(frame, [5, 20], [0, 1], {
             extrapolateLeft: 'clamp',
@@ -157,26 +161,26 @@ export const RiskMatrix: React.FC<Props> = ({ accentColor }) => {
               top: y,
               width: CARD_W,
               height: CARD_H,
-              borderRadius: 16,
-              border: `2px solid ${isActive ? accentColor : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: px(16),
+              border: `${px(2)}px solid ${isActive ? accentColor : 'rgba(255,255,255,0.08)'}`,
               background: `rgba(255,255,255,${pulseOpacity})`,
-              padding: '20px 24px',
+              padding: `${px(20)}px ${px(24)}px`,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               transform: `scale(${interpolate(cp, [0, 1], [0.85, 1])})`,
               opacity: interpolate(cp, [0, 1], [0, 1]),
-              boxShadow: isActive ? `0 0 30px ${accentColor}15` : 'none',
+              boxShadow: isActive ? `0 0 ${px(30)}px ${accentColor}15` : 'none',
             }}
           >
             {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 28 }}>{risk.icon}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: px(12) }}>
+              <span style={{ fontSize: fs(28) }}>{risk.icon}</span>
               <div>
                 <div
                   style={{
                     fontFamily: "'SF Pro Display', sans-serif",
-                    fontSize: 22,
+                    fontSize: fs(22),
                     fontWeight: 700,
                     color: isActive ? '#e2e8f0' : '#94a3b8',
                   }}
@@ -186,9 +190,9 @@ export const RiskMatrix: React.FC<Props> = ({ accentColor }) => {
                 <div
                   style={{
                     fontFamily: "'SF Pro Display', sans-serif",
-                    fontSize: 14,
+                    fontSize: fs(14),
                     color: '#64748b',
-                    marginTop: 2,
+                    marginTop: px(2),
                   }}
                 >
                   {risk.desc}
@@ -197,14 +201,14 @@ export const RiskMatrix: React.FC<Props> = ({ accentColor }) => {
             </div>
 
             {/* Gauge */}
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: px(12) }}>
               <div
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  marginBottom: 6,
+                  marginBottom: px(6),
                   fontFamily: "'SF Mono', monospace",
-                  fontSize: 11,
+                  fontSize: fs(11),
                   color: '#64748b',
                 }}
               >
@@ -219,11 +223,11 @@ export const RiskMatrix: React.FC<Props> = ({ accentColor }) => {
 
       {/* Bottom summary */}
       <Sequence from={15 + RISKS.length * STEP_INTERVAL + 15}>
-        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 50 }}>
+        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: px(50) }}>
           <div
             style={{
               fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: 22,
+              fontSize: fs(22),
               color: accentColor,
               fontWeight: 600,
               opacity: interpolate(

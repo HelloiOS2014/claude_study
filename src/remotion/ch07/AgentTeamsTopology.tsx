@@ -4,10 +4,10 @@ import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
   spring,
 } from 'remotion'
+import { useScale } from '../shared/useScale'
 
 export const AgentTeamsTopologySchema = z.object({
   accentColor: z.string().default('#D97757'),
@@ -15,39 +15,39 @@ export const AgentTeamsTopologySchema = z.object({
 
 type Props = z.infer<typeof AgentTeamsTopologySchema>
 
-const NODE_R = 40
-
-const DotGrid: React.FC = () => (
+const DotGrid: React.FC<{ bgSize: string }> = ({ bgSize }) => (
   <AbsoluteFill
     style={{
       backgroundColor: '#0a0a1a',
       backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
+      backgroundSize: bgSize,
     }}
   />
 )
 
-// Star topology nodes (left side)
-const STAR_CENTER = { x: 480, y: 520 }
-const STAR_CHILDREN = [
-  { x: 320, y: 380, label: '搜索' },
-  { x: 640, y: 380, label: '编码' },
-  { x: 320, y: 660, label: '测试' },
-  { x: 640, y: 660, label: '文档' },
-]
-
-// Mesh topology nodes (right side)
-const MESH_NODES = [
-  { x: 1160, y: 380, label: 'Agent A' },
-  { x: 1400, y: 380, label: 'Agent B' },
-  { x: 1160, y: 660, label: 'Agent C' },
-  { x: 1400, y: 660, label: 'Agent D' },
-  { x: 1280, y: 520, label: '协调者' },
-]
-
 export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const { px, fs, fps, width, height } = useScale()
+
+  const NODE_R = px(40)
+
+  // Star topology nodes (left side)
+  const STAR_CENTER = { x: px(480), y: px(520) }
+  const STAR_CHILDREN = [
+    { x: px(320), y: px(380), label: '搜索' },
+    { x: px(640), y: px(380), label: '编码' },
+    { x: px(320), y: px(660), label: '测试' },
+    { x: px(640), y: px(660), label: '文档' },
+  ]
+
+  // Mesh topology nodes (right side)
+  const MESH_NODES = [
+    { x: px(1160), y: px(380), label: 'Agent A' },
+    { x: px(1400), y: px(380), label: 'Agent B' },
+    { x: px(1160), y: px(660), label: 'Agent C' },
+    { x: px(1400), y: px(660), label: 'Agent D' },
+    { x: px(1280), y: px(520), label: '协调者' },
+  ]
 
   // Section label animations
   const leftLabelP = spring({ frame: frame - 10, fps, config: { damping: 14, stiffness: 120 } })
@@ -55,17 +55,17 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
 
   return (
     <AbsoluteFill>
-      <DotGrid />
+      <DotGrid bgSize={`${px(32)}px ${px(32)}px`} />
 
       {/* Title */}
       <div
         style={{
           position: 'absolute',
-          top: 60,
+          top: px(60),
           width: '100%',
           textAlign: 'center',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 42,
+          fontSize: fs(42),
           fontWeight: 700,
           color: '#e2e8f0',
           opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' }),
@@ -78,10 +78,10 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          left: 960,
-          top: 200,
+          left: width / 2,
+          top: px(200),
           width: 2,
-          height: interpolate(frame, [15, 40], [0, 600], {
+          height: interpolate(frame, [15, 40], [0, px(600)], {
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
           }),
@@ -93,11 +93,11 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          left: 480,
-          top: 230,
+          left: px(480),
+          top: px(230),
           transform: 'translateX(-50%)',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 28,
+          fontSize: fs(28),
           fontWeight: 700,
           color: '#38bdf8',
           opacity: interpolate(leftLabelP, [0, 1], [0, 1]),
@@ -110,11 +110,11 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
       <div
         style={{
           position: 'absolute',
-          left: 1280,
-          top: 230,
+          left: px(1280),
+          top: px(230),
           transform: 'translateX(-50%)',
           fontFamily: "'SF Pro Display', sans-serif",
-          fontSize: 28,
+          fontSize: fs(28),
           fontWeight: 700,
           color: '#a78bfa',
           opacity: interpolate(rightLabelP, [0, 1], [0, 1]),
@@ -146,7 +146,7 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
               boxShadow: '0 0 20px rgba(56,189,248,0.15)',
             }}
           >
-            <span style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>
+            <span style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: fs(14), fontWeight: 700, color: '#e2e8f0' }}>
               主控
             </span>
           </div>
@@ -162,7 +162,7 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
         return (
           <React.Fragment key={`star-${i}`}>
             {/* Line from center to child */}
-            <svg style={{ position: 'absolute', top: 0, left: 0, width: 1920, height: 1080, pointerEvents: 'none' }}>
+            <svg style={{ position: 'absolute', top: 0, left: 0, width: width, height: height, pointerEvents: 'none' }}>
               <line
                 x1={STAR_CENTER.x}
                 y1={STAR_CENTER.y}
@@ -178,10 +178,10 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
             <div
               style={{
                 position: 'absolute',
-                left: child.x - 35,
-                top: child.y - 35,
-                width: 70,
-                height: 70,
+                left: child.x - px(35),
+                top: child.y - px(35),
+                width: px(70),
+                height: px(70),
                 borderRadius: '50%',
                 border: '2px solid rgba(56,189,248,0.5)',
                 background: 'rgba(56,189,248,0.05)',
@@ -192,7 +192,7 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
                 opacity: interpolate(cp, [0, 1], [0, 1]),
               }}
             >
-              <span style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: 13, fontWeight: 600, color: '#94d8f6' }}>
+              <span style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: fs(13), fontWeight: 600, color: '#94d8f6' }}>
                 {child.label}
               </span>
             </div>
@@ -211,7 +211,7 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
             extrapolateRight: 'clamp',
           })
           return (
-            <svg key={`mesh-line-${i}-${j}`} style={{ position: 'absolute', top: 0, left: 0, width: 1920, height: 1080, pointerEvents: 'none' }}>
+            <svg key={`mesh-line-${i}-${j}`} style={{ position: 'absolute', top: 0, left: 0, width: width, height: height, pointerEvents: 'none' }}>
               <line
                 x1={nodeA.x}
                 y1={nodeA.y}
@@ -237,10 +237,10 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
             key={`mesh-${i}`}
             style={{
               position: 'absolute',
-              left: node.x - (isCoord ? NODE_R : 35),
-              top: node.y - (isCoord ? NODE_R : 35),
-              width: isCoord ? NODE_R * 2 : 70,
-              height: isCoord ? NODE_R * 2 : 70,
+              left: node.x - (isCoord ? NODE_R : px(35)),
+              top: node.y - (isCoord ? NODE_R : px(35)),
+              width: isCoord ? NODE_R * 2 : px(70),
+              height: isCoord ? NODE_R * 2 : px(70),
               borderRadius: '50%',
               border: `${isCoord ? 3 : 2}px solid ${isCoord ? '#a78bfa' : 'rgba(167,139,250,0.5)'}`,
               background: isCoord ? 'rgba(167,139,250,0.08)' : 'rgba(167,139,250,0.05)',
@@ -255,7 +255,7 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
             <span
               style={{
                 fontFamily: "'SF Pro Display', sans-serif",
-                fontSize: isCoord ? 14 : 12,
+                fontSize: isCoord ? fs(14) : fs(12),
                 fontWeight: isCoord ? 700 : 600,
                 color: isCoord ? '#e2e8f0' : '#c4b5fd',
               }}
@@ -268,11 +268,11 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
 
       {/* Comparison labels at bottom */}
       <Sequence from={150}>
-        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 60 }}>
+        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: px(60) }}>
           <div
             style={{
               display: 'flex',
-              gap: 80,
+              gap: px(80),
               opacity: interpolate(frame - 150, [0, 20], [0, 1], {
                 extrapolateLeft: 'clamp',
                 extrapolateRight: 'clamp',
@@ -280,19 +280,19 @@ export const AgentTeamsTopology: React.FC<Props> = ({ accentColor }) => {
             }}
           >
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: 18, color: '#38bdf8', fontWeight: 600 }}>
+              <div style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: fs(18), color: '#38bdf8', fontWeight: 600 }}>
                 星型: 中心控制
               </div>
-              <div style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: 14, color: '#7c86a0', marginTop: 4 }}>
+              <div style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: fs(14), color: '#7c86a0', marginTop: px(4) }}>
                 简单可控，单点瓶颈
               </div>
             </div>
-            <div style={{ width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ width: 1, height: px(40), backgroundColor: 'rgba(255,255,255,0.1)' }} />
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: 18, color: '#a78bfa', fontWeight: 600 }}>
+              <div style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: fs(18), color: '#a78bfa', fontWeight: 600 }}>
                 网状: 对等协作
               </div>
-              <div style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: 14, color: '#7c86a0', marginTop: 4 }}>
+              <div style={{ fontFamily: "'SF Pro Display', sans-serif", fontSize: fs(14), color: '#7c86a0', marginTop: px(4) }}>
                 灵活强大，复杂度高
               </div>
             </div>
