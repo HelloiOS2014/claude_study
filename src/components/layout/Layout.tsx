@@ -9,25 +9,22 @@ export function Layout() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-bg-primary)' }}>
-      {/* Header */}
       <Header
         onMenuToggle={() => setIsMobileMenuOpen(prev => !prev)}
         isMobileMenuOpen={isMobileMenuOpen}
       />
 
-      {/* Mobile Navigation Drawer */}
       <MobileNav
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
       />
 
-      {/* Body */}
       <div className="flex pt-14">
-        {/* Desktop Sidebar */}
+        {/* Desktop Sidebar — hidden on mobile */}
         <aside
-          className="hidden lg:block fixed top-14 bottom-0 overflow-y-auto"
+          className="hidden lg:block fixed top-14 bottom-0 overflow-y-auto shrink-0"
           style={{
-            width: 'var(--sidebar-width)',
+            width: '280px',
             backgroundColor: 'var(--color-bg-secondary)',
             borderRight: '1px solid var(--color-border)',
           }}
@@ -35,22 +32,10 @@ export function Layout() {
           <Sidebar />
         </aside>
 
-        {/* Main Content */}
-        <main
-          className="flex-1 min-h-[calc(100vh-3.5rem)]"
-          style={{ marginLeft: 'var(--sidebar-width)' }}
-        >
-          {/* Responsive: remove margin on mobile */}
-          <style>{`
-            @media (max-width: 1023px) {
-              main { margin-left: 0 !important; }
-            }
-          `}</style>
-
-          <div className="max-w-4xl mx-auto px-6 sm:px-8 py-10 sm:py-14">
-            <div className="animate-fade-in">
-              <Outlet />
-            </div>
+        {/* Main Content — no margin on mobile, 280px margin on desktop */}
+        <main className="flex-1 min-h-[calc(100vh-3.5rem)] ml-0 lg:ml-[280px]">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-14">
+            <Outlet />
           </div>
         </main>
       </div>

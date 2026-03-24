@@ -1,20 +1,20 @@
-import { useEffect, lazy, Suspense, type ComponentType } from 'react'
+import React, { useEffect, lazy, Suspense, type ComponentType } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getChapter, getTierColor, getTierLabel, allChapters } from '../data/toc'
 import { useProgress } from '../hooks/useProgress'
 
-// Lazy-load chapter content components
-const chapterModules: Record<string, () => Promise<{ default: ComponentType }>> = {
-  ch00: () => import('../chapters/ch00/index'),
-  ch01: () => import('../chapters/ch01/index'),
-  ch02: () => import('../chapters/ch02/index'),
-  ch03: () => import('../chapters/ch03/index'),
-  ch04: () => import('../chapters/ch04/index'),
-  ch05: () => import('../chapters/ch05/index'),
-  ch06: () => import('../chapters/ch06/index'),
-  ch07: () => import('../chapters/ch07/index'),
-  ch08: () => import('../chapters/ch08/index'),
-  ch09: () => import('../chapters/ch09/index'),
+// Lazy-load chapter content components — lazy() MUST be called at module level, not inside render
+const lazyChapters: Record<string, React.LazyExoticComponent<ComponentType>> = {
+  ch00: lazy(() => import('../chapters/ch00/index')),
+  ch01: lazy(() => import('../chapters/ch01/index')),
+  ch02: lazy(() => import('../chapters/ch02/index')),
+  ch03: lazy(() => import('../chapters/ch03/index')),
+  ch04: lazy(() => import('../chapters/ch04/index')),
+  ch05: lazy(() => import('../chapters/ch05/index')),
+  ch06: lazy(() => import('../chapters/ch06/index')),
+  ch07: lazy(() => import('../chapters/ch07/index')),
+  ch08: lazy(() => import('../chapters/ch08/index')),
+  ch09: lazy(() => import('../chapters/ch09/index')),
 }
 
 export function ChapterPage() {
@@ -170,9 +170,9 @@ export function ChapterPage() {
 /* ─── Dynamic Chapter Content Loader ─── */
 
 function ChapterContent({ chapterId }: { chapterId: string }) {
-  const loader = chapterModules[chapterId]
+  const LazyChapter = lazyChapters[chapterId]
 
-  if (!loader) {
+  if (!LazyChapter) {
     return (
       <div
         className="rounded-xl p-8 text-center"
@@ -190,8 +190,6 @@ function ChapterContent({ chapterId }: { chapterId: string }) {
       </div>
     )
   }
-
-  const LazyChapter = lazy(loader)
 
   return (
     <Suspense
