@@ -154,7 +154,7 @@ export function AnimationWrapper({
 
   return (
     <div
-      className={`w-full overflow-hidden rounded-xl ${className}`}
+      className={`w-auto overflow-hidden rounded-none sm:rounded-xl -mx-4 sm:-mx-6 lg:-mx-8 ${className}`}
       style={{
         border: '1px solid var(--color-border)',
         background: 'var(--color-bg-secondary)',
@@ -164,10 +164,7 @@ export function AnimationWrapper({
         fallback={<FallbackCard text={fallbackText} />}
       >
         <Suspense fallback={<LoadingPlaceholder text={loadingText} />}>
-          <div
-            className="w-full"
-            style={{ aspectRatio: '16 / 9' }}
-          >
+          <div className="w-full" style={{ aspectRatio: '16 / 9' }}>
             <Player
               component={LazyComponent}
               durationInFrames={durationInFrames}
@@ -175,8 +172,10 @@ export function AnimationWrapper({
               compositionHeight={height}
               fps={fps}
               inputProps={inputProps}
-              autoPlay={false}
+              autoPlay
+              loop
               controls
+              showVolumeControls={false}
               style={{
                 width: '100%',
                 height: '100%',
