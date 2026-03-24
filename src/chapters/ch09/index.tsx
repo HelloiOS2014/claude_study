@@ -163,9 +163,9 @@ Layer 1: 事前防御 (Pre-production)
 ═══════════════════════════════════════════════
 ┌─────────────────┬──────────────────────────────┐
 │ 权限分级        │ L1/L2/L3 差异化配置 (§9.2)   │
-│ CLAUDE.md 约束  │ 编码规范 + 禁止规则 (Ch3)     │
+│ CLAUDE.md 约束  │ 编码规范 + 禁止规则 (Ch4)     │
 │ Plan 强制       │ 复杂任务必须先 Plan (Ch3)     │
-│ Hook 拦截       │ PreToolUse 阻止危险操作 (Ch4) │
+│ Hook 拦截       │ PreToolUse 阻止危险操作 (Ch5) │
 │ Worktree 隔离   │ 每个任务独立工作目录 (Ch8)    │
 └─────────────────┴──────────────────────────────┘
 
@@ -174,7 +174,7 @@ Layer 2: 过程控制 (In-process)
 ═══════════════════════════════════════════════
 ┌─────────────────┬──────────────────────────────┐
 │ 逐步执行        │ Plan 模式分步确认 (Ch3)       │
-│ 自动测试        │ PostToolUse 触发测试 (Ch4)    │
+│ 自动测试        │ PostToolUse 触发测试 (Ch5)    │
 │ Stop Hook 验证  │ 完成前自动检查 (Ch8)          │
 │ 成本监控        │ 实时 token/费用追踪 (§9.4)    │
 │ 上下文健康      │ /context 检查 + 主动压缩 (Ch0)│
@@ -1072,19 +1072,19 @@ Phase 3: 深化 (持续)
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <td className="px-3 py-2.5"><strong style={{ color: 'var(--color-text-primary)' }}>Week 2</strong></td>
-                <td className="px-3 py-2.5">Ch3 Plan Mode + Ch4 Hooks</td>
+                <td className="px-3 py-2.5">Ch3 Plan Mode + Ch5 Hooks</td>
                 <td className="px-3 py-2.5">用 Plan Mode 完成一个功能</td>
                 <td className="px-3 py-2.5">能配置 PostToolUse Hook</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <td className="px-3 py-2.5"><strong style={{ color: 'var(--color-text-primary)' }}>Week 3</strong></td>
-                <td className="px-3 py-2.5">Ch5 MCP + 工具集成</td>
+                <td className="px-3 py-2.5">Ch7 MCP + 工具集成</td>
                 <td className="px-3 py-2.5">连接至少一个 MCP 服务器</td>
                 <td className="px-3 py-2.5">能解释 MCP 架构和安全边界</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <td className="px-3 py-2.5"><strong style={{ color: 'var(--color-text-primary)' }}>Week 4</strong></td>
-                <td className="px-3 py-2.5">Ch6-Ch7 测试 + Review + 上下文管理</td>
+                <td className="px-3 py-2.5">Ch6 Subagent + Ch7 Agent Teams</td>
                 <td className="px-3 py-2.5">独立完成一个中型任务</td>
                 <td className="px-3 py-2.5">通过 L1 升级评估</td>
               </tr>
@@ -1137,7 +1137,7 @@ Phase 3: 深化 (持续)
                   '代码质量下降',
                   '高 — bug 进入生产',
                   'PostToolUse 自动测试 + 分级 Review + 度量监控',
-                  'Ch4, Ch6, 9.2',
+                  'Ch5, Ch6, 9.2',
                 ],
                 [
                   '理解债务累积',
@@ -1149,7 +1149,7 @@ Phase 3: 深化 (持续)
                   '敏感数据泄露',
                   '严重 — 合规/安全',
                   'deny 规则 + 密钥扫描 Hook + 文件保护',
-                  'Ch0, Ch4, 9.5',
+                  'Ch0, Ch5, 9.5',
                 ],
                 [
                   '成本失控',
@@ -1161,7 +1161,7 @@ Phase 3: 深化 (持续)
                   '上下文窗口耗尽',
                   '中 — 质量下降',
                   'Grep>Read + 主动 compact + 新会话策略',
-                  'Ch0, Ch7',
+                  'Ch0',
                 ],
                 [
                   'API 不可用',
@@ -1185,7 +1185,7 @@ Phase 3: 深化 (持续)
                   'Prompt 注入攻击',
                   '中-高 — CI 安全',
                   'CI 只读权限 + 注入检测 Hook + 人工审核',
-                  'Ch4, Ch8, 9.5',
+                  'Ch5, Ch8, 9.5',
                 ],
                 [
                   '供应商锁定',

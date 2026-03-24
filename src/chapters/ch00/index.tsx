@@ -442,7 +442,7 @@ Agent          子代理整个对话 tokens          成本乘数，谨慎使用
           └── 否 → 继续正常工作
 
 特殊情况:
-  需要处理超大文件?  → 考虑使用 1M context 模型 (claude-opus-4-0-20250115)
+  需要处理超大文件?  → 考虑使用 1M context 模型 (如 claude-opus-4-5)
   团队共享上下文?    → 把关键决策写入 CLAUDE.md 而非依赖对话记忆`}
         />
 
@@ -1164,7 +1164,7 @@ Snyk 2024             开源项目中 AI 生成的代码引入了新类别的漏
           className="text-sm"
           style={{ color: 'var(--color-text-muted)' }}
         >
-          下一章: <strong style={{ color: 'var(--color-text-secondary)' }}>Chapter 1 — CLAUDE.md 工程</strong>。你将学习如何利用 System Prompt 的优先级系统，将项目规范写成 Claude 真正会遵守的指令。
+          下一章: <strong style={{ color: 'var(--color-text-secondary)' }}>Chapter 1 — Prompt 精确控制</strong>。你将学习如何写出结构化的工程级 Prompt，掌握权重词、约束语和 Token 效率优化。
         </p>
       </section>
     </div>

@@ -456,7 +456,7 @@ isolation: "worktree"
             className="text-sm font-semibold mb-3"
             style={{ color: 'var(--color-text-primary)' }}
           >
-            15 个 Frontmatter 字段速查
+            14 个 Frontmatter 字段速查
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
             <div><code style={{ color: 'var(--color-accent)' }}>name</code> — Agent 显示名称</div>

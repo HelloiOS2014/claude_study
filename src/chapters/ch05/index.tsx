@@ -1569,17 +1569,17 @@ One paragraph summary of the overall quality and readiness to merge.`}
           <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
             {[
               {
-                name: 'claudekit',
+                name: 'claudekit（示例）',
                 desc: '全功能工具箱：包含格式化、lint、测试、changelog 等常用 Skills 和 Hooks。适合快速搭建质量流水线。',
                 url: 'github.com/anthropics/claudekit',
               },
               {
-                name: 'claude-hud',
+                name: 'claude-hud（示例）',
                 desc: '开发状态仪表盘：实时显示 token 消耗、Hook 执行状态、工具调用统计。帮助优化工作流性能。',
                 url: 'github.com/anthropics/claude-hud',
               },
               {
-                name: 'Ralph Wiggum',
+                name: 'ralph-wiggum（示例）',
                 desc: '安全扫描 Plugin：集成多种安全检测（密钥泄露、依赖漏洞、代码注入），开箱即用的安全防护层。',
                 url: 'github.com/anthropics/ralph-wiggum',
               },

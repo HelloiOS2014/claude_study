@@ -229,7 +229,7 @@ export default function Ch02() {
           className="text-lg leading-relaxed max-w-3xl"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          第 1 章我们完成了安装和配置。现在你已经有了一个能用的 Claude Code。
+          第 1 章我们学习了 Prompt 精确控制和 Token 效率优化。现在你已经能写出结构化的工程级 Prompt。
           但 "能用" 和 "用好" 之间有一条巨大的鸿沟 -- 这一章我们来探索这条鸿沟的边界,
           学会在 Vibe Coding 的自由和精确控制之间做出正确选择。
         </p>
