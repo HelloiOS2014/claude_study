@@ -1,9 +1,13 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { DecisionTree } from '../../components/content/DecisionTree'
 import type { TreeNode } from '../../components/content/DecisionTree'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazyPlanModeFlow = lazy(() => import('../../remotion/ch03/PlanModeFlow'))
 
 /* ═══════════════════════════════════════════════
    Decision Tree Data — "Should I use Plan Mode?"
@@ -227,6 +231,12 @@ Normal Mode → Plan Mode → Accept Edits Mode → Normal Mode → ...
         >
           3.2 四阶段思维框架（完整 RBAC 实战）
         </h2>
+
+        <AnimationWrapper
+          component={LazyPlanModeFlow}
+          durationInFrames={180}
+          fallbackText="Plan Mode 流程动画加载失败"
+        />
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           Plan Mode 不是简单地"先想后做"。一个好的 Plan 过程分为四个阶段：

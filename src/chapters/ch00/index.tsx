@@ -1,7 +1,12 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { TierBadge } from '../../components/content/TierBadge'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazyRequestLifecycle = lazy(() => import('../../remotion/ch00/RequestLifecycle'))
+const LazyTokenEconomy = lazy(() => import('../../remotion/ch00/TokenEconomy'))
 
 export default function Ch00() {
   return (
@@ -34,6 +39,12 @@ export default function Ch00() {
         >
           0.1 一条请求的完整旅程
         </h2>
+
+        <AnimationWrapper
+          component={LazyRequestLifecycle}
+          durationInFrames={210}
+          fallbackText="请求生命周期动画加载失败"
+        />
 
         <p
           className="leading-relaxed"
@@ -277,6 +288,12 @@ Agent          子代理整个对话 tokens          成本乘数，谨慎使用
         >
           0.2 上下文窗口经济学
         </h2>
+
+        <AnimationWrapper
+          component={LazyTokenEconomy}
+          durationInFrames={180}
+          fallbackText="Token 经济动画加载失败"
+        />
 
         <p
           className="leading-relaxed"

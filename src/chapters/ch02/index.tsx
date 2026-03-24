@@ -1,8 +1,12 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { DecisionTree } from '../../components/content/DecisionTree'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazyVibeCodingCurve = lazy(() => import('../../remotion/ch02/VibeCodingCurve'))
 
 /* ═══════════════════════════════════════════════
    Decision Tree Data
@@ -486,38 +490,11 @@ export default router;`}
           </table>
         </div>
 
-        {/* Quality vs Context curve */}
-        <div
-          className="rounded-xl p-6 my-8"
-          style={{
-            background: 'var(--color-bg-tertiary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <h4 className="text-base font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
-            质量 vs 上下文消耗曲线
-          </h4>
-          <div className="font-mono text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-            <pre className="whitespace-pre overflow-x-auto">{`代码质量
-  ^
-  |  ★ Round 1        ★ Round 2
-  |  ████████████████  ██████████████
-  |
-  |                    ★ Round 3
-  |                    ██████████ ← 风格漂移开始
-  |
-  |                                 ★ Round 4
-  |                                 █████ ← 设计决策丢失
-  |
-  +──────────────────────────────────────→ 上下文消耗
-  0%         25%         50%       75%
-
-  ╔══════════════════════════════════════════════════╗
-  ║  拐点通常出现在上下文消耗 30-50% 时。           ║
-  ║  这条曲线就是我们需要 Plan Mode (第3章) 的原因。║
-  ╚══════════════════════════════════════════════════╝`}</pre>
-          </div>
-        </div>
+        <AnimationWrapper
+          component={LazyVibeCodingCurve}
+          durationInFrames={180}
+          fallbackText="Vibe Coding 曲线动画加载失败"
+        />
 
         <QualityCallout>
           <p className="mb-2">

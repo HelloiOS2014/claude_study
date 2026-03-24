@@ -1,5 +1,9 @@
+import { lazy } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { allChapters, getTierColor, getTierLabel, type Chapter, type Tier } from '../data/toc'
+import { AnimationWrapper } from '../components/animation/AnimationWrapper'
+
+const LazyClaudeCodeIntro = lazy(() => import('../remotion/shared/ClaudeCodeIntro'))
 
 export function HomePage() {
   return (
@@ -64,16 +68,18 @@ function HeroSection() {
         </p>
 
         {/* Remotion animation placeholder */}
-        <div
-          className="mt-8 rounded-xl overflow-hidden aspect-video max-w-2xl flex items-center justify-center"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <span className="font-mono text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            [ ClaudeCodeIntro 动画 — Phase 3 ]
-          </span>
+        <div className="mt-8 max-w-2xl">
+          <AnimationWrapper
+            component={LazyClaudeCodeIntro}
+            durationInFrames={210}
+            inputProps={{
+              title: 'Claude Code',
+              subtitle: 'AI 辅助开发能力养成系统',
+              terminalCommand: 'claude',
+              accentColor: '#D97757',
+            }}
+            fallbackText="ClaudeCodeIntro 动画加载失败"
+          />
         </div>
       </div>
     </section>

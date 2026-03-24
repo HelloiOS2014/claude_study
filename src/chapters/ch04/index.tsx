@@ -1,8 +1,12 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazyClaudeMdHierarchy = lazy(() => import('../../remotion/ch04/ClaudeMdHierarchy'))
 
 /* ═══════════════════════════════════════════════
    Chapter 4 Component
@@ -61,6 +65,12 @@ export default function Ch04() {
         >
           4.1 注入机制：CLAUDE.md 是怎么工作的
         </h2>
+
+        <AnimationWrapper
+          component={LazyClaudeMdHierarchy}
+          durationInFrames={180}
+          fallbackText="CLAUDE.md 层级动画加载失败"
+        />
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           首先纠正一个常见误解：<strong>CLAUDE.md 不是 system prompt</strong>。

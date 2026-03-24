@@ -1,8 +1,13 @@
+import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
 import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
+import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+
+const LazyPromptDissection = lazy(() => import('../../remotion/ch01/PromptDissection'))
+const LazyPromptComparison = lazy(() => import('../../remotion/ch01/PromptComparison'))
 
 export default function Ch01() {
   return (
@@ -32,6 +37,11 @@ export default function Ch01() {
         >
           1.1 Prompt 解剖实验室
         </h2>
+        <AnimationWrapper
+          component={LazyPromptDissection}
+          durationInFrames={210}
+          fallbackText="Prompt 解剖动画加载失败"
+        />
         <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
           同一个任务——"优化这段代码的性能"——五种不同的写法，从最差到最好。
           我们逐字分析每一个 prompt 为什么有效或无效。
@@ -281,6 +291,11 @@ export default function Ch01() {
         >
           1.2 特殊权重词与结构化技巧
         </h2>
+        <AnimationWrapper
+          component={LazyPromptComparison}
+          durationInFrames={180}
+          fallbackText="Prompt 对比动画加载失败"
+        />
         <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
           Claude 对某些词汇有特殊的"权重"响应。用对了，一个词抵十句话。
         </p>
