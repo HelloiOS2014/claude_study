@@ -37,7 +37,7 @@ const DotGrid: React.FC = () => {
   )
 }
 
-export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor }) => {
+export const ClaudeMdHierarchy: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { px, fs, fps } = useScale()
 

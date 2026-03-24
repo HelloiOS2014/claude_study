@@ -27,7 +27,7 @@ const MARKERS = [
   { x: 95, label: '💀 Auto-compact', color: '#f87171' },
 ]
 
-export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
+export const VibeCodingCurve: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { px, fs, width, height } = useScale()
 
@@ -83,6 +83,14 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
 
       {/* Axes */}
       <svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }}>
+        {/* Defs must come first for filter references */}
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation={Math.max(px(4), 3)} result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+
         {/* X axis */}
         <line x1={CHART_LEFT} y1={CHART_BOTTOM} x2={CHART_RIGHT} y2={CHART_BOTTOM} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
         {/* Y axis */}
@@ -98,9 +106,9 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
         {pathD && (
           <>
             {/* Glow */}
-            <path d={pathD} fill="none" stroke={accentColor} strokeWidth={px(4)} opacity={0.3} filter="url(#glow)" />
+            <path d={pathD} fill="none" stroke={accentColor} strokeWidth={Math.max(px(6), 4)} opacity={0.3} filter="url(#glow)" />
             {/* Main line */}
-            <path d={pathD} fill="none" stroke={accentColor} strokeWidth={px(3)} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={pathD} fill="none" stroke={accentColor} strokeWidth={Math.max(px(4), 3)} strokeLinecap="round" strokeLinejoin="round" />
           </>
         )}
 
@@ -116,13 +124,7 @@ export const VibeCodingCurve: React.FC<Props> = ({ accentColor }) => {
           </circle>
         )}
 
-        {/* Filter for glow */}
-        <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation={px(4)} result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-        </defs>
+        {/* defs moved to top of SVG */}
       </svg>
 
       {/* Axis labels */}

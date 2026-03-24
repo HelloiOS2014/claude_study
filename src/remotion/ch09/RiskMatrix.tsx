@@ -71,7 +71,7 @@ const GaugeBar: React.FC<{ progress: number; color: string }> = ({ progress, col
   )
 }
 
-export const RiskMatrix: React.FC<Props> = ({ accentColor }) => {
+export const RiskMatrix: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { fps, px, fs, centerX, centerY } = useScale()
 

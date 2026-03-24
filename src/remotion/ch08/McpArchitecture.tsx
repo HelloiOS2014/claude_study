@@ -34,7 +34,7 @@ const DotGrid: React.FC = () => {
   )
 }
 
-export const McpArchitecture: React.FC<Props> = ({ accentColor }) => {
+export const McpArchitecture: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { fps, width, height, px, fs } = useScale()
 

@@ -24,7 +24,7 @@ const STEPS = [
 
 const STEP_INTERVAL = 35
 
-export const PlanModeFlow: React.FC<Props> = ({ accentColor }) => {
+export const PlanModeFlow: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { px, fs, fps, centerX } = useScale()
 

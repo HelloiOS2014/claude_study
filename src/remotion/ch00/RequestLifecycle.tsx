@@ -39,7 +39,7 @@ const DotGrid: React.FC<{ dotSize: string }> = ({ dotSize }) => (
   />
 )
 
-export const RequestLifecycle: React.FC<Props> = ({ accentColor }) => {
+export const RequestLifecycle: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { fps, height, px, fs, centerX } = useScale()
 

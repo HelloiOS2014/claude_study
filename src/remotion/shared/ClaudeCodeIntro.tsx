@@ -75,7 +75,7 @@ const ScanLine: React.FC<{ accentColor: string }> = ({
 const TerminalTyping: React.FC<{
   command: string;
   accentColor: string;
-}> = ({ command, accentColor }) => {
+}> = ({ command, accentColor = '#D97757' }) => {
   const frame = useCurrentFrame();
   const { fs } = useScale();
   const CHAR_FRAMES = 3;
@@ -136,7 +136,7 @@ const TerminalTyping: React.FC<{
 
 const GlitchFlash: React.FC<{
   accentColor: string;
-}> = ({ accentColor }) => {
+}> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame();
   // Multi-pulse flash pattern over 15 frames
   const flashOpacity = interpolate(
@@ -171,7 +171,7 @@ const TitleReveal: React.FC<{
   title: string;
   subtitle: string;
   accentColor: string;
-}> = ({ fps, title, subtitle, accentColor }) => {
+}> = ({ fps, title, subtitle, accentColor = '#D97757' }) => {
   const frame = useCurrentFrame();
   const { px, fs } = useScale();
   const [titlePart1, titlePart2] = (() => {

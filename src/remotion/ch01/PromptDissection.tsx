@@ -35,7 +35,7 @@ const LINES = [
 const LINE_INTERVAL = 40
 const ANNOTATION_DELAY = 20
 
-export const PromptDissection: React.FC<Props> = ({ accentColor }) => {
+export const PromptDissection: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { px, fs } = useScale()
 

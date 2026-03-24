@@ -2,7 +2,6 @@ import React from 'react'
 import { z } from 'zod'
 import {
   AbsoluteFill,
-  Sequence,
   useCurrentFrame,
   interpolate,
   spring,
@@ -20,7 +19,7 @@ const GOOD_PROMPT = '这段代码处理 10000 条数据需要 8 秒。\n目标 <
 const BAD_REACTION = 'Claude 随机选方向优化...\n可能改了你不想改的东西'
 const GOOD_REACTION = 'Claude 精确定位瓶颈\n给出对比方案\n等你决定再动手'
 
-export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
+export const PromptComparison: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { fps, px, fs } = useScale()
 
@@ -88,33 +87,31 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
           </div>
         </div>
 
-        {/* Bad reaction */}
-        <Sequence from={70}>
+        {/* Bad reaction — no Sequence to avoid absolute positioning overlay */}
+        <div style={{
+          marginTop: px(12),
+          padding: `${px(10)}px ${px(14)}px`,
+          borderRadius: px(10),
+          background: 'rgba(248, 113, 113, 0.05)',
+          border: '1px solid rgba(248, 113, 113, 0.1)',
+          opacity: interpolate(frame, [70, 85], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+        }}>
           <div style={{
-            marginTop: px(20),
-            padding: `${px(16)}px ${px(20)}px`,
-            borderRadius: px(10),
-            background: 'rgba(248, 113, 113, 0.05)',
-            border: '1px solid rgba(248, 113, 113, 0.1)',
-            opacity: interpolate(frame - 70, [0, 15], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+            fontFamily: "'SF Pro Display', sans-serif",
+            fontSize: fs(13),
+            color: '#4a5068',
+            marginBottom: px(6),
+          }}>Claude 的反应</div>
+          <div style={{
+            fontFamily: "'SF Pro Display', sans-serif",
+            fontSize: fs(16),
+            color: '#f87171',
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.4,
           }}>
-            <div style={{
-              fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: fs(13),
-              color: '#4a5068',
-              marginBottom: px(8),
-            }}>Claude 的反应</div>
-            <div style={{
-              fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: fs(18),
-              color: '#f87171',
-              whiteSpace: 'pre-wrap',
-              lineHeight: 1.5,
-            }}>
-              {BAD_REACTION}
-            </div>
+            {BAD_REACTION}
           </div>
-        </Sequence>
+        </div>
       </div>
 
       {/* Center arrow */}
@@ -168,33 +165,31 @@ export const PromptComparison: React.FC<Props> = ({ accentColor }) => {
           </div>
         </div>
 
-        {/* Good reaction */}
-        <Sequence from={90}>
+        {/* Good reaction — no Sequence to avoid absolute positioning overlay */}
+        <div style={{
+          marginTop: px(12),
+          padding: `${px(10)}px ${px(14)}px`,
+          borderRadius: px(10),
+          background: 'rgba(74, 222, 128, 0.05)',
+          border: '1px solid rgba(74, 222, 128, 0.1)',
+          opacity: interpolate(frame, [90, 105], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+        }}>
           <div style={{
-            marginTop: px(20),
-            padding: `${px(16)}px ${px(20)}px`,
-            borderRadius: px(10),
-            background: 'rgba(74, 222, 128, 0.05)',
-            border: '1px solid rgba(74, 222, 128, 0.1)',
-            opacity: interpolate(frame - 90, [0, 15], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+            fontFamily: "'SF Pro Display', sans-serif",
+            fontSize: fs(13),
+            color: '#4a5068',
+            marginBottom: px(6),
+          }}>Claude 的反应</div>
+          <div style={{
+            fontFamily: "'SF Pro Display', sans-serif",
+            fontSize: fs(16),
+            color: '#4ade80',
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.4,
           }}>
-            <div style={{
-              fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: fs(13),
-              color: '#4a5068',
-              marginBottom: px(8),
-            }}>Claude 的反应</div>
-            <div style={{
-              fontFamily: "'SF Pro Display', sans-serif",
-              fontSize: fs(18),
-              color: '#4ade80',
-              whiteSpace: 'pre-wrap',
-              lineHeight: 1.5,
-            }}>
-              {GOOD_REACTION}
-            </div>
+            {GOOD_REACTION}
           </div>
-        </Sequence>
+        </div>
       </div>
 
       {/* Bottom verdict */}

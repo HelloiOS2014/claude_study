@@ -31,7 +31,7 @@ const DotGrid: React.FC<{ bgSize: string }> = ({ bgSize }) => (
   />
 )
 
-export const SubagentFanout: React.FC<Props> = ({ accentColor }) => {
+export const SubagentFanout: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { px, fs, fps, width, height } = useScale()
 

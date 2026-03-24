@@ -24,7 +24,7 @@ const BARS = [
 
 const MAX_VALUE = 10000
 
-export const TokenEconomy: React.FC<Props> = ({ accentColor }) => {
+export const TokenEconomy: React.FC<Props> = ({ accentColor = '#D97757' }) => {
   const frame = useCurrentFrame()
   const { fps, height, px, fs } = useScale()
 
