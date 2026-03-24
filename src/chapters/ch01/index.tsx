@@ -509,11 +509,11 @@ MUST keep all existing tests passing
           title="multi-step-protocol.xml"
           annotations={[
             { line: 1, text: "task 标签包含一句话的核心目标，是 Claude 的\"北极星\"" },
-            { line: 4, text: "context 提供背景信息，帮助 Claude 理解为什么要做这件事" },
+            { line: 5, text: "context 提供背景信息，帮助 Claude 理解为什么要做这件事" },
             { line: 12, text: "instructions 中的阶段分离：Research → Plan → Execute → Review" },
-            { line: 14, text: "Research 阶段明确标注\"只读\"，防止 Claude 提前修改代码" },
-            { line: 33, text: "NEVER/MUST 权重词定义不可触碰的红线" },
-            { line: 39, text: "verification 模板让 Claude 在每个阶段进行自检" },
+            { line: 15, text: "Research 阶段明确标注\"只读\"，防止 Claude 提前修改代码" },
+            { line: 34, text: "NEVER/MUST 权重词定义不可触碰的红线" },
+            { line: 41, text: "verification 模板让 Claude 在每个阶段进行自检" },
           ]}
         />
       </section>

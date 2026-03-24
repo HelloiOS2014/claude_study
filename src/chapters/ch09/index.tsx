@@ -743,7 +743,7 @@ ccusage --team --days 30 --format prometheus > /metrics/claude-usage.prom`}
           annotations={[
             { line: 7, text: 'L2 可以自由编辑 src/ 和 tests/——不需要每次确认' },
             { line: 17, text: '创建新文件和安装依赖仍需确认——防止意外文件' },
-            { line: 34, text: 'PostToolUse Hook: 每次编辑后自动运行测试——实时质量把关' },
+            { line: 33, text: 'PostToolUse Hook: 每次编辑后自动运行测试——实时质量把关' },
           ]}
         />
 
@@ -829,9 +829,9 @@ ccusage --team --days 30 --format prometheus > /metrics/claude-usage.prom`}
           annotations={[
             { line: 7, text: 'L3 可以自由编辑所有文件——最大自由度' },
             { line: 19, text: '推送和配置文件修改仍需确认——最后的人工关卡' },
-            { line: 37, text: 'PreToolUse: 文件保护脚本，阻止修改受保护的核心文件' },
-            { line: 48, text: 'PostToolUse: 自动测试——L3 依赖 Hook 而非人工 review 每次编辑' },
-            { line: 55, text: 'Stop Hook: 最终检查——确保所有测试通过、无 lint 错误' },
+            { line: 34, text: 'PreToolUse: 文件保护脚本，阻止修改受保护的核心文件' },
+            { line: 45, text: 'PostToolUse: 自动测试——L3 依赖 Hook 而非人工 review 每次编辑' },
+            { line: 56, text: 'Stop Hook: 最终检查——确保所有测试通过、无 lint 错误' },
           ]}
         />
 

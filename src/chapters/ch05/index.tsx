@@ -703,8 +703,7 @@ exit 0`}
             { line: 7, text: 'Hook 脚本通过 stdin 接收完整的事件 JSON payload。' },
             { line: 12, text: '"Edit|Write" 匹配 Edit 或 Write 工具。| 是正则 OR 语法。' },
             { line: 17, text: '同一事件可以注册多个 Hook，按声明顺序执行。先 format 再 lint。' },
-            { line: 25, text: 'Prompt hook 不需要 matcher，Stop 事件全局触发。' },
-            { line: 26, text: 'prompt 内容直接发送给 LLM 做单轮判断，消耗约 200-500 token。' },
+            { line: 25, text: 'Prompt hook 不需要 matcher，Stop 事件全局触发。prompt 内容直接发送给 LLM 做单轮判断，消耗约 200-500 token。' },
             { line: 30, text: 'permissions.allow 白名单确保 Hook 脚本调用的工具不会被权限拦截。' },
             { line: 32, text: '允许 prettier 和 eslint 的自动执行，避免每次都弹权限确认。' },
           ]}
@@ -1021,8 +1020,8 @@ exit 0`}
             { line: 10, text: '危险命令拦截放在文件保护之后，因为它们检查不同的维度。' },
             { line: 17, text: '安全扫描在格式化之前执行，先检查安全再修复格式。' },
             { line: 22, text: '扫描 Read/Glob/Grep 的输出，检测外部内容中的注入攻击。' },
-            { line: 36, text: 'PreCompact 确保上下文压缩时不丢失关键项目信息。' },
-            { line: 42, text: 'Stop hook 是最后一道关卡，综合检查所有维度。' },
+            { line: 37, text: 'PreCompact 确保上下文压缩时不丢失关键项目信息。' },
+            { line: 43, text: 'Stop hook 是最后一道关卡，综合检查所有维度。' },
           ]}
         />
       </section>
@@ -1538,7 +1537,7 @@ One paragraph summary of the overall quality and readiness to merge.`}
             { line: 2, text: 'Plugin 名字必须唯一，安装时用这个名字引用。' },
             { line: 7, text: '列出所有 Skill 文件的相对路径。' },
             { line: 12, text: 'Hook 定义格式和 settings.json 中完全一致，直接合并到项目配置中。' },
-            { line: 31, text: 'Plugin 可以包含 MCP 服务器配置，扩展 Claude 的工具能力。' },
+            { line: 33, text: 'Plugin 可以包含 MCP 服务器配置，扩展 Claude 的工具能力。' },
           ]}
         />
 

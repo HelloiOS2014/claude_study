@@ -630,7 +630,7 @@ jobs:
             将审查结果作为 PR comment 发布。`}
           annotations={[
             { line: 13, text: '超时保护——防止 Claude 陷入长时间循环' },
-            { line: 23, text: '限制工具范围——CI 中 Claude 只能读、搜索、运行特定命令，不能写文件' },
+            { line: 25, text: '限制工具范围——CI 中 Claude 只能读、搜索、运行特定命令，不能写文件' },
             { line: 24, text: 'max_turns 限制交互轮次，控制成本和时间' },
           ]}
         />
