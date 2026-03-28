@@ -5,7 +5,6 @@ import { useProgress } from '../hooks/useProgress'
 
 // Lazy-load chapter content components — lazy() MUST be called at module level, not inside render
 const lazyChapters: Record<string, React.LazyExoticComponent<ComponentType>> = {
-  ch00: lazy(() => import('../chapters/ch00/index')),
   ch01: lazy(() => import('../chapters/ch01/index')),
   ch02: lazy(() => import('../chapters/ch02/index')),
   ch03: lazy(() => import('../chapters/ch03/index')),
@@ -15,6 +14,8 @@ const lazyChapters: Record<string, React.LazyExoticComponent<ComponentType>> = {
   ch07: lazy(() => import('../chapters/ch07/index')),
   ch08: lazy(() => import('../chapters/ch08/index')),
   ch09: lazy(() => import('../chapters/ch09/index')),
+  ch10: lazy(() => import('../chapters/ch10/index')),
+  ch11: lazy(() => import('../chapters/ch11/index')),
 }
 
 export function ChapterPage() {
@@ -64,6 +65,7 @@ export function ChapterPage() {
           </span>
           <span className="text-xs font-mono" style={{ color: 'var(--color-text-muted)' }}>
             Part {chapter.part} · {chapter.partTitle}
+            <span className="ml-1 opacity-60">({chapter.partSubtitle})</span>
           </span>
         </div>
 
@@ -104,18 +106,25 @@ export function ChapterPage() {
 
           {/* Prerequisites */}
           {prereqChapters.length > 0 && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span style={{ color: 'var(--color-text-muted)' }}>前置：</span>
-              {prereqChapters.map(pc => (
-                <button
-                  key={pc!.id}
-                  onClick={() => navigate(`/${pc!.id}`)}
-                  className="font-mono underline-offset-2 hover:underline transition-colors"
-                  style={{ color: 'var(--color-accent)' }}
-                >
-                  Ch{pc!.number}
-                </button>
-              ))}
+              {prereqChapters.map(pc => {
+                const isHard = chapter.hardDependencies.includes(pc!.id)
+                return (
+                  <button
+                    key={pc!.id}
+                    onClick={() => navigate(`/${pc!.id}`)}
+                    className="font-mono underline-offset-2 hover:underline transition-colors"
+                    style={{
+                      color: isHard ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                    }}
+                    title={isHard ? '必要前置' : '推荐前置'}
+                  >
+                    Ch{String(pc!.number).padStart(2, '0')}
+                    {isHard ? '' : '?'}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
