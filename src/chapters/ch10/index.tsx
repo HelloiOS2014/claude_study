@@ -1,27 +1,27 @@
 import { ReferenceSection } from '../../components/content/ReferenceSection'
 
-export default function Ch04() {
+export default function Ch10() {
   return (
     <div className="space-y-8">
       <section>
-        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>4.1 快速开始：5 分钟写一个 CLAUDE.md</h2>
+        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>10.1 三个核心原则</h2>
         <p style={{ color: 'var(--color-text-secondary)' }}>章节内容开发中...</p>
       </section>
       <section>
-        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>4.2 注入机制与优先级</h2>
+        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>10.2 设计你自己的工作流</h2>
         <p style={{ color: 'var(--color-text-secondary)' }}>章节内容开发中...</p>
       </section>
       <section>
-        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>4.3 写好 CLAUDE.md 的方法</h2>
+        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>10.3 社区方法论案例研究</h2>
         <p style={{ color: 'var(--color-text-secondary)' }}>章节内容开发中...</p>
       </section>
       <section>
-        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>4.4 Auto Memory 系统</h2>
+        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>10.4 反模式</h2>
         <p style={{ color: 'var(--color-text-secondary)' }}>章节内容开发中...</p>
       </section>
       <ReferenceSection version="Claude Code v1.x">
         <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-          <p>完整优先级层级图、Auto Memory frontmatter、/context 命令、Token 摊销数学</p>
+          <p>GSD / BMAD / Writer-Reviewer / RIPER-5 项目链接、适用场景对比表、成本估算</p>
         </div>
       </ReferenceSection>
     </div>
