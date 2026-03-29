@@ -3,85 +3,106 @@ import { CodeBlock } from '../../components/content/CodeBlock'
 import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
-import { ConfigExample } from '../../components/content/ConfigExample'
 import { DecisionTree } from '../../components/content/DecisionTree'
+import type { TreeNode } from '../../components/content/DecisionTree'
 import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+import { ReferenceSection } from '../../components/content/ReferenceSection'
 
-const LazyHookEventFlow = lazy(() => import('../../remotion/ch05/HookEventFlow'))
+const LazyPlanModeFlow = lazy(() => import('../../remotion/ch03/PlanModeFlow'))
 
 /* ═══════════════════════════════════════════════
-   Decision Tree Data: Hook Type Selection
+   Decision Tree Data — "Should I use Plan Mode?"
    ═══════════════════════════════════════════════ */
 
-const hookTypeTree = {
+const planModeTree: TreeNode = {
   id: 'root',
-  question: '你的自动化需求是什么类型?',
-  description: '根据需求特征选择最合适的 Hook 类型。',
+  question: '你即将开始一个新任务，应该用 Plan Mode 吗？',
+  description: '根据任务特征选择最高效的工作模式。',
   children: [
     {
-      label: '确定性规则判断',
+      label: '一行改动 / 简单 fix',
       node: {
-        id: 'deterministic',
-        question: '需要外部服务参与吗?',
+        id: 'one-liner',
+        question: '跳过 Plan',
+        result: {
+          text: '直接执行即可。Plan Mode 的开销对一行改动来说完全不值得。直接描述你要改什么，让 Claude 改。',
+          tier: 'l1',
+        },
+      },
+    },
+    {
+      label: '涉及 3+ 文件',
+      node: {
+        id: 'multi-file',
+        question: '你对这些文件的代码熟悉吗？',
         children: [
           {
-            label: '不需要, 本地执行',
+            label: '熟悉，改过很多次',
             node: {
-              id: 'command',
-              question: '推荐: Command Hook',
+              id: 'familiar-multi',
+              question: '建议 Plan',
               result: {
-                text: '使用 Command Hook。通过 stdin 接收 JSON, 用脚本做确定性判断 (路径匹配、正则检测、文件类型过滤), 通过 exit code 返回结果。执行快、可预测、零 token 消耗。',
-                tier: 'l1',
+                text: '使用 Plan Mode 明确改动顺序和文件依赖。即使你熟悉代码，3+ 文件的协调容易出错。Plan 帮你理清执行路径。',
+                tier: 'l2',
               },
-              description: '适用场景: 格式化、lint、路径黑名单、危险命令拦截、密钥泄露扫描。',
             },
           },
           {
-            label: '需要调用外部 API',
+            label: '不太熟悉',
             node: {
-              id: 'http',
-              question: '推荐: HTTP Hook',
+              id: 'unfamiliar-multi',
+              question: '必须 Explore + Plan',
               result: {
-                text: '使用 HTTP Hook。将事件 payload 发送到外部 HTTP 端点, 由远程服务做判断。适合团队共享的集中式策略管控, 或需要调用第三方安全扫描服务的场景。',
-                tier: 'l2',
+                text: '先用 Explore 阶段让 Claude 分析现有代码结构，理解文件间关系。然后进入 Plan Mode 制定改动方案。不熟悉的代码直接改是灾难的开始。',
+                tier: 'l3',
               },
-              description: '适用场景: Slack 通知、集中式安全策略服务、CI/CD 触发、审计日志。',
             },
           },
         ],
       },
     },
     {
-      label: '需要语义理解',
+      label: '需求不明确',
       node: {
-        id: 'semantic',
-        question: '判断过程需要多少步骤?',
-        children: [
-          {
-            label: '单次判断即可',
-            node: {
-              id: 'prompt',
-              question: '推荐: Prompt Hook',
-              result: {
-                text: '使用 Prompt Hook。用一个 LLM prompt 做单轮语义判断: "这次修改是否完成了所有任务?" "这段代码是否有安全隐患?" 消耗少量 token, 但能处理模糊判断。',
-                tier: 'l2',
-              },
-              description: '适用场景: 完成度检查、代码质量评估、变更摘要生成。',
-            },
-          },
-          {
-            label: '需要多步验证 (读文件、跑测试等)',
-            node: {
-              id: 'agent',
-              question: '推荐: Agent Hook',
-              result: {
-                text: '使用 Agent Hook。启动一个最多 50 轮的子 Agent, 可以使用工具 (读文件、执行命令) 进行深度验证。功能最强, 但 token 消耗最大, 慎用。',
-                tier: 'l3',
-              },
-              description: '适用场景: 自动 code review、架构一致性验证、跨文件依赖检查。',
-            },
-          },
-        ],
+        id: 'unclear-req',
+        question: '先 Diagnose',
+        result: {
+          text: '需求模糊时直接写代码 = 赌博。先用 Diagnose 阶段厘清约束和边界条件，让 Claude 帮你发现需求中的歧义。然后再决定是否需要 Plan。',
+          tier: 'l2',
+        },
+      },
+    },
+    {
+      label: '涉及数据库 Schema 变更',
+      node: {
+        id: 'db-schema',
+        question: '必须 Plan',
+        result: {
+          text: 'Schema 变更是不可逆的（至少回滚成本极高）。必须用 Plan Mode 列出：migration 步骤、数据兼容性、回滚方案、上下游影响。没有 Plan 的 Schema 变更等于裸奔。',
+          tier: 'l3',
+        },
+      },
+    },
+    {
+      label: '上下文已经 >60%',
+      node: {
+        id: 'context-full',
+        question: '先 /compact，再 Plan',
+        result: {
+          text: '上下文快满时做 Plan 会导致 Claude "健忘"——前面讨论的约束可能被截断。先用 /compact 压缩上下文，或开新会话，再进入 Plan Mode。',
+          tier: 'l2',
+        },
+      },
+    },
+    {
+      label: '需要他人 Review 的变更',
+      node: {
+        id: 'needs-review',
+        question: 'Plan + 导出',
+        result: {
+          text: '用 Plan Mode 生成方案，然后导出为 PR Description 或设计文档。Reviewer 能看到你的思考过程，不只是代码差异。Plan 输出直接变成 Review 的上下文。',
+          tier: 'l2',
+        },
       },
     },
   ],
@@ -111,28 +132,27 @@ export default function Ch05() {
             className="text-xs uppercase tracking-widest font-medium"
             style={{ color: 'var(--color-text-muted)' }}
           >
-            Automation Phase
+            Planning Phase
           </span>
         </div>
         <h1
           className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          用 AI 做自动化：Hooks + Skills
+          用 AI 做方案设计：Plan Mode + 结构化思考
         </h1>
         <p
           className="text-lg leading-relaxed max-w-3xl"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          前几章我们学会了如何写好 prompt、如何做 Plan、如何构建项目。但每次都要手动检查代码格式、
-          手动跑 lint、手动确认任务完成度 -- 这些重复劳动正是 AI 应该自动化的。
-          Hook 系统让你在 Claude 的每一个操作节点插入自动化检查，Skills 系统让你把复杂的工作流封装成一键触发的命令。
-          这一章，我们要把 Claude Code 从"一个聊天工具"变成"一条自动化质量流水线"。
+          前面我们学会了让 Claude 写代码。但写代码只是软件开发的一小部分 --
+          真正决定项目成败的是方案设计。这一章我们将学习如何用 Plan Mode
+          把 Claude 从"代码生成器"变成"架构思考伙伴"，在动手之前先想清楚。
         </p>
       </header>
 
       {/* ═══════════════════════════════════════════════
-          Section 5.1: Hook 事件模型
+          Section 5.1: Plan Mode 的底层实现
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -142,149 +162,69 @@ export default function Ch05() {
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          5.1 Hook 事件模型
+          5.1 Plan Mode 的底层实现
         </h2>
 
-        <AnimationWrapper
-          component={LazyHookEventFlow}
-          durationInFrames={210}
-          fallbackText="Hook 事件流动画加载失败"
-        />
-
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Hook 的本质是事件驱动的拦截器。Claude Code 在执行过程中会触发一系列生命周期事件，
-          你可以在任何事件节点注册 Hook，对事件进行拦截、修改或阻止。
-          理解这 9 个事件是使用 Hook 的前提。
+          很多人以为 Plan Mode 是 Claude "变得更有纪律性" -- 它会忍住不改代码，先做计划。
+          这是一个误解。Plan Mode 的实现远比这粗暴且有效：
+          <strong>它直接禁用了 Write 和 Edit 工具</strong>。Claude 不是"选择"不改代码，
+          而是<strong>物理上无法</strong>改代码。
         </p>
 
-        <CodeBlock
-          language="bash"
-          title="hook-lifecycle-events.txt"
-          code={`Claude Code 生命周期事件（按执行顺序）
-═══════════════════════════════════════════
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          理解这一点很重要。Plan Mode 改变的是 system prompt 中的工具权限列表。
+          进入 Plan Mode 后，Claude 只能读取文件（Read tool）、搜索代码（Grep/Glob）、
+          运行只读命令（Bash with restrictions），但不能创建、修改或删除任何文件。
+          它被迫只能<strong>思考和输出文字</strong>。
+        </p>
 
-SessionStart        会话开始时触发（仅一次）
-  │                 Matcher: 无
-  │                 Payload: { session_id, cwd }
-  ▼
-UserPromptSubmit    用户按下回车后、发送给 LLM 前
-  │                 Matcher: 无
-  │                 Payload: { prompt_text, session_id }
-  ▼
-┌─────── Agentic Loop ──────────────────┐
-│                                        │
-│  PreToolUse       工具调用前            │
-│    │              Matcher: tool_name    │
-│    │              (Edit, Write, Bash,   │
-│    │               Glob, Grep, Read...) │
-│    │              Payload: { tool_name, │
-│    │                tool_input }        │
-│    ▼                                   │
-│  [工具执行]                             │
-│    │                                   │
-│    ▼                                   │
-│  PostToolUse      工具调用后            │
-│    │              Matcher: tool_name    │
-│    │              Payload: { tool_name, │
-│    │                tool_input,         │
-│    │                tool_output }       │
-│    ▼                                   │
-│  (循环直到任务完成)                      │
-│                                        │
-│  SubagentStart    子 Agent 启动时       │
-│    │              Matcher: 无           │
-│    │              Payload: { task }     │
-│    ▼                                   │
-│  SubagentStop     子 Agent 结束时       │
-│    │              Matcher: 无           │
-│    │              Payload: { task,      │
-│    │                result }            │
-│    ▼                                   │
-│  PreCompact       上下文压缩前          │
-│                   Matcher: 无           │
-│                   Payload: { summary,   │
-│                     message_count }     │
-│                                        │
-└────────────────────────────────────────┘
-  │
-  ▼
-Notification        需要通知用户时
-  │                 Matcher: 无
-  │                 Payload: { message }
-  ▼
-Stop                任务完成、Claude 停止前
-                    Matcher: 无
-                    Payload: { reason, summary }`}
-        />
+        <p className="mt-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+          注：EDPE 是本教程提出的教学框架，非 Claude Code 内置功能。
+        </p>
 
         <h3
           className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          三种返回状态
+          模式切换
         </h3>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          每个 Hook 执行后通过 exit code 告诉 Claude Code 下一步该做什么：
+          <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>Shift+Tab</code> 在三种模式间循环切换：
         </p>
 
         <CodeBlock
           language="bash"
-          title="hook-exit-codes.sh"
-          code={`# exit 0 — Allow（放行）
-# Hook 执行成功，操作继续。stdout 输出会作为上下文反馈给 Claude。
-exit 0
+          title="模式循环"
+          code={`# Shift+Tab 循环
+Normal Mode → Plan Mode → Accept Edits Mode → Normal Mode → ...
 
-# exit 1 — Ask（询问用户）
-# Hook 发现潜在问题，暂停操作，让用户决定是否继续。
-# 用于"不确定是否应该阻止"的灰色地带。
-echo "检测到可能的安全风险：文件包含 API key 模式" >&2
-exit 1
-
-# exit 2 — Deny（拒绝）
-# Hook 明确拒绝此操作，操作被取消，不会执行。
-# 用于确定性的安全规则。
-echo "禁止操作：不允许修改 .env 文件" >&2
-exit 2`}
+# Normal Mode:     所有工具可用，Claude 可以读、写、执行
+# Plan Mode:       Write/Edit 工具被禁用，Claude 只能读和思考
+# Accept Edits:    Claude 提出修改建议，你逐个批准/拒绝`}
+          showLineNumbers={false}
         />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          执行优先级
-        </h3>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          当同一事件注册了多个 Hook 时，按以下顺序执行。高优先级的拒绝会覆盖低优先级的放行：
+          这意味着 Plan Mode 不是一个"建议"，而是一个<strong>硬约束</strong>。
+          你不需要在 prompt 里写"不要修改代码"——工具层面已经做了限制。
+          这就像是给一个厨师拿走了所有刀具，只留下菜谱本和笔 --
+          他只能写菜谱，不能切菜。
         </p>
 
-        <CodeBlock
-          language="bash"
-          title="hook-execution-order.txt"
-          code={`执行顺序（从高到低）:
-
-1. Managed Hooks     — Anthropic 内置的安全规则（不可覆盖）
-2. Global Hooks      — ~/.claude/settings.json 中定义
-3. Project Hooks     — .claude/settings.json 中定义
-4. Plugin Hooks      — 通过插件注册
-
-规则：
-- 所有 Hook 都会执行（不会短路）
-- 最终结果取"最严格"的那个
-- 任何一个 Hook 返回 exit 2 → 整体 Deny
-- 没有 exit 2 但有 exit 1 → 整体 Ask
-- 全部 exit 0 → Allow`}
-        />
-
-        <QualityCallout title="关键理解">
-          Hook 不是"建议"，是"拦截"。一个 Deny 就能阻止操作，不管其他 Hook 怎么说。
-          这意味着你的安全 Hook 永远有最终否决权 -- 这是 Hook 系统安全性的基石。
+        <QualityCallout title="为什么工具级别的限制比 prompt 级别更可靠">
+          <p>
+            如果你只在 prompt 中说"先不要改代码，先做计划"，Claude 有概率会忽略这个指令，
+            尤其是在上下文很长的时候。但 Plan Mode 是在工具权限层面做的限制 --
+            即使 Claude "想"改代码，API 调用也会被拒绝。
+            这是<strong>机制保证</strong>，不是"行为引导"。
+          </p>
         </QualityCallout>
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 5.2: 四种 Hook 类型与选型
+          Section 5.2: 四阶段框架 EDPE
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -294,160 +234,368 @@ exit 2`}
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          5.2 四种 Hook 类型与选型
+          5.2 四阶段框架 EDPE
         </h2>
 
+        <AnimationWrapper
+          component={LazyPlanModeFlow}
+          durationInFrames={180}
+          fallbackText="Plan Mode 流程动画加载失败"
+        />
+
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Claude Code 支持四种 Hook 类型，它们在能力、成本和适用场景上有显著差异。
-          选错类型会导致流水线要么太慢（用 Agent 做简单格式化），要么太弱（用 Command 做语义判断）。
+          Plan Mode 不是简单地"先想后做"。一个好的 Plan 过程分为四个阶段：
+          <strong>Explore（探索）→ Diagnose（诊断）→ Plan（规划）→ Execute（执行）</strong>。
+          让我们用一个真实场景来走完这四个阶段：给现有的 Express API 添加 RBAC（基于角色的访问控制）。
         </p>
+      </section>
 
+      {/* ═══════════════════════════════════════════════
+          Section 5.3: 实战：RBAC 功能实现
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          5.3 实战：RBAC 功能实现
+        </h2>
+
+        {/* ── Stage 1: Explore ── */}
         <h3
-          className="text-lg font-semibold mt-8"
+          className="text-lg font-semibold mt-10"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          Command Hook：确定性脚本
+          Stage 1: Explore（探索）-- 5 分钟
         </h3>
 
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          通过 stdin 接收事件 JSON payload，执行本地脚本，通过 stdout/stderr + exit code 返回结果。
-          零 token 消耗，执行速度最快，适合所有确定性规则。
-        </p>
-
-        <CodeBlock
-          language="json"
-          title="command-hook-structure.json"
-          code={`{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "type": "command",
-        "command": "node .claude/hooks/format-check.js"
-      }
-    ]
-  }
-}`}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Prompt Hook：单轮 LLM 判断
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          发送一个 prompt 给 LLM 做单次语义判断。适合需要"理解"才能判断的场景，
-          比如判断任务是否真的完成、代码改动是否合理。消耗少量 token。
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Explore 阶段的唯一目标是<strong>理解现状</strong>。注意：我们在这个阶段
+          <strong>不问解决方案</strong>。为什么？因为如果你在不了解现状的情况下问"怎么加 RBAC"，
+          Claude 会给你一个通用方案 -- 而通用方案在碰到你项目的具体细节时必然水土不服。
         </p>
 
         <CodeBlock
-          language="json"
-          title="prompt-hook-structure.json"
-          code={`{
-  "hooks": {
-    "Stop": [
-      {
-        "type": "prompt",
-        "prompt": "Review the work done in this session. Check: 1) Are all requested features implemented? 2) Are there tests for new code? 3) Are there any TODO comments left? If anything is incomplete, respond with EXIT_CODE=1 and explain what's missing. Otherwise respond with EXIT_CODE=0."
-      }
-    ]
-  }
-}`}
+          language="bash"
+          title="Explore 阶段 Prompt（在 Plan Mode 下使用）"
+          code={`# 切换到 Plan Mode (Shift+Tab)
+# 然后输入以下 prompt:
+
+分析这个 Express API 项目的认证和权限现状：
+
+1. 当前的用户模型有哪些字段？有没有 role 或 permission 相关字段？
+2. 现有的认证中间件是怎么实现的？（JWT？Session？）
+3. 列出所有路由端点，标注哪些需要认证、哪些是公开的
+4. 当前有没有任何形式的权限检查？（哪怕是硬编码的 if 判断）
+5. 数据库用的什么？ORM 是什么？migration 工具是什么？
+
+重要：只分析现状，不要提出任何修改建议。
+我需要先完全理解现有架构，再考虑方案。`}
+          showLineNumbers={false}
         />
 
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          这个 prompt 的每一个限制条件都有目的：
+        </p>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>约束</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>为什么需要</th>
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-mono text-xs">"只分析现状"</td>
+                <td className="py-3 px-4">防止 Claude 跳到解决方案。AI 天然倾向于"帮你解决问题"，你需要明确告诉它现在还不到那一步。</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-mono text-xs">"不要提出修改建议"</td>
+                <td className="py-3 px-4">双重保险。有些 Claude 模型会在分析完现状后"顺便"给建议，这个约束堵住这个出口。</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-mono text-xs">5 个具体问题</td>
+                <td className="py-3 px-4">结构化的问题比"分析一下"效果好 10 倍。Claude 会逐一回答，不会遗漏关键维度。</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-mono text-xs">"列出所有路由端点"</td>
+                <td className="py-3 px-4">要求完整性。如果只是"看看路由"，Claude 可能只展示几个例子。"列出所有"强制它做全面扫描。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <PromptCompare
+          bad={{
+            prompt: '帮我给这个 API 加 RBAC',
+            label: '直接要方案',
+            explanation: '不了解现状就要方案，Claude 只能给通用模板。结果是：方案和你的项目实际架构不匹配，要么大改方案，要么硬塞代码。',
+          }}
+          good={{
+            prompt: '分析这个 API 的认证和权限现状，只分析不建议',
+            label: '先探索现状',
+            explanation: '了解了当前架构、数据模型、现有中间件后，后续的方案才能"长在"现有代码上，而不是空中楼阁。',
+          }}
+        />
+
+        {/* ── Stage 2: Diagnose ── */}
         <h3
-          className="text-lg font-semibold mt-8"
+          className="text-lg font-semibold mt-10"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          Agent Hook：多轮深度验证
+          Stage 2: Diagnose（诊断）-- 5 分钟
         </h3>
 
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          启动一个子 Agent（最多 50 轮对话），可以使用工具（读文件、执行 Bash 命令等）。
-          功能最强但 token 消耗最大，适合需要跨文件验证、运行测试等复杂场景。
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Explore 告诉我们"有什么"，Diagnose 告诉我们"在什么限制下工作"。
+          关键理念：<strong>约束是过滤器</strong>。你给的约束越明确，Claude 能给的方案就越精准。
+          没有约束的方案 = 无限可能 = 没有可执行性。
         </p>
 
         <CodeBlock
-          language="json"
-          title="agent-hook-structure.json"
-          code={`{
-  "hooks": {
-    "Stop": [
-      {
-        "type": "agent",
-        "prompt": "Verify the changes made in this session: 1) Read all modified files and check for code quality issues. 2) Run 'npm test' and verify all tests pass. 3) Check that no console.log statements were left in production code. Report any issues found.",
-        "maxTurns": 20
-      }
-    ]
-  }
-}`}
+          language="bash"
+          title="Diagnose 阶段 Prompt"
+          code={`# 继续在 Plan Mode 中
+
+基于你刚才的分析，我需要加 RBAC。以下是约束条件：
+
+硬约束（不可违反）：
+- 数据库用的 PostgreSQL + Prisma，migration 必须可回滚
+- 现有的 JWT 认证中间件必须保留，RBAC 在其基础上扩展
+- 不能引入新的依赖库（如 casbin、casl），用原生实现
+- 现有的 20+ 个 API 端点不能 break，必须向后兼容
+
+软约束（尽量满足）：
+- 角色设计遵循最小权限原则
+- 新端点的 response 格式与现有一致
+- 权限检查要在中间件层，不要散落在 handler 里
+
+给我 2-3 个可能的实现方案的大方向（不需要细节），
+每个方案列出优缺点和适用场景。`}
+          showLineNumbers={false}
         />
 
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          注意几个设计选择：
+        </p>
+
+        <ul className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
+            <span><strong>硬约束和软约束分开</strong> -- 让 Claude 知道哪些可以商量，哪些不行。混在一起会导致 Claude 在某些"软约束"上做无谓的坚持，或在"硬约束"上做不该做的妥协。</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
+            <span><strong>约束先行，方案后给</strong> -- 先告诉约束再问方案，而不是先问方案再说"但是不能用 casbin"。后者会让 Claude 浪费 token 生成不可行的方案再推翻。</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
+            <span><strong>要求多方案比较</strong> -- "给我 2-3 个方案" 比 "给我一个方案" 好得多。Claude 给单一方案时倾向于给"最安全"的，但那不一定是最适合你的。</span>
+          </li>
+        </ul>
+
+        {/* ── Stage 3: Plan ── */}
         <h3
-          className="text-lg font-semibold mt-8"
+          className="text-lg font-semibold mt-10"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          HTTP Hook：外部服务集成
+          Stage 3: Plan（规划）-- 10 分钟
         </h3>
 
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          将事件 payload 通过 HTTP POST 发送到外部端点。适合团队级别的集中式策略管控、
-          审计日志记录、或需要调用第三方服务的场景。
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          假设你从 Diagnose 阶段选择了"方案 B: 基于角色的中间件 + 路由级权限声明"。
+          现在进入 Plan 阶段，把方向变成可执行的步骤。
+          核心原则：<strong>没有验证步骤的计划等于没有计划</strong>。
         </p>
 
         <CodeBlock
-          language="json"
-          title="http-hook-structure.json"
-          code={`{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "type": "http",
-        "url": "https://your-team-server.com/api/claude-audit",
-        "headers": {
-          "Authorization": "Bearer $TEAM_AUDIT_TOKEN"
-        }
-      }
-    ]
-  }
-}`}
+          language="bash"
+          title="Plan 阶段 Prompt"
+          code={`# 仍在 Plan Mode 中
+
+选定方案 B。现在把它细化成可执行的实施计划。要求：
+
+1. 分成清晰的 Phase（每个 Phase 独立可验证）
+2. 每个 Phase 包含：
+   - 具体要改的文件列表
+   - 改动内容摘要
+   - 验证步骤（怎么确认这个 Phase 做对了）
+   - 预期的测试命令
+   - 回滚方案（如果这个 Phase 出问题怎么撤销）
+3. Phase 之间的依赖关系要明确
+4. 估算每个 Phase 的代码改动量（行数级别）
+
+额外要求：如果任何 Phase 的改动超过 200 行，拆成更小的子步骤。`}
+          showLineNumbers={false}
         />
 
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Claude 会输出类似这样的计划：
+        </p>
+
+        <CodeBlock
+          language="markdown"
+          title="Claude 生成的实施计划（示例摘要）"
+          code={`## Phase 1: 数据模型扩展（~50 行）
+文件: prisma/schema.prisma, src/types/auth.ts
+
+改动:
+- User model 添加 role 字段 (enum: ADMIN, EDITOR, VIEWER)
+- 创建 Permission 枚举类型
+- 创建 role-permission 映射常量
+
+验证步骤:
+- [ ] npx prisma migrate dev --name add-user-role
+- [ ] npx prisma generate (无错误)
+- [ ] 现有测试全部通过 (npm test)
+- [ ] 数据库中现有用户 role 默认为 VIEWER
+
+回滚: npx prisma migrate reset 或 手动 SQL DROP COLUMN
+
+---
+
+## Phase 2: 权限中间件（~80 行）
+文件: src/middleware/rbac.ts, src/middleware/auth.ts
+
+改动:
+- 创建 requirePermission() 中间件工厂函数
+- 修改现有 auth 中间件，在 req.user 上附加 role 信息
+- 中间件签名: requirePermission('users:write')
+
+验证步骤:
+- [ ] 单元测试: 中间件对不同 role 的请求返回正确状态码
+- [ ] 不带 role 的旧 token 被视为 VIEWER
+- [ ] 403 响应格式与现有错误格式一致
+
+回滚: 删除 rbac.ts，恢复 auth.ts 的 git 版本
+
+---
+
+## Phase 3: 路由集成（~120 行）
+文件: src/routes/*.ts
+
+改动:
+- 为每个路由添加 requirePermission() 中间件
+- 路由权限映射表
+- 公开端点不需要权限中间件
+
+验证步骤:
+- [ ] ADMIN 能访问所有端点
+- [ ] VIEWER 只能 GET
+- [ ] 未认证用户只能访问公开端点
+- [ ] 现有集成测试全部通过
+
+回滚: git checkout src/routes/`}
+          showLineNumbers={false}
+        />
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          注意每个 Phase 都有验证步骤。这不是形式主义 -- 验证步骤是你在 Execute 阶段的"检查站"。
+          如果 Phase 1 的验证没通过，你就不应该进入 Phase 2。
+        </p>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <strong>Pro tip:</strong> 按 <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>Ctrl+G</code> 可以在外部编辑器中打开 Claude 生成的计划，
+          方便你做修改和标注。修改后保存，Claude 会自动读取你的修改。
+        </p>
+
+        <QualityCallout title="质量线：Plan = 强制思考检查站">
+          <p>
+            2023 年，Amazon 因为一个权限配置错误导致了估计 $2.8B 的损失（S3 全球故障事件）。
+            事后分析的根本原因之一是：变更流程中<strong>没有人类审查步骤</strong>。
+            自动化测试全过了，但没人审查变更的<strong>意图和影响范围</strong>。
+          </p>
+          <p className="mt-2">
+            Plan Mode 就是你的人类审查步骤。它强迫你（和 Claude）在改代码之前
+            回答"我们要做什么、为什么这样做、怎么验证做对了"这三个问题。
+            这 10 分钟的思考可以省掉 10 小时的调试。
+          </p>
+        </QualityCallout>
+
+        {/* ── Stage 4: Execute ── */}
         <h3
-          className="text-lg font-semibold mt-8"
+          className="text-lg font-semibold mt-10"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          选型决策树
+          Stage 4: Execute（执行）-- 逐步推进
         </h3>
 
-        <DecisionTree
-          root={hookTypeTree}
-          title="Hook 类型选择器"
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          现在切回 Normal Mode（<code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>Shift+Tab</code>），让 Claude 开始执行。
+          但不是说"执行计划" -- 而是<strong>一步一步来</strong>。
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="Execute 阶段 Prompt"
+          code={`# 切回 Normal Mode (Shift+Tab)
+
+执行 Phase 1：数据模型扩展。
+
+完成后停下来，不要继续 Phase 2。
+我需要先验证 Phase 1 的结果。`}
+          showLineNumbers={false}
+        />
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Claude 会执行 Phase 1 的所有改动。然后你按照 Plan 中的验证步骤逐一检查。
+          如果一切正常：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="Phase 1 验证通过后"
+          code={`Phase 1 验证通过。继续执行 Phase 2：权限中间件。
+同样，完成后停下等我验证。`}
+          showLineNumbers={false}
+        />
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          如果验证发现问题呢？<strong>不要在 Normal Mode 下让 Claude 修修补补</strong>。
+          正确做法是切回 Plan Mode，重新审视出问题的 Phase：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="验证失败时的处理"
+          code={`# 切回 Plan Mode (Shift+Tab)
+
+Phase 2 的验证失败了：
+- requirePermission('users:write') 对 ADMIN 返回 403
+- 错误信息：role 字段在 JWT payload 中找不到
+
+分析原因，调整 Phase 2 的计划。
+可能是 Phase 1 的 auth 中间件没有正确传递 role 信息到 JWT。`}
+          showLineNumbers={false}
         />
 
         <PromptCompare
           bad={{
-            label: '过度设计',
-            prompt: `Stop hook 用 Agent 类型来检查代码格式
-→ 每次停止消耗 5000+ token
-→ 启动子 Agent 需要 3-5 秒`,
-            explanation: '格式检查是确定性规则，用 Command hook 运行 prettier 即可，零 token 消耗，毫秒级完成。',
+            prompt: '有 bug，帮我修一下那个 403 问题',
+            label: '直接 fix',
+            explanation: '不分析原因就修 bug，Claude 可能只修表面症状。403 的根因可能在 JWT 签发而不是权限检查 -- 头痛医头的修法只会引入更多问题。',
           }}
           good={{
-            label: '合理选型',
-            prompt: `PostToolUse hook 用 Command 运行 prettier
-Stop hook 用 Prompt 检查任务完成度
-Agent hook 仅用于深度 code review`,
-            explanation: '每种类型用在最合适的场景：确定性用 Command，语义判断用 Prompt，复杂验证用 Agent。',
+            prompt: '验证失败了（具体症状）。切回 Plan Mode 分析原因，调整计划',
+            label: '回到 Plan 分析',
+            explanation: '把具体症状给 Claude，让它在 Plan Mode 下分析根因。这样修复方案会考虑全局影响，而不是局部打补丁。',
           }}
         />
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <strong>Explore → Diagnose → Plan → Execute</strong> 不是线性的 --
+          它是一个循环。Execute 中发现问题时，随时可以退回到 Plan 甚至 Explore 阶段。
+          关键是：每次退回都是<strong>有意识的决策</strong>，而不是在 Normal Mode 下焦头烂额地打补丁。
+        </p>
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 5.3: 实战：自动化质量流水线
+          Section 5.4: 验证检查点的价值
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -457,1451 +605,349 @@ Agent hook 仅用于深度 code review`,
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          5.3 实战：自动化质量流水线
+          5.4 验证检查点的价值
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          基于前几章构建的 Express API 项目，我们来搭建一条完整的自动化质量流水线。
-          目标：Claude 每次编辑代码后自动格式化、自动 lint 修复；完成任务前自动检查完成度；
-          执行 Bash 命令前自动拦截危险操作。
+          Plan Mode 不是万能药。用在不需要的地方会浪费时间和 token，不用在需要的地方会浪费更多时间和 token。
+          下面是一个场景化的决策指南：
         </p>
 
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Layer 1: 自动格式化 (PostToolUse + Prettier)
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          每次 Claude 编辑或创建文件后，自动运行 prettier 格式化。
-          注意：我们需要一个中间脚本来做文件类型过滤和失败降级，而不是直接调用 prettier。
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title=".claude/hooks/auto-format.sh"
-          code={`#!/bin/bash
-# PostToolUse hook: 自动格式化被修改的文件
-# 通过 stdin 接收 JSON payload, 提取文件路径后运行 prettier
-
-set -euo pipefail
-
-# 从 stdin 读取 JSON payload
-PAYLOAD=$(cat)
-
-# 提取工具名和文件路径
-TOOL_NAME=$(echo "$PAYLOAD" | jq -r '.tool_name // empty')
-FILE_PATH=$(echo "$PAYLOAD" | jq -r '.tool_input.file_path // .tool_input.path // empty')
-
-# 只处理 Edit 和 Write 工具
-if [[ "$TOOL_NAME" != "Edit" && "$TOOL_NAME" != "Write" ]]; then
-  exit 0
-fi
-
-# 文件路径为空则跳过
-if [[ -z "$FILE_PATH" ]]; then
-  exit 0
-fi
-
-# 文件类型过滤: 只格式化前端/后端代码文件
-case "$FILE_PATH" in
-  *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.scss|*.html|*.md|*.yaml|*.yml)
-    # 支持的文件类型, 继续
-    ;;
-  *)
-    # 不支持的文件类型 (二进制文件、图片等), 跳过
-    exit 0
-    ;;
-esac
-
-# 检查文件是否存在 (可能是删除操作)
-if [[ ! -f "$FILE_PATH" ]]; then
-  exit 0
-fi
-
-# 运行 prettier, 失败时降级为跳过 (不阻断工作流)
-if npx prettier --write "$FILE_PATH" 2>/dev/null; then
-  echo "Formatted: $FILE_PATH"
-else
-  echo "Prettier skipped (not installed or parse error): $FILE_PATH" >&2
-  # 格式化失败不应阻断编辑操作, exit 0 继续
-fi
-
-exit 0`}
-          highlightLines={[12, 23, 37, 44]}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Layer 2: 自动 Lint 修复 (PostToolUse + ESLint)
-        </h3>
-
-        <CodeBlock
-          language="bash"
-          title=".claude/hooks/auto-lint.sh"
-          code={`#!/bin/bash
-# PostToolUse hook: 自动 lint 修复被修改的文件
-set -euo pipefail
-
-PAYLOAD=$(cat)
-TOOL_NAME=$(echo "$PAYLOAD" | jq -r '.tool_name // empty')
-FILE_PATH=$(echo "$PAYLOAD" | jq -r '.tool_input.file_path // .tool_input.path // empty')
-
-if [[ "$TOOL_NAME" != "Edit" && "$TOOL_NAME" != "Write" ]]; then
-  exit 0
-fi
-
-if [[ -z "$FILE_PATH" ]]; then
-  exit 0
-fi
-
-# ESLint 只处理 JS/TS 文件
-case "$FILE_PATH" in
-  *.ts|*.tsx|*.js|*.jsx)
-    ;;
-  *)
-    exit 0
-    ;;
-esac
-
-if [[ ! -f "$FILE_PATH" ]]; then
-  exit 0
-fi
-
-# --fix 自动修复, 失败时记录但不阻断
-if npx eslint --fix "$FILE_PATH" 2>/dev/null; then
-  echo "Linted: $FILE_PATH"
-else
-  echo "ESLint reported issues in: $FILE_PATH" >&2
-  # lint 错误反馈给 Claude, 但不阻断操作
-fi
-
-exit 0`}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Layer 3: 完成度检查 (Stop + Prompt Hook)
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Claude 认为任务完成要停止时，用一个 Prompt Hook 做最后的语义检查。
-          如果发现遗漏，返回 exit 1 让用户决定是否继续。
-        </p>
-
-        <CodeBlock
-          language="json"
-          title="stop-hook-prompt.json"
-          code={`{
-  "type": "prompt",
-  "prompt": "Review the conversation and changes made. Check these criteria:\\n1. Were ALL tasks in the original request completed?\\n2. Were tests written or updated for new/changed code?\\n3. Are there any leftover TODO or FIXME comments?\\n4. Were any files left in a broken state?\\n\\nIf everything is complete, respond EXIT_CODE=0.\\nIf anything is missing, respond EXIT_CODE=1 and list what's incomplete."
-}`}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Layer 4: 危险命令拦截 (PreToolUse + Bash)
-        </h3>
-
-        <CodeBlock
-          language="bash"
-          title=".claude/hooks/block-dangerous.sh"
-          code={`#!/bin/bash
-# PreToolUse hook: 拦截危险的 Bash 命令
-set -euo pipefail
-
-PAYLOAD=$(cat)
-TOOL_NAME=$(echo "$PAYLOAD" | jq -r '.tool_name // empty')
-
-# 只检查 Bash 工具
-if [[ "$TOOL_NAME" != "Bash" ]]; then
-  exit 0
-fi
-
-COMMAND=$(echo "$PAYLOAD" | jq -r '.tool_input.command // empty')
-
-# 危险命令黑名单 (正则匹配)
-DANGEROUS_PATTERNS=(
-  "rm -rf /"
-  "rm -rf ~"
-  "rm -rf \."
-  "DROP TABLE"
-  "DROP DATABASE"
-  "TRUNCATE TABLE"
-  "git push.*--force"
-  "git push.*-f "
-  "git reset --hard"
-  "chmod 777"
-  ":(){ :|:& };:"
-  "> /dev/sda"
-  "mkfs\."
-  "dd if=.*of=/dev/"
-)
-
-for pattern in "\${DANGEROUS_PATTERNS[@]}"; do
-  if echo "$COMMAND" | grep -qiE "$pattern"; then
-    echo "BLOCKED: 检测到危险命令模式 '$pattern'" >&2
-    echo "原始命令: $COMMAND" >&2
-    echo "如果你确实需要执行此操作, 请手动在终端中运行。" >&2
-    exit 2  # Deny - 直接拒绝
-  fi
-done
-
-exit 0`}
-          highlightLines={[17, 34, 37]}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          完整 settings.json 配置
-        </h3>
-
-        <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-          将四层 Hook 整合到项目的 .claude/settings.json 中。注意 Hook 的声明顺序就是同一事件内的执行顺序。
-        </p>
-
-        <ConfigExample
-          title=".claude/settings.json -- 完整质量流水线"
-          language="json"
-          code={`{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "type": "command",
-        "command": "bash .claude/hooks/block-dangerous.sh"
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "type": "command",
-        "command": "bash .claude/hooks/auto-format.sh"
-      },
-      {
-        "matcher": "Edit|Write",
-        "type": "command",
-        "command": "bash .claude/hooks/auto-lint.sh"
-      }
-    ],
-    "Stop": [
-      {
-        "type": "prompt",
-        "prompt": "Review the conversation and changes made. Check: 1) Were ALL tasks completed? 2) Were tests written/updated? 3) Any leftover TODOs? 4) Any broken files? If complete: EXIT_CODE=0. If incomplete: EXIT_CODE=1 with details."
-      }
-    ]
-  },
-  "permissions": {
-    "allow": [
-      "Bash(npm test)",
-      "Bash(npx prettier*)",
-      "Bash(npx eslint*)"
-    ]
-  }
-}`}
-          annotations={[
-            { line: 5, text: 'matcher 使用正则匹配工具名。"Bash" 只匹配 Bash 工具的调用。' },
-            { line: 7, text: 'Hook 脚本通过 stdin 接收完整的事件 JSON payload。' },
-            { line: 12, text: '"Edit|Write" 匹配 Edit 或 Write 工具。| 是正则 OR 语法。' },
-            { line: 17, text: '同一事件可以注册多个 Hook，按声明顺序执行。先 format 再 lint。' },
-            { line: 25, text: 'Prompt hook 不需要 matcher，Stop 事件全局触发。prompt 内容直接发送给 LLM 做单轮判断，消耗约 200-500 token。' },
-            { line: 30, text: 'permissions.allow 白名单确保 Hook 脚本调用的工具不会被权限拦截。' },
-            { line: 32, text: '允许 prettier 和 eslint 的自动执行，避免每次都弹权限确认。' },
-          ]}
-        />
-
-        <QualityCallout title="流水线执行流程">
-          Claude 编辑文件 → PostToolUse 触发 → auto-format.sh 格式化 → auto-lint.sh 修复 lint →
-          Claude 继续工作 → ... → Claude 准备停止 → Stop 触发 → Prompt hook 检查完成度 →
-          如果有遗漏，用户被告知并可以让 Claude 继续。整个过程对 Claude 几乎透明。
-        </QualityCallout>
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 5.4: 安全 Hook
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          5.4 安全 Hook
-        </h2>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          5.3 的流水线解决了代码质量问题，但还有一类更严肃的问题：安全。
-          Claude 可能会修改 .env 文件、在代码中硬编码 API key、或在 Bash 中执行危险操作。
-          安全 Hook 是你的最后一道防线。
-        </p>
-
-        <QualityCallout title="质量线">
-          Hook 是在 AI 操作和代码提交之间插入自动化质量检查的机制。
-          数据表明，使用 Claude Code 而不配置安全 Hook 时，密钥泄露率是基线的 2 倍。
-          这不是因为 Claude 恶意泄露，而是因为它在示例代码和测试中倾向于使用真实格式的 token。
-        </QualityCallout>
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          受保护文件拦截
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          阻止 Claude 修改敏感文件。关键点：不仅要拦截 Edit/Write 工具，还要拦截 Bash 工具 --
-          否则 Claude 可以通过 <code style={{ color: 'var(--color-accent)' }}>echo "..." {'>'} .env</code> 绕过你的 PreToolUse 拦截。
-          这是 Ch0 提到的权限盲区。
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title=".claude/hooks/protect-files.sh"
-          code={`#!/bin/bash
-# PreToolUse hook: 阻止修改受保护文件
-# 适用 matcher: "Edit|Write|Bash"  ← 注意包含 Bash!
-set -euo pipefail
-
-PAYLOAD=$(cat)
-TOOL_NAME=$(echo "$PAYLOAD" | jq -r '.tool_name // empty')
-
-# ── 受保护文件列表 ──
-PROTECTED_PATTERNS=(
-  "\.env$"
-  "\.env\..*"
-  "credentials\.json"
-  "serviceAccount.*\.json"
-  "\.pem$"
-  "\.key$"
-  "id_rsa"
-  "\.claude/settings\.json"
-)
-
-# ── 对 Edit/Write 工具：直接检查 file_path ──
-if [[ "$TOOL_NAME" == "Edit" || "$TOOL_NAME" == "Write" ]]; then
-  FILE_PATH=$(echo "$PAYLOAD" | jq -r '.tool_input.file_path // empty')
-  for pattern in "\${PROTECTED_PATTERNS[@]}"; do
-    if echo "$FILE_PATH" | grep -qE "$pattern"; then
-      echo "BLOCKED: 禁止修改受保护文件: $FILE_PATH" >&2
-      echo "匹配规则: $pattern" >&2
-      exit 2
-    fi
-  done
-fi
-
-# ── 对 Bash 工具：检查命令是否操作受保护文件 ──
-# 这是防止 Claude 用 Bash 绕过 Edit/Write 拦截的关键
-if [[ "$TOOL_NAME" == "Bash" ]]; then
-  COMMAND=$(echo "$PAYLOAD" | jq -r '.tool_input.command // empty')
-  for pattern in "\${PROTECTED_PATTERNS[@]}"; do
-    # 检查命令中是否包含受保护文件的操作
-    if echo "$COMMAND" | grep -qE "(>|>>|tee|cp|mv|sed -i|chmod|chown).*$pattern"; then
-      echo "BLOCKED: Bash 命令尝试修改受保护文件" >&2
-      echo "命令: $COMMAND" >&2
-      echo "匹配规则: $pattern" >&2
-      exit 2
-    fi
-  done
-fi
-
-exit 0`}
-          highlightLines={[3, 35, 40]}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          密钥泄露扫描
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          在 PostToolUse 阶段扫描 Claude 写入文件的内容，检测是否包含密钥模式。
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title=".claude/hooks/secret-scan.sh"
-          code={`#!/bin/bash
-# PostToolUse hook: 扫描写入内容是否包含密钥
-set -euo pipefail
-
-PAYLOAD=$(cat)
-TOOL_NAME=$(echo "$PAYLOAD" | jq -r '.tool_name // empty')
-
-if [[ "$TOOL_NAME" != "Edit" && "$TOOL_NAME" != "Write" ]]; then
-  exit 0
-fi
-
-FILE_PATH=$(echo "$PAYLOAD" | jq -r '.tool_input.file_path // .tool_input.path // empty')
-
-if [[ -z "$FILE_PATH" || ! -f "$FILE_PATH" ]]; then
-  exit 0
-fi
-
-# 跳过测试文件和 mock 目录 (它们经常包含假 token)
-case "$FILE_PATH" in
-  *__tests__*|*__mocks__*|*.test.*|*.spec.*|*fixture*)
-    exit 0
-    ;;
-esac
-
-# 密钥模式列表
-SECRET_PATTERNS=(
-  "AKIA[0-9A-Z]{16}"                    # AWS Access Key
-  "sk-[a-zA-Z0-9]{48}"                  # OpenAI API Key
-  "sk-ant-[a-zA-Z0-9-]{80,}"            # Anthropic API Key
-  "ghp_[a-zA-Z0-9]{36}"                 # GitHub Personal Access Token
-  "gho_[a-zA-Z0-9]{36}"                 # GitHub OAuth Token
-  "xoxb-[0-9]{11}-[0-9]{11}-[a-zA-Z0-9]{24}"  # Slack Bot Token
-  "-----BEGIN (RSA |EC )?PRIVATE KEY-----"     # Private Keys
-  "mongodb\\+srv://[^:]+:[^@]+@"        # MongoDB Connection String
-  "postgres://[^:]+:[^@]+@"             # PostgreSQL Connection String
-)
-
-FOUND_SECRETS=0
-
-for pattern in "\${SECRET_PATTERNS[@]}"; do
-  if grep -qE "$pattern" "$FILE_PATH" 2>/dev/null; then
-    echo "WARNING: 检测到疑似密钥模式" >&2
-    echo "  文件: $FILE_PATH" >&2
-    echo "  模式: $pattern" >&2
-    FOUND_SECRETS=1
-  fi
-done
-
-if [[ $FOUND_SECRETS -eq 1 ]]; then
-  echo "" >&2
-  echo "建议: 使用环境变量替代硬编码的密钥。" >&2
-  exit 1  # Ask - 让用户确认是否为误报
-fi
-
-exit 0`}
-          highlightLines={[20, 28, 49]}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Prompt Injection 扫描
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          当 Claude 读取外部文件或用户输入时，内容可能包含 prompt injection 攻击。
-          可以集成 parry 等注入检测工具作为 Hook。
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title=".claude/hooks/injection-scan.sh"
-          code={`#!/bin/bash
-# PostToolUse hook: 扫描读取内容是否包含注入攻击
-# matcher: "Read|Glob|Grep"
-set -euo pipefail
-
-PAYLOAD=$(cat)
-TOOL_NAME=$(echo "$PAYLOAD" | jq -r '.tool_name // empty')
-TOOL_OUTPUT=$(echo "$PAYLOAD" | jq -r '.tool_output // empty')
-
-# 检查工具输出中是否有注入模式
-INJECTION_PATTERNS=(
-  "ignore previous instructions"
-  "ignore all previous"
-  "disregard.*instructions"
-  "you are now"
-  "new system prompt"
-  "IMPORTANT: override"
-  "<system>"
-)
-
-for pattern in "\${INJECTION_PATTERNS[@]}"; do
-  if echo "$TOOL_OUTPUT" | grep -qiE "$pattern"; then
-    echo "WARNING: 检测到疑似 prompt injection" >&2
-    echo "  工具: $TOOL_NAME" >&2
-    echo "  模式: $pattern" >&2
-    exit 1  # Ask 用户确认
-  fi
-done
-
-exit 0`}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          PreCompact 上下文保留 Hook
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          当上下文窗口快满、Claude 要做 compact（压缩上下文）时，
-          你可以通过 PreCompact hook 注入关键信息，确保压缩后不会丢失重要上下文。
-        </p>
-
-        <CodeBlock
-          language="json"
-          title="precompact-hook.json"
-          code={`{
-  "hooks": {
-    "PreCompact": [
-      {
-        "type": "command",
-        "command": "echo 'CRITICAL CONTEXT TO PRESERVE: 1) We are building an Express API with TypeScript. 2) Auth uses JWT with RS256. 3) Database is PostgreSQL with Prisma ORM. 4) All endpoints must have input validation with Zod. 5) Test framework is Vitest.'"
-      }
-    ]
-  }
-}`}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          完整安全 Hook 配置
-        </h3>
-
-        <ConfigExample
-          title=".claude/settings.json -- 安全 Hook 层"
-          language="json"
-          code={`{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write|Bash",
-        "type": "command",
-        "command": "bash .claude/hooks/protect-files.sh"
-      },
-      {
-        "matcher": "Bash",
-        "type": "command",
-        "command": "bash .claude/hooks/block-dangerous.sh"
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "type": "command",
-        "command": "bash .claude/hooks/secret-scan.sh"
-      },
-      {
-        "matcher": "Read|Glob|Grep",
-        "type": "command",
-        "command": "bash .claude/hooks/injection-scan.sh"
-      },
-      {
-        "matcher": "Edit|Write",
-        "type": "command",
-        "command": "bash .claude/hooks/auto-format.sh"
-      },
-      {
-        "matcher": "Edit|Write",
-        "type": "command",
-        "command": "bash .claude/hooks/auto-lint.sh"
-      }
-    ],
-    "PreCompact": [
-      {
-        "type": "command",
-        "command": "echo 'PRESERVE: Express+TS, JWT RS256, PostgreSQL+Prisma, Zod validation, Vitest'"
-      }
-    ],
-    "Stop": [
-      {
-        "type": "prompt",
-        "prompt": "Review all changes. Check: 1) All tasks done? 2) Tests written? 3) No TODOs left? 4) No secrets in code? EXIT_CODE=0 if complete, EXIT_CODE=1 if not."
-      }
-    ]
-  }
-}`}
-          annotations={[
-            { line: 5, text: '关键：matcher 包含 Bash，防止通过 echo > file 绕过 Edit/Write 拦截。' },
-            { line: 10, text: '危险命令拦截放在文件保护之后，因为它们检查不同的维度。' },
-            { line: 17, text: '安全扫描在格式化之前执行，先检查安全再修复格式。' },
-            { line: 22, text: '扫描 Read/Glob/Grep 的输出，检测外部内容中的注入攻击。' },
-            { line: 37, text: 'PreCompact 确保上下文压缩时不丢失关键项目信息。' },
-            { line: 43, text: 'Stop hook 是最后一道关卡，综合检查所有维度。' },
-          ]}
-        />
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 5.5: Skills 系统
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          5.5 Skills 系统
-        </h2>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Hook 解决了"自动触发"的问题，但有些工作流需要"手动触发"：
-          code review、生成 changelog、重构检查等。Skills 系统让你把这些复杂工作流封装成
-          斜杠命令，一键触发。
-        </p>
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Skills vs Commands
-        </h3>
-
-        <CodeBlock
-          language="bash"
-          title="skills-vs-commands.txt"
-          code={`Skills（技能）                           Commands（命令）
-═══════════════════════                  ═══════════════════════
-用户定义的斜杠命令                        Claude 内置的斜杠命令
-/review, /changelog, /refactor           /help, /clear, /compact
-存储在 .claude/skills/ 目录              内置在 Claude Code 中
-Markdown 文件 + frontmatter              不可自定义
-可以调用 LLM 和工具                       固定功能
-支持参数替换和动态上下文                    无参数系统
-可以在 context: fork 中隔离执行           在主会话中执行`}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Skill 文件结构与 Frontmatter 字段
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          每个 Skill 是一个 Markdown 文件，放在 .claude/skills/ 目录下。
-          文件开头的 YAML frontmatter 定义元数据和行为参数。
-        </p>
-
-        <ConfigExample
-          title=".claude/skills/example.md -- Skill 文件结构"
-          language="markdown"
-          code={`---
-name: review
-description: Perform a thorough code review on recent changes
-arguments:
-  - name: scope
-    description: "What to review: 'staged', 'branch', or a file path"
-    required: false
-    default: "staged"
-allowed-tools: Read, Bash, Glob, Grep
-context: fork
-disable-model-invocation: false
-max-turns: 30
-model: claude-sonnet-4-20250514
----
-
-# Code Review Skill
-
-You are a senior code reviewer. Review the changes specified by the user.
-
-## Instructions
-
-1. First, understand the scope of changes
-2. Check for bugs, security issues, and code quality
-3. Provide actionable feedback with line references`}
-          annotations={[
-            { line: 2, text: 'name: 定义触发命令名。用 /review 调用此 Skill。' },
-            { line: 3, text: 'description: 在 Skill 列表中显示的描述文字。' },
-            { line: 4, text: 'arguments: 定义 Skill 接受的参数列表。调用时 /review staged。' },
-            { line: 5, text: 'name: 参数名，在模板中用 $ARGUMENTS 或 $0, $1 引用。' },
-            { line: 9, text: 'allowed-tools: 限制 Skill 可以使用的工具，减少安全风险。' },
-            { line: 10, text: 'context: fork 表示在隔离上下文中执行，不污染主会话。' },
-            { line: 11, text: 'disable-model-invocation: true 时禁止 Skill 调用 LLM，只执行模板内容。' },
-            { line: 12, text: 'max-turns: 限制 Skill 的最大对话轮数，防止失控。' },
-            { line: 13, text: 'model: 指定使用的模型。Skill 可以用比主会话更便宜/快的模型。' },
-          ]}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          12 个 Frontmatter 字段详解
-        </h3>
-
-        <CodeBlock
-          language="yaml"
-          title="frontmatter-fields.yaml"
-          code={`# ── 基础字段 ──
-name: review                    # 必填。命令名，用 /name 触发
-description: "Code review"      # 推荐。在列表中的描述
-arguments:                      # 可选。参数定义
-  - name: target
-    description: "Review target"
-    required: false
-    default: "staged"
-
-# ── 行为控制 ──
-context: fork                   # fork | main (默认 main)
-                                # fork: 隔离执行，不影响主会话上下文
-                                # main: 在主会话中执行，共享上下文
-allowed-tools: Read, Bash       # 逗号分隔。限制可用工具
-max-turns: 30                   # 最大对话轮数 (默认无限)
-model: claude-sonnet-4-20250514      # 指定模型 (默认跟随主会话)
-
-# ── 安全控制 ──
-disable-model-invocation: false # true 时禁止调用 LLM
-                                # 用于纯模板 Skill (无 AI 判断)
-
-# ── 高级字段 ──
-inherit-context: true           # 是否继承主会话上下文
-timeout: 300                    # 超时秒数
-tags: [review, quality]         # 标签，用于分类`}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          动态上下文注入：!command 语法
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Skill 模板中可以用 <code style={{ color: 'var(--color-accent)' }}>{'`!command`'}</code> 语法动态注入命令输出。
-          这让 Skill 能在每次调用时获取最新的项目状态。
-        </p>
-
-        <CodeBlock
-          language="markdown"
-          title="dynamic-context-example.md"
-          code={`---
-name: review-staged
-description: Review currently staged changes
-context: fork
----
-
-# Review Staged Changes
-
-Here are the currently staged changes:
-
-\`!git diff --cached\`
-
-Here is the project structure for context:
-
-\`!find src -name "*.ts" | head -20\`
-
-Review these changes for:
-1. Bugs and logic errors
-2. Security vulnerabilities
-3. Code style consistency
-4. Missing error handling`}
-          highlightLines={[11, 15]}
-        />
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          <code style={{ color: 'var(--color-accent)' }}>{'`!git diff --cached`'}</code> 在 Skill 启动时被替换为实际的 git diff 输出。
-          这意味着每次调用 /review-staged 时，Claude 都能看到最新的暂存区变更。
-        </p>
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          参数替换
-        </h3>
-
-        <CodeBlock
-          language="markdown"
-          title="argument-substitution.md"
-          code={`---
-name: explain
-description: Explain a file or function in detail
-arguments:
-  - name: target
-    description: "File path or function name"
-    required: true
----
-
-# Explain: $ARGUMENTS
-
-Read and analyze the following:
-- If $0 is a file path, read the entire file
-- If $0 is a function name, search for it in the codebase
-
-$ARGUMENTS — 所有参数拼接为一个字符串
-$0        — 第一个参数
-$1        — 第二个参数
-$2        — 第三个参数 (以此类推)
-
-用法示例:
-  /explain src/auth/jwt.ts       → $ARGUMENTS = "src/auth/jwt.ts", $0 = "src/auth/jwt.ts"
-  /explain validateToken strict   → $ARGUMENTS = "validateToken strict", $0 = "validateToken", $1 = "strict"`}
-        />
-
-        <QualityCallout title="context: fork 的重要性">
-          如果你的 Skill 需要读取大量文件或执行耗时操作，务必使用 context: fork。
-          否则这些操作的输出会填满主会话的上下文窗口，导致后续对话质量下降甚至触发 compact。
-          fork 模式下，Skill 执行完毕后，只有最终结果会返回给主会话。
-        </QualityCallout>
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 5.6: 实战：从零写 Code Review Skill
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          5.6 实战：从零写 Code Review Skill
-        </h2>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          我们来完整实现一个 Code Review Skill，逐行解释每个设计决策。
-          这个 Skill 应该能对当前分支的变更做深度 review，输出结构化的反馈报告。
-        </p>
-
-        <CodeBlock
-          language="markdown"
-          title=".claude/skills/review.md"
-          code={`---
-name: review
-description: Deep code review for current branch changes vs main
-arguments:
-  - name: base
-    description: "Base branch to compare against"
-    required: false
-    default: "main"
-allowed-tools: Read, Bash, Glob, Grep
-context: fork
-max-turns: 30
-model: claude-sonnet-4-20250514
----
-
-# Code Review: Current Branch vs $0
-
-## Context
-
-You are a senior engineer performing a thorough code review.
-Your goal is to find real issues, not nitpick style (that's handled by automated tools).
-
-## Changes to Review
-
-\`!git diff $0...HEAD --stat\`
-
-### Detailed Diff
-
-\`!git diff $0...HEAD\`
-
-### Recent Commits
-
-\`!git log $0...HEAD --oneline\`
-
-## Review Checklist
-
-For each file changed, check:
-
-### 1. Correctness
-- Logic errors, off-by-one, null/undefined handling
-- Edge cases not covered
-- Race conditions in async code
-
-### 2. Security
-- SQL injection, XSS, CSRF vulnerabilities
-- Hardcoded secrets or credentials
-- Improper input validation
-- Authentication/authorization gaps
-
-### 3. Design
-- Does the change follow existing patterns in the codebase?
-- Are there unnecessary abstractions or missing abstractions?
-- Is the naming clear and consistent?
-
-### 4. Error Handling
-- Are errors caught and handled appropriately?
-- Are error messages helpful for debugging?
-- Are there missing try/catch blocks around I/O operations?
-
-### 5. Tests
-- Are there tests for new functionality?
-- Do tests cover edge cases?
-- Are test names descriptive?
-
-## Output Format
-
-Organize your review as:
-
-### Critical Issues (must fix)
-- [FILE:LINE] Description of issue
-
-### Suggestions (should consider)
-- [FILE:LINE] Description of suggestion
-
-### Positive Notes
-- Things done well that should be continued
-
-### Summary
-One paragraph summary of the overall quality and readiness to merge.`}
-          highlightLines={[9, 10, 12, 24, 28, 32]}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          逐行设计决策解释
-        </h3>
-
-        <div
-          className="rounded-lg p-5 space-y-4"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
-              Line 9: allowed-tools: Read, Bash, Glob, Grep
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-              只允许读取类操作。故意不包含 Edit/Write -- review 不应该修改代码。
-              如果需要自动修复，那应该是另一个 Skill（/fix）。职责分离。
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
-              Line 10: context: fork
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-              Review 需要读取大量文件内容，如果在主会话中执行，diff 输出会填满上下文窗口。
-              fork 模式让 review 在隔离环境中执行，只有最终报告返回主会话。
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
-              Line 12: model: claude-sonnet-4-20250514
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-              Review 不需要最强的生成能力（不写代码），但需要较好的理解能力。
-              Sonnet 在 review 场景下性价比更高。如果你的主会话用的是 Opus，这可以省不少 token。
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
-              Line 24-32: 动态上下文注入
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-              三个 !command 在 Skill 启动时执行：先看变更统计（整体感知），再看详细 diff（深入分析），
-              最后看 commit 历史（理解意图）。$0 引用用户传入的 base 分支参数。
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
-              Review Checklist 设计
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-              故意不包含"代码风格"检查 -- 那是 prettier/eslint Hook 的职责。
-              Review Skill 聚焦于机器难以自动检测的问题：逻辑正确性、设计合理性、安全漏洞。
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
-              Output Format 要求
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-              用 [FILE:LINE] 格式引用，让反馈可以直接定位到代码。
-              分三级（Critical / Suggestions / Positive）避免把所有问题混在一起。
-              "Positive Notes" 是有意加的 -- 正面反馈帮助建立好的模式。
-            </p>
-          </div>
+        {/* Decision table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>场景</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>建议</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>理由</th>
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">一行改动</td>
+                <td className="py-3 px-4"><span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80' }}>Skip</span></td>
+                <td className="py-3 px-4">Plan 的开销（token + 时间）远大于改动本身</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">3+ 文件改动</td>
+                <td className="py-3 px-4"><span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(250, 204, 21, 0.1)', color: '#facc15' }}>Plan</span></td>
+                <td className="py-3 px-4">多文件协调需要理清顺序和依赖</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">不熟悉的代码</td>
+                <td className="py-3 px-4"><span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }}>Explore first</span></td>
+                <td className="py-3 px-4">不了解现状就做计划 = 空中楼阁</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">需求不清晰</td>
+                <td className="py-3 px-4"><span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }}>Diagnose first</span></td>
+                <td className="py-3 px-4">需求模糊 + 直接编码 = 做了再拆、拆了再做</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">上下文 &gt;60%</td>
+                <td className="py-3 px-4"><span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(250, 204, 21, 0.1)', color: '#facc15' }}>/compact first</span></td>
+                <td className="py-3 px-4">上下文快满时 Plan 质量下降，先压缩再规划</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">数据库 Schema 变更</td>
+                <td className="py-3 px-4"><span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }}>Must Plan</span></td>
+                <td className="py-3 px-4">不可逆操作 -- 必须有回滚方案和数据兼容性分析</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">需要他人 Review</td>
+                <td className="py-3 px-4"><span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(250, 204, 21, 0.1)', color: '#facc15' }}>Plan + 导出</span></td>
+                <td className="py-3 px-4">Plan 输出直接变成 PR Description</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
+        {/* Interactive Decision Tree */}
+        <DecisionTree
+          root={planModeTree}
+          title="决策树：我该用 Plan Mode 吗？"
+        />
+
+        {/* Extended Thinking */}
         <h3
-          className="text-lg font-semibold mt-8"
+          className="text-lg font-semibold mt-10"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          使用方式
+          进阶技巧：Extended Thinking
         </h3>
-
-        <CodeBlock
-          language="bash"
-          title="skill-usage.sh"
-          code={`# 默认对比 main 分支
-/review
-
-# 对比指定分支
-/review develop
-
-# 对比指定 commit
-/review HEAD~5`}
-        />
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 5.7: Plugin 系统
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          5.7 Plugin 系统
-        </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          当你的 Hook + Skills 组合成为一套可复用的工作流时，就可以打包成 Plugin 在团队或社区中共享。
-          Plugin = Skills + Agents + Hooks + MCP 配置的打包产物。
+          Plan Mode 和 Extended Thinking 可以叠加使用。
+          按 <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>Alt+T</code> 开启
+          Extended Thinking，Claude 会在回答之前先进行一轮内部推理。
+          结合 Plan Mode：
         </p>
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Plugin 目录结构
-        </h3>
 
         <CodeBlock
           language="bash"
-          title="plugin-directory-structure.txt"
-          code={`my-quality-plugin/
-├── manifest.json            # Plugin 清单（必须）
-├── skills/
-│   ├── review.md            # Code Review Skill
-│   ├── changelog.md         # Changelog 生成 Skill
-│   └── refactor.md          # 重构检查 Skill
-├── hooks/
-│   ├── auto-format.sh       # 自动格式化 Hook
-│   ├── secret-scan.sh       # 密钥扫描 Hook
-│   └── block-dangerous.sh   # 危险命令拦截 Hook
-├── agents/
-│   └── deep-review.md       # 深度 Review Agent 配置
-└── mcp/
-    └── config.json          # MCP 服务器配置`}
+          title="Plan + Extended Thinking"
+          code={`# 1. 开启 Extended Thinking (Alt+T)
+# 2. 切换到 Plan Mode (Shift+Tab)
+# 3. 输入 prompt，可以在末尾加 "ultrathink" 要求更深度的思考
+
+分析这个并发问题的根因，给出修复方案。ultrathink
+
+# Claude 会先做一轮内部推理（你看不到），然后输出更深入的分析
+# 适合：架构决策、复杂 bug 分析、性能优化方案设计`}
+          showLineNumbers={false}
         />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Plugin Manifest
-        </h3>
-
-        <ConfigExample
-          title="manifest.json -- Plugin 清单"
-          language="json"
-          code={`{
-  "name": "quality-pipeline",
-  "version": "1.0.0",
-  "description": "Automated quality pipeline for TypeScript projects",
-  "author": "your-team",
-  "homepage": "https://github.com/your-team/quality-plugin",
-  "skills": [
-    "skills/review.md",
-    "skills/changelog.md",
-    "skills/refactor.md"
-  ],
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "type": "command",
-        "command": "bash hooks/block-dangerous.sh"
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "type": "command",
-        "command": "bash hooks/auto-format.sh"
-      },
-      {
-        "matcher": "Edit|Write",
-        "type": "command",
-        "command": "bash hooks/secret-scan.sh"
-      }
-    ]
-  },
-  "mcp": {
-    "servers": {}
-  }
-}`}
-          annotations={[
-            { line: 2, text: 'Plugin 名字必须唯一，安装时用这个名字引用。' },
-            { line: 7, text: '列出所有 Skill 文件的相对路径。' },
-            { line: 12, text: 'Hook 定义格式和 settings.json 中完全一致，直接合并到项目配置中。' },
-            { line: 33, text: 'Plugin 可以包含 MCP 服务器配置，扩展 Claude 的工具能力。' },
-          ]}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          社区 Plugin 推荐
-        </h3>
-
-        <div
-          className="rounded-lg overflow-hidden"
-          style={{
-            border: '1px solid var(--color-border)',
-            background: 'var(--color-bg-secondary)',
-          }}
-        >
-          <div
-            className="px-4 py-3 text-sm font-medium"
-            style={{
-              borderBottom: '1px solid var(--color-border)',
-              color: 'var(--color-text-primary)',
-              background: 'var(--color-bg-tertiary)',
-            }}
-          >
-            推荐社区 Plugin
-          </div>
-          <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
-            {[
-              {
-                name: 'claudekit（示例）',
-                desc: '全功能工具箱：包含格式化、lint、测试、changelog 等常用 Skills 和 Hooks。适合快速搭建质量流水线。',
-                url: 'github.com/anthropics/claudekit',
-              },
-              {
-                name: 'claude-hud（示例）',
-                desc: '开发状态仪表盘：实时显示 token 消耗、Hook 执行状态、工具调用统计。帮助优化工作流性能。',
-                url: 'github.com/anthropics/claude-hud',
-              },
-              {
-                name: 'ralph-wiggum（示例）',
-                desc: '安全扫描 Plugin：集成多种安全检测（密钥泄露、依赖漏洞、代码注入），开箱即用的安全防护层。',
-                url: 'github.com/anthropics/ralph-wiggum',
-              },
-            ].map((plugin) => (
-              <div key={plugin.name} className="px-4 py-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className="text-sm font-semibold"
-                    style={{ color: 'var(--color-accent)' }}
-                  >
-                    {plugin.name}
-                  </span>
-                  <span
-                    className="text-xs px-1.5 py-0.5 rounded"
-                    style={{
-                      background: 'var(--color-bg-surface)',
-                      border: '1px solid var(--color-border)',
-                      color: 'var(--color-text-muted)',
-                    }}
-                  >
-                    {plugin.url}
-                  </span>
-                </div>
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  {plugin.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 5.8: Hook 失败模式
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          5.8 Hook 失败模式
-        </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Hook 系统强大但也容易出错。以下是最常见的三类失败模式及其诊断方法。
+          Extended Thinking 会增加 token 消耗，但对于复杂决策来说物超所值。
+          经验法则：如果一个问题你自己想了 5 分钟还没有清晰思路，就值得开 Extended Thinking。
         </p>
 
+        {/* Multi-option comparison */}
         <h3
-          className="text-lg font-semibold mt-8"
+          className="text-lg font-semibold mt-10"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          死循环 (Dead Loop)
+          进阶技巧：多方案比较
         </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          最危险的失败模式。当 Hook 的行为触发了另一个 Hook，形成无限循环。
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title="dead-loop-example.txt"
-          code={`# 典型死循环场景:
-#
-# PostToolUse(Edit) hook → 运行 prettier → prettier 修改文件
-#   → 触发 PostToolUse(Write)?
-#
-# 实际上 Claude Code 的 Hook 系统有内置保护:
-# Hook 执行的工具调用不会触发新的 Hook。
-# 但如果你用 Agent hook, Agent 的工具调用 CAN 触发 Hook!
-#
-# 危险配置:
-# Stop hook (Agent) → Agent 发现问题 → Agent 修改文件
-#   → PostToolUse(Edit) hook 触发 → 格式化 → Agent 看到格式变了
-#   → Agent 再次修改 → ...
-#
-# 解决方案:
-# 1. Agent hook 的 allowed-tools 不要包含 Edit/Write
-# 2. 设置 max-turns 限制
-# 3. 用 /hooks 命令检查 Hook 链路`}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          诊断工具：/hooks 命令
-        </h3>
-
-        <CodeBlock
-          language="bash"
-          title="hooks-inspection.sh"
-          code={`# 查看当前生效的所有 Hook
-/hooks
-
-# 输出示例:
-# ┌─────────────────────────────────────────────────────┐
-# │ Active Hooks                                         │
-# ├───────────────┬────────────┬─────────────────────────┤
-# │ Event         │ Type       │ Source                   │
-# ├───────────────┼────────────┼─────────────────────────┤
-# │ PreToolUse    │ command    │ .claude/settings.json    │
-# │  └─ Bash      │            │ block-dangerous.sh       │
-# │ PreToolUse    │ command    │ .claude/settings.json    │
-# │  └─ Edit|Write│            │ protect-files.sh         │
-# │ PostToolUse   │ command    │ .claude/settings.json    │
-# │  └─ Edit|Write│            │ auto-format.sh           │
-# │ PostToolUse   │ command    │ .claude/settings.json    │
-# │  └─ Edit|Write│            │ auto-lint.sh             │
-# │ Stop          │ prompt     │ .claude/settings.json    │
-# └───────────────┴────────────┴─────────────────────────┘
-
-# 查看 Hook 执行日志
-# Claude Code 的 Hook 日志在 ~/.claude/logs/ 目录
-ls -la ~/.claude/logs/
-
-# 查看最近的 Hook 执行记录
-# 日志包含: 触发事件、Hook 类型、exit code、执行时间、stdout/stderr
-tail -f ~/.claude/logs/hooks.log`}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          性能影响
-        </h3>
-
-        <CodeBlock
-          language="bash"
-          title="hook-performance-impact.txt"
-          code={`Hook 类型的性能开销:
-═══════════════════════════════════════════
-
-Command Hook
-  延迟: 10-100ms (取决于脚本复杂度)
-  Token: 0
-  适合: 每次工具调用都触发
-
-Prompt Hook
-  延迟: 1-3s (等待 LLM 响应)
-  Token: 200-500 per invocation
-  适合: 低频事件 (Stop, SessionStart)
-
-Agent Hook
-  延迟: 10-60s (多轮对话)
-  Token: 2000-10000 per invocation
-  适合: 仅在关键节点触发
-
-HTTP Hook
-  延迟: 100ms-5s (取决于网络和服务端)
-  Token: 0
-  适合: 异步通知 (不阻塞主流程时)
-
-建议:
-- PostToolUse 只用 Command hook (每次编辑都触发, 必须快)
-- Stop 可以用 Prompt hook (每次会话结束只触发一次)
-- Agent hook 仅用于手动触发的 Skill 中, 不要放在自动触发的事件上`}
-        />
-
-        <QualityCallout title="性能规则">
-          如果你的 PostToolUse Hook 执行超过 200ms，Claude 的编辑体验会明显变慢。
-          格式化 + lint 两个 Hook 的总耗时应控制在 500ms 以内。
-          如果超时，考虑合并为一个脚本，或使用异步执行模式。
-        </QualityCallout>
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 5.9: 设计阶段的 Review 策略
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          5.9 设计阶段的 Review 策略
-        </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          有了自动化流水线后，人类的 review 重点应该从"检查格式和低级错误"转向"验证设计和逻辑"。
-          但不同规模的变更需要不同的 review 策略。
+          永远不要只问 Claude 要一个方案。要求它给 2-3 个方案并比较优劣。
+          单一方案的问题是：你不知道它为什么选这个方案而不是那个。
+          多方案比较让你看到决策空间的全貌。
         </p>
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          中等变更 (5-15 files): Plan-First Review
-        </h3>
 
         <CodeBlock
           language="bash"
-          title="review-strategy-medium.txt"
-          code={`中等变更 Review 流程:
-═══════════════════════
+          title="多方案比较 Prompt 模板"
+          code={`给我 2-3 个实现 [功能] 的方案。
 
-Step 1: 先 Review Plan (高优先级)
-  ├── 检查架构决策是否合理
-  ├── 检查是否遗漏了重要的边界情况
-  ├── 检查技术选型是否符合项目约定
-  └── 检查接口设计是否与现有代码一致
+对每个方案，给出：
+- 核心思路（2-3 句话）
+- 优点
+- 缺点
+- 适用条件（什么情况下选这个）
+- 粗略的工作量估算
 
-Step 2: 抽查实现 (中优先级)
-  ├── 选取最复杂的 2-3 个文件深入审查
-  ├── 检查错误处理是否完善
-  ├── 检查测试覆盖的关键路径
-  └── 其余文件信任自动化 (lint + format + type check)
-
-Step 3: 验证集成 (基本检查)
-  ├── 跑一遍完整测试
-  ├── 手动测试关键用户路径
-  └── 检查 CI 是否全绿
-
-时间分配:
-  Plan Review:     40%
-  抽查实现:        40%
-  集成验证:        20%`}
+最后给一个比较矩阵，维度包括：
+复杂度、性能、可维护性、扩展性、实现时间`}
+          showLineNumbers={false}
         />
 
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          然后你可以根据自己的优先级（比如"时间紧迫"或"需要长期维护"）选择最合适的方案。
+          这比让 Claude 直接给"最佳方案"有效得多 -- 因为"最佳"取决于你的上下文，
+          而 Claude 不完全了解你的上下文。
+        </p>
+
+        {/* Plan Reuse Value */}
         <h3
-          className="text-lg font-semibold mt-8"
+          className="text-lg font-semibold mt-10"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          Hook 自动化后，人类聚焦三件事
+          Plan 的复用价值
         </h3>
 
-        <div
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
-        >
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Plan Mode 的输出不是一次性的。一个好的 Plan 至少可以复用为以下四种产物：
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
             {
-              title: '逻辑正确性',
-              items: [
-                '业务逻辑是否符合需求',
-                '边界条件是否处理',
-                '并发/异步是否安全',
-                '数据流是否正确',
-              ],
-              color: 'var(--color-tier-l1)',
+              title: 'PR Description',
+              desc: 'Plan 的 Phase 划分和改动摘要直接变成 PR 的 Summary。Reviewer 能看到不只是"改了什么"，还有"为什么这样改"和"按什么顺序改的"。',
+              tip: '直接复制 Plan 的 Phase 列表到 PR body。',
             },
             {
-              title: '设计合理性',
-              items: [
-                '抽象层次是否合适',
-                '接口设计是否一致',
-                '是否过度/不足工程化',
-                '依赖方向是否正确',
-              ],
-              color: 'var(--color-tier-l2)',
+              title: '设计文档',
+              desc: 'Explore 阶段的现状分析 + Diagnose 阶段的约束和方案比较 + Plan 阶段的实施步骤 = 一份完整的轻量级设计文档。',
+              tip: '适合需要设计评审的中大型功能。',
             },
             {
-              title: '安全性',
-              items: [
-                '认证/授权是否完整',
-                '输入验证是否充分',
-                '是否有注入风险',
-                '敏感数据是否保护',
-              ],
-              color: 'var(--color-tier-l3)',
+              title: 'Review Checklist',
+              desc: 'Plan 中每个 Phase 的验证步骤就是 Reviewer 的检查清单。比"LGTM"有用 100 倍。',
+              tip: '把验证步骤格式化成 checkbox 列表。',
             },
-          ].map((focus) => (
+            {
+              title: '任务拆分',
+              desc: '如果 Plan 涉及多人协作，Phase 可以直接变成独立的 Jira ticket / GitHub Issue。每个 Phase 有明确的输入、输出和验证标准。',
+              tip: '适合 tech lead 分配工作。',
+            },
+          ].map((item) => (
             <div
-              key={focus.title}
+              key={item.title}
               className="rounded-lg p-4"
               style={{
-                border: `1px solid var(--color-border)`,
-                borderTop: `3px solid ${focus.color}`,
                 background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border)',
               }}
             >
               <h4
-                className="text-sm font-semibold mb-3"
-                style={{ color: focus.color }}
+                className="text-sm font-semibold mb-2"
+                style={{ color: 'var(--color-text-primary)' }}
               >
-                {focus.title}
+                {item.title}
               </h4>
-              <ul className="space-y-1.5">
-                {focus.items.map((item, i) => (
-                  <li
-                    key={i}
-                    className="text-sm flex items-start gap-2"
-                    style={{ color: 'var(--color-text-secondary)' }}
-                  >
-                    <span style={{ color: focus.color, flexShrink: 0 }}>-</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
+              <p
+                className="text-sm leading-relaxed mb-2"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                {item.desc}
+              </p>
+              <p
+                className="text-xs leading-relaxed"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                {item.tip}
+              </p>
             </div>
           ))}
         </div>
 
-        <PromptCompare
-          bad={{
-            label: '低效 Review',
-            prompt: `逐行检查所有 15 个文件的格式
-手动确认每个变量命名是否符合规范
-在 Review 中修改缩进和空行问题`,
-            explanation: '这些全是自动化 Hook 应该处理的。你在做机器的工作。',
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          换句话说：Plan Mode 的 10 分钟投入，产出的不仅是更好的代码，
+          还有文档、Review 材料和项目管理产物。
+          这是一个极高 ROI 的时间投资。
+        </p>
+
+        {/* Failure modes */}
+        <h3
+          className="text-lg font-semibold mt-10"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          失败模式：Plan Mode 的四种常见错误
+        </h3>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Plan Mode 不是银弹。用错了反而比不用还糟。以下是最常见的四种失败模式：
+        </p>
+
+        {/* Failure 1 */}
+        <div
+          className="rounded-lg overflow-hidden"
+          style={{
+            border: '1px solid var(--color-border)',
+            borderLeft: '3px solid #f87171',
           }}
-          good={{
-            label: '高效 Review',
-            prompt: `花 40% 时间审查 Plan 的架构决策
-抽查最复杂的 3 个文件的业务逻辑
-验证安全相关代码的认证/授权逻辑`,
-            explanation: '机器处理格式和 lint，人类聚焦逻辑、设计和安全 -- 各自做擅长的事。',
+        >
+          <div className="px-5 py-4">
+            <h4 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              1. 过度规划（Over-planning）
+            </h4>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              症状：一个添加日志的小任务，用 Plan Mode 做了 30 分钟的架构分析，
+              输出了 5 个 Phase 的实施计划。
+            </p>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              根因：没有做前置判断"这个任务值不值得 Plan"。参考 5.4 的决策表：
+              一行改动、简单 fix、已经非常熟悉的代码都不需要 Plan。
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong>经验法则</strong>：如果你能在脑子里想清楚改动的完整路径（改哪些文件、改什么），
+              就不需要 Plan Mode。Plan 是给那些你<strong>脑子里装不下</strong>的任务用的。
+            </p>
+          </div>
+        </div>
+
+        {/* Failure 2 */}
+        <div
+          className="rounded-lg overflow-hidden"
+          style={{
+            border: '1px solid var(--color-border)',
+            borderLeft: '3px solid #f87171',
           }}
-        />
+        >
+          <div className="px-5 py-4">
+            <h4 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              2. 计划粒度太粗（Too-coarse Plan）
+            </h4>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              症状：计划只有"Phase 1: 实现后端 → Phase 2: 实现前端 → Phase 3: 集成测试"。
+              每个 Phase 都太大，无法独立验证。
+            </p>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              根因：prompt 中没有要求细粒度。Claude 默认给的粒度取决于上下文 --
+              如果你不明确要求，它可能给你一个高层概述而不是可执行的步骤。
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong>修复方法</strong>：在 Plan prompt 中加约束："如果任何 Phase 的改动超过 N 行，
+              拆成更小的子步骤"，"每个 Phase 必须能在 10 分钟内完成和验证"。
+            </p>
+          </div>
+        </div>
+
+        {/* Failure 3 */}
+        <div
+          className="rounded-lg overflow-hidden"
+          style={{
+            border: '1px solid var(--color-border)',
+            borderLeft: '3px solid #f87171',
+          }}
+        >
+          <div className="px-5 py-4">
+            <h4 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              3. 没有验证步骤（No Verification Steps）
+            </h4>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              症状：计划列出了要做什么，但没有说怎么确认做对了。
+              执行完一个 Phase 后你不知道该看什么、测什么、验什么。
+            </p>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              根因：Claude 倾向于输出"行动步骤"而省略"验证步骤"，因为验证步骤不是"做新东西"而是"检查旧东西"。
+              你需要在 prompt 中<strong>明确要求</strong>。
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong>修复方法</strong>：在 Plan prompt 中写死要求："每个 Phase 必须包含验证步骤，
+              包括具体的测试命令和预期输出"。如果 Claude 给的 Plan 没有验证步骤，<strong>拒绝接受</strong>，
+              要求它补充。
+            </p>
+          </div>
+        </div>
+
+        {/* Failure 4 */}
+        <div
+          className="rounded-lg overflow-hidden"
+          style={{
+            border: '1px solid var(--color-border)',
+            borderLeft: '3px solid #f87171',
+          }}
+        >
+          <div className="px-5 py-4">
+            <h4 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              4. 上下文满了才做 Plan（Planning on Full Context）
+            </h4>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              症状：在一个已经聊了很久的会话中，上下文占用 &gt;60%，这时才切换到 Plan Mode 做规划。
+              Plan 的质量明显下降 -- 遗漏你之前提到过的约束，或者给出和之前讨论矛盾的方案。
+            </p>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              根因：上下文窗口快满时，Claude 对早期内容的"注意力"下降。
+              你在会话开头提的约束可能被后来的大量代码和讨论"稀释"了。
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong>修复方法</strong>：
+              (1) 在做 Plan 之前先 <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>/compact</code> 压缩上下文；
+              (2) 或者开一个新会话，把关键约束重新列一遍再做 Plan；
+              (3) 经验法则：如果你感觉 Claude 开始"忘事"了，就该 compact 或重开了。
+            </p>
+          </div>
+        </div>
+
+        <QualityCallout title="自检清单">
+          <p>
+            在接受 Claude 的 Plan 之前，检查以下四项：
+          </p>
+          <ol className="mt-2 space-y-1 list-decimal list-inside">
+            <li>每个 Phase 是否有验证步骤？</li>
+            <li>每个 Phase 的改动量是否合理（&lt;200 行）？</li>
+            <li>是否有回滚方案？</li>
+            <li>Phase 之间的依赖关系是否清晰？</li>
+          </ol>
+          <p className="mt-2">
+            如果任何一项答案为"否"，要求 Claude 补充。不要带着残缺的 Plan 开始 Execute。
+          </p>
+        </QualityCallout>
       </section>
 
       {/* ═══════════════════════════════════════════════
@@ -1915,52 +961,54 @@ Step 3: 验证集成 (基本检查)
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          练习
+          本章练习
         </h2>
 
         <ExerciseCard
           tier="l1"
-          title="配置 PostToolUse Prettier Hook"
-          description="在你的项目中配置一个 PostToolUse Hook，让 Claude 每次编辑 .ts/.tsx 文件后自动运行 prettier --write。验证：让 Claude 写一段故意格式混乱的代码，确认保存后自动被格式化。"
+          title="Plan Mode 添加 CRUD 端点"
+          description="选择一个你有的（或新建一个）Express/Fastify/Hono API 项目。使用完整的四阶段流程（Explore → Diagnose → Plan → Execute）为一个资源添加完整的 CRUD 端点。截图记录每个阶段的 token 消耗量。"
           checkpoints={[
-            '.claude/settings.json 中正确配置了 PostToolUse Hook',
-            'Hook 脚本能正确解析 stdin JSON payload',
-            '只对 .ts/.tsx 文件触发格式化（其他类型跳过）',
-            '格式化失败时不阻断 Claude 的操作（exit 0）',
-            'permissions.allow 中白名单了 prettier 命令',
+            '完成了 Explore 阶段，输出了现状分析',
+            '完成了 Diagnose 阶段，列出了硬约束和软约束',
+            'Plan 中每个 Phase 都有验证步骤',
+            '逐 Phase 执行，每个 Phase 验证后才进入下一个',
+            '记录了总 token 消耗（对比直接让 Claude 做的消耗）',
           ]}
         />
 
         <ExerciseCard
           tier="l2"
-          title="搭建完整四层质量流水线"
-          description="实现 5.3 节的完整四层流水线：Layer 1 自动格式化、Layer 2 自动 lint、Layer 3 完成度检查、Layer 4 危险命令拦截。在你的 Express API 项目上完整测试每一层。"
+          title="中等功能的计划 vs 实际偏差分析"
+          description="在你的真实项目中，选一个中等规模的功能（预计 3-5 个文件的改动）。用 Plan Mode 做完整规划，然后执行。记录：Plan 预测的文件列表 vs 实际修改的文件列表、Plan 预测的改动量 vs 实际改动量、执行中回退到 Plan 的次数和原因。"
           checkpoints={[
-            '四层 Hook 全部在 .claude/settings.json 中正确配置',
-            'Layer 1: 编辑 .ts 文件后自动格式化生效',
-            'Layer 2: 编辑后 ESLint 自动修复生效',
-            'Layer 3: Claude 停止时 Prompt hook 正确检查完成度',
-            'Layer 4: 执行 rm -rf / 等危险命令被 exit 2 拦截',
-            'permissions.allow 白名单配置正确，Hook 脚本不被权限拦截',
-            '/hooks 命令显示所有 Hook 正确加载',
+            '功能复杂度适中（3-5 文件改动，不是一行 fix）',
+            '记录了 Plan 和实际执行的偏差',
+            '分析了偏差的原因（是 Plan 不够详细？还是需求变了？）',
+            '总结了一条改进 Plan 质量的经验',
           ]}
         />
 
         <ExerciseCard
           tier="l3"
-          title="编写 Code Review Skill 并实战测试"
-          description="基于 5.6 节实现完整的 Code Review Skill，然后在 3 个真实 PR 上测试它。记录每次 review 的质量：是否发现了真实问题？是否有大量误报？根据结果迭代优化 Skill 模板。"
+          title="有 Plan vs 无 Plan 的定量对比"
+          description={'选同一类型的两个任务（比如都是「给现有 API 加一个新资源」）。一个用 Plan Mode 的四阶段流程，一个直接用 Normal Mode 让 Claude 做。定量比较：token 消耗、总耗时、返工次数（Claude 做了又改的次数）、最终代码质量（lint 警告数、测试覆盖率、响应格式一致性）。'}
           checkpoints={[
-            '.claude/skills/review.md 文件正确创建并可通过 /review 触发',
-            'context: fork 隔离执行，不污染主会话',
-            '动态上下文 (!git diff) 正确注入',
-            '在 PR #1 上测试：review 输出格式化且有行号引用',
-            '在 PR #2 上测试：发现至少一个自动化工具未检测到的问题',
-            '在 PR #3 上测试：根据前两次结果优化后的 Skill 更精准',
-            '记录三次测试的误报率，目标控制在 30% 以下',
+            '两个任务的类型和复杂度可比',
+            '记录了 token 消耗的定量数据',
+            '记录了返工次数（rejected edits / redo prompts）',
+            '评估了最终代码质量的可量化指标',
+            '写了一段结论：什么场景下 Plan Mode 的 ROI 为正',
           ]}
         />
       </section>
+
+      <ReferenceSection version="Claude Code v1.x">
+        <div className="text-sm space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
+          <p>EDPE 提示模板完整版（待补充）</p>
+          <p>Plan Mode 配置选项（待补充）</p>
+        </div>
+      </ReferenceSection>
     </div>
   )
 }

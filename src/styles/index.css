@@ -11,6 +11,7 @@
   --color-bg-tertiary: #161636;
   --color-bg-elevated: #1c1c42;
   --color-bg-surface: rgba(255, 255, 255, 0.03);
+  --color-bg-reference: rgba(255, 255, 255, 0.015);
 
   /* Text */
   --color-text-primary: #e2e8f0;
@@ -51,6 +52,7 @@
   --color-bg-tertiary: #eeeeee;
   --color-bg-elevated: #ffffff;
   --color-bg-surface: rgba(0, 0, 0, 0.02);
+  --color-bg-reference: rgba(0, 0, 0, 0.02);
   --color-text-primary: #1a1a2e;
   --color-text-secondary: #6b7280;
   --color-text-muted: #9ca3af;

@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { allChapters, getTierColor, getTierLabel, type Chapter, type Tier } from '../data/toc'
+import { allChapters, quickPaths, getTierColor, getTierLabel, type Chapter, type Tier } from '../data/toc'
 import { AnimationWrapper } from '../components/animation/AnimationWrapper'
 
 const LazyClaudeCodeIntro = lazy(() => import('../remotion/shared/ClaudeCodeIntro'))
@@ -63,8 +63,8 @@ function HeroSection() {
           className="text-lg max-w-2xl leading-relaxed"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          由浅入深的 AI 辅助开发能力养成系统。按开发生命周期编排——AI 介入越早，操作越高阶。
-          无论你是第一次接触 Claude Code 还是想深入 Agent Teams，都能找到你的起点。
+          由浅入深的 AI 辅助开发能力养成系统。从 Prompt Engineering 到 Harness Engineering——
+          不只是学会和 AI 对话，更要学会构建 AI 周围的基础设施。
         </p>
 
         {/* Remotion animation placeholder */}
@@ -89,12 +89,7 @@ function HeroSection() {
 /* ─── Route Guide ────────────────────────────── */
 
 function RouteGuide() {
-  const routes = [
-    { label: '第一次使用 Claude Code', path: '顺序阅读 Ch0 → Ch1 → Ch2 → ...' },
-    { label: '有经验，想快速进阶', path: 'Ch0(速览) → Ch3 → Ch5 → Ch6 → 感兴趣的章节' },
-    { label: '关注架构与治理', path: '每章全读，重点看决策框架和质量线段落' },
-    { label: '需要决策依据', path: 'Ch0 摘要 → 每章质量线 → Ch9' },
-  ]
+  const navigate = useNavigate()
 
   return (
     <section>
@@ -103,7 +98,7 @@ function RouteGuide() {
         style={{ color: 'var(--color-text-primary)' }}
       >
         <span className="font-mono text-sm" style={{ color: 'var(--color-accent)' }}>//</span>
-        推荐路线
+        快速路径
       </h2>
 
       <div
@@ -113,26 +108,54 @@ function RouteGuide() {
           border: '1px solid var(--color-border)',
         }}
       >
-        {routes.map((route, i) => (
+        {quickPaths.map((path, i) => (
           <div
             key={i}
-            className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 px-5 py-3.5"
+            className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-5 py-3.5"
             style={{
-              borderBottom: i < routes.length - 1 ? '1px solid var(--color-border)' : 'none',
+              borderBottom: i < quickPaths.length - 1 ? '1px solid var(--color-border)' : 'none',
             }}
           >
+            <div className="flex items-center gap-2 shrink-0 sm:w-40">
+              <span
+                className="text-sm font-medium"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
+                {path.label}
+              </span>
+              <span
+                className="text-[10px] font-mono"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                ~{path.estimatedMinutes}m
+              </span>
+            </div>
+
             <span
-              className="text-sm font-medium shrink-0 sm:w-52"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              {route.label}
-            </span>
-            <span
-              className="text-xs font-mono"
+              className="text-xs hidden sm:inline"
               style={{ color: 'var(--color-text-muted)' }}
             >
-              {route.path}
+              {path.target}
             </span>
+
+            <div className="flex items-center gap-1 flex-wrap sm:ml-auto">
+              {path.chapters.map((chId, ci) => (
+                <button
+                  key={chId}
+                  onClick={() => navigate(`/${chId}`)}
+                  className="text-[10px] font-mono px-1.5 py-0.5 rounded hover:underline transition-colors"
+                  style={{
+                    background: 'var(--color-bg-tertiary)',
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
+                  {chId.replace('ch', 'Ch')}
+                  {ci < path.chapters.length - 1 && (
+                    <span className="ml-1" style={{ color: 'var(--color-text-muted)' }}>→</span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -147,20 +170,20 @@ function TierOverview() {
     {
       tier: 'l1',
       title: 'L1 基础',
-      desc: '编码阶段介入。掌握 Prompt 工程和基础操作，能用 Claude Code 高效完成编码任务。',
-      chapters: 'Ch0 - Ch2',
+      desc: '和 AI 对话。掌握 Prompt 工程和 Vibe Coding 的边界，能高效完成编码任务。',
+      chapters: 'Ch01 - Ch03',
     },
     {
       tier: 'l2',
       title: 'L2 进阶',
-      desc: '设计阶段介入。掌握 Plan Mode、CLAUDE.md、Hooks、Skills，构建自动化工作流。',
-      chapters: 'Ch3 - Ch5',
+      desc: '构建驾驭系统。掌握 CLAUDE.md、Plan Mode、Skills、Hooks，构建自动化 Harness。',
+      chapters: 'Ch04 - Ch07',
     },
     {
       tier: 'l3',
       title: 'L3 高阶',
-      desc: '需求阶段介入。掌握 Subagent、Agent Teams、MCP、社区方法论，管理全开发生命周期。',
-      chapters: 'Ch6 - Ch9',
+      desc: '规模化与治理。掌握多代理协作、SDK 集成、工作流设计、组织级治理。',
+      chapters: 'Ch08 - Ch11',
     },
   ]
 

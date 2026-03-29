@@ -1,81 +1,84 @@
 import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
-import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
 import { DecisionTree } from '../../components/content/DecisionTree'
-import type { TreeNode } from '../../components/content/DecisionTree'
+import { ReferenceSection } from '../../components/content/ReferenceSection'
 import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
 
-const LazyAgentTeamsTopology = lazy(() => import('../../remotion/ch07/AgentTeamsTopology'))
+const LazyHookEventFlow = lazy(() => import('../../remotion/ch05/HookEventFlow'))
 
 /* ═══════════════════════════════════════════════
-   Decision Tree: Subagent vs Teams 选择
+   Decision Tree Data: Handler Type Selection
    ═══════════════════════════════════════════════ */
 
-const topologyChoiceTree: TreeNode = {
+const handlerTypeTree = {
   id: 'root',
-  question: '你的任务需要多个 AI 之间共享信息吗？',
-  description: '选择 Subagent 星型拓扑还是 Teams 网状拓扑，取决于协作需求。',
+  question: '你的 Hook 需要什么能力？',
+  description: '根据判断逻辑的复杂度选择最合适的 handler 类型。',
   children: [
     {
-      label: '不需要，各自独立完成即可',
+      label: '确定性规则（正则、路径、exit code）',
       node: {
-        id: 'independent',
-        question: '任务之间有先后依赖吗？',
+        id: 'deterministic',
+        question: '需要外部服务参与吗？',
         children: [
           {
-            label: '有依赖，前一个的输出是后一个的输入',
+            label: '不需要，本地脚本即可',
             node: {
-              id: 'pipeline',
-              question: '推荐：Subagent 流水线',
+              id: 'command',
+              question: '推荐：command handler',
               result: {
-                text: '使用 Subagent 流水线（第 6 章的三阶段模式）。主 Agent 负责在阶段之间传递结果。简单、可预测、成本可控。',
+                text: '通过 stdin 接收 JSON，用 shell/Node 脚本做确定性判断，通过 exit code 返回决策。零 token 消耗，毫秒级执行。',
                 tier: 'l1',
               },
+              description: '适用：格式化、lint、路径黑名单、危险命令拦截、密钥泄露扫描。',
             },
           },
           {
-            label: '无依赖，可以并行',
+            label: '需要调用远程 API / 团队服务',
             node: {
-              id: 'parallel',
-              question: '推荐：Subagent 并行',
+              id: 'http',
+              question: '推荐：http handler',
               result: {
-                text: '使用多个 Subagent 并行执行。主 Agent 汇总结果。这是最简单的并行化方式，适合搜索、分析等只读任务。',
-                tier: 'l1',
+                text: '将事件 payload POST 到外部 HTTP 端点，由远程服务返回决策。适合集中式策略管控和审计日志。',
+                tier: 'l2',
               },
+              description: '适用：Slack 通知、集中式安全策略、CI/CD 触发、合规审计。',
             },
           },
         ],
       },
     },
     {
-      label: '需要，Agent 之间需要协调',
+      label: '需要语义理解（LLM 判断）',
       node: {
-        id: 'coordination',
-        question: '协调方式是什么？',
+        id: 'semantic',
+        question: '判断过程需要多少步骤？',
         children: [
           {
-            label: '通过文件系统间接协调就够了',
+            label: '单次判断即可',
             node: {
-              id: 'file-coord',
-              question: '推荐：Subagent + 文件约定',
+              id: 'prompt',
+              question: '推荐：prompt handler',
               result: {
-                text: '用 Subagent 配合文件约定（如 Agent A 写 spec.md，Agent B 读 spec.md）。成本低于 Teams，适合简单的信息传递。',
+                text: '用一个 prompt 做单轮 LLM 判断："这次修改是否完成了所有任务？" 消耗约 200-500 token，但能处理模糊判断。',
                 tier: 'l2',
               },
+              description: '适用：完成度检查、代码质量评估、变更摘要生成。',
             },
           },
           {
-            label: '需要实时感知其他 Agent 的进度和变更',
+            label: '需要多步验证（读文件、跑测试等）',
             node: {
-              id: 'realtime',
-              question: '推荐：Agent Teams',
+              id: 'agent',
+              question: '推荐：agent handler',
               result: {
-                text: '启用 Agent Teams。Teammates 通过共享任务列表和文件更新进行协作。适合跨层变更（前端+后端+测试同时进行）等场景。注意：Teams 成本随 teammate 数量线性增长。',
+                text: '启动一个最多 50 轮的子 Agent，可使用工具（读文件、执行命令）做深度验证。功能最强但 token 消耗最大，慎用。',
                 tier: 'l3',
               },
+              description: '适用：自动 code review、架构一致性验证、跨文件依赖检查。',
             },
           },
         ],
@@ -85,7 +88,7 @@ const topologyChoiceTree: TreeNode = {
 }
 
 /* ═══════════════════════════════════════════════
-   Chapter 7 Component
+   Chapter 7: Hooks 自动化
    ═══════════════════════════════════════════════ */
 
 export default function Ch07() {
@@ -108,29 +111,28 @@ export default function Ch07() {
             className="text-xs uppercase tracking-widest font-medium"
             style={{ color: 'var(--color-text-muted)' }}
           >
-            Teams + MCP
+            Automation Layer
           </span>
         </div>
         <h1
           className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          用 AI 做架构决策：多角度分析与验证
+          Hooks 自动化：让质量检查永不遗漏
         </h1>
         <p
           className="text-lg leading-relaxed max-w-3xl"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          第 6 章的 Subagent 是"主从"关系 —— 主 Agent 发号施令，Subagent 听命执行。
-          但真实的软件工程不是独裁制：前端需要知道后端改了什么 API，测试需要知道哪些模块变了，
-          架构师需要看到所有人的方案才能做决策。
-          这一章我们升级到 Agent Teams（对等协作）和 MCP（连接外部系统），
-          让 AI 不仅能和 AI 协作，还能操作浏览器、查数据库、调 API。
+          CLAUDE.md 告诉 Claude "要遵守什么规范"，但它是偏好，不是保障 --
+          在第 20 轮对话中，Claude 可能忘记跑 ESLint。
+          Hooks 系统在 Claude 的每个操作节点插入自动化检查，把"希望它做"变成"保证它做"。
+          这一章，我们从零构建一条四层质量流水线，在实战中学会 21+ 事件、4 种 handler、exit code 语义。
         </p>
       </header>
 
       {/* ═══════════════════════════════════════════════
-          Section 7.1: Agent Teams 架构
+          Section 7.1: 为什么需要 Hooks
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -140,460 +142,445 @@ export default function Ch07() {
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          7.1 Agent Teams 架构
+          7.1 为什么需要 Hooks
         </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          你的 CLAUDE.md 写着"每次修改代码后必须通过 ESLint"。前 5 轮对话，Claude 记得住。
+          到第 20 轮呢？随着上下文变长，指令被稀释，Claude 可能会直接跳过 lint 检查。
+          这不是 Claude 的恶意 -- 是 LLM 注意力衰减的客观规律。
+        </p>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Hook 的解决方案很简单：<strong>不依赖模型记住规则，让 harness 强制执行。</strong>
+          Claude 每次编辑文件后，PostToolUse 事件自动触发，ESLint 自动运行 -- 不管 Claude 记不记得，不管是第 1 轮还是第 100 轮。
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="hooks-vs-instructions.txt"
+          code={`CLAUDE.md 指令（偏好）                    Hooks（保障）
+═══════════════════════                  ═══════════════════════
+"请在编辑后运行 ESLint"                  编辑后自动运行 ESLint
+依赖模型注意力                            依赖事件触发，确定性执行
+上下文稀释后可能遗忘                      永不遗忘
+建议性                                    强制性
+token 消耗（每轮提醒）                    零 token 消耗（command handler）
+适合：风格偏好、思考方式                  适合：质量检查、安全规则`}
+        />
+
+        <QualityCallout title="CLAUDE.md 是偏好，Hooks 是保障">
+          把 CLAUDE.md 想象成团队的编码规范文档 -- 新人可能忘记遵守。
+          Hooks 则像 CI/CD 流水线 -- 不管谁提交代码，检查都会自动运行。
+          最佳实践：用 CLAUDE.md 传达"为什么"和"怎么想"，用 Hooks 保障"必须做什么"。
+        </QualityCallout>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          数据佐证：LangChain 在仅修改 harness 配置（增加 Hooks 自动化检查、不改模型和 prompt）后，
+          SWE-bench 基准测试得分提升了 <strong>+13.7%</strong>。
+          这说明工程化 harness 对输出质量的影响可以和 prompt 工程相当。
+        </p>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 7.2: 实战：构建质量流水线
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          7.2 实战：构建质量流水线
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          不讲理论了，直接动手。我们要逐层构建一条四层质量流水线。
+          每一层都会自然引出 Hook 的核心概念 -- 事件、handler、exit code、matcher。
+          建完之后，你会发现你已经掌握了 Hook 系统的所有关键知识。
+        </p>
 
         <AnimationWrapper
-          component={LazyAgentTeamsTopology}
-          durationInFrames={180}
-          fallbackText="Agent Teams 拓扑动画加载失败"
+          component={LazyHookEventFlow}
+          durationInFrames={210}
+          fallbackText="Hook 事件流动画加载失败"
         />
 
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Subagent 是<strong style={{ color: 'var(--color-text-primary)' }}>星型拓扑</strong>：
-          所有信息必须经过主 Agent 中转。Agent Teams 是<strong style={{ color: 'var(--color-text-primary)' }}>网状拓扑</strong>：
-          每个 teammate 有自己的收件箱和共享的任务列表，可以直接感知其他 teammate 的进度。
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title="topology-comparison.sh"
-          code={`# ═══ Subagent 星型拓扑 ═══
-#
-#         主 Agent
-#        /   |   \\
-#       v    v    v
-#     Sub1  Sub2  Sub3
-#
-# - 单向通信：主 → 子
-# - 子之间不可见
-# - 主 Agent 是唯一的信息中心
-# - 主 Agent 上下文承载所有协调信息
-
-# ═══ Agent Teams 网状拓扑 ═══
-#
-#     Team Lead
-#       ↕
-#    ┌──┴──┐
-#    ↕     ↕
-#  前端  后端  ←→  测试
-#    ↕           ↕
-#    └─────→────┘
-#
-# - 双向通信（通过共享任务列表）
-# - Teammate 可以看到其他人的任务状态
-# - 通过文件和任务更新共享信息
-# - Team Lead 负责分解任务和最终汇总`}
-        />
-
-        <div
-          className="rounded-xl p-5"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <h4
-            className="text-sm font-semibold mb-4"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            为什么需要从 Subagent 升级到 Teams？
-          </h4>
-          <div className="space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <p>
-              <strong style={{ color: 'var(--color-text-primary)' }}>场景：</strong>
-              后端 Agent 修改了一个 API 的返回格式（从 <code style={{ color: 'var(--color-accent)' }}>{'{ data: [] }'}</code> 改为
-              <code style={{ color: 'var(--color-accent)' }}> {'{ items: [], total: number }'}</code>），
-              前端 Agent 需要知道这个变更才能正确更新调用代码，测试 Agent 需要知道新的响应结构才能写正确的断言。
-            </p>
-            <p>
-              <strong style={{ color: '#f87171' }}>Subagent 的问题：</strong>
-              主 Agent 必须先等后端 Subagent 完成，读取它的摘要，然后把变更信息手动转发给前端和测试 Subagent。
-              每一个信息传递都增加主 Agent 的上下文负担，且容易丢失细节。
-            </p>
-            <p>
-              <strong style={{ color: '#4ade80' }}>Teams 的解法：</strong>
-              后端 teammate 修改 API 后更新任务状态，前端和测试 teammate 通过任务列表自动感知到变更。
-              Team Lead 只需要做顶层协调，不需要当信息中转站。
-            </p>
-          </div>
-        </div>
-
-        <DecisionTree
-          root={topologyChoiceTree}
-          title="选择协作拓扑"
-        />
-
-        <CodeBlock
-          language="bash"
-          title="enable-teams.sh"
-          code={`# 启用 Agent Teams（实验性功能）
-export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
-
-# 然后正常启动 Claude Code
-claude
-
-# 在对话中，你可以让 Claude 使用 Teams 模式：
-# "用 Agent Teams 完成这个跨前后端的功能开发，
-#  分配 3 个 teammate：frontend、backend、test"
-
-# 注意：这是实验性功能，行为可能在未来版本中变化`}
-        />
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 7.2: Teams 实战
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          7.2 Teams 实战
-        </h2>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          让我们通过一个真实场景来看 Agent Teams 是如何工作的：
-          实现一个"用户通知系统"，涉及后端 API、前端 UI、和端到端测试。
-        </p>
-
-        {/* ── 任务分解 ── */}
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          跨层并行：Team Lead + Teammates
-        </h3>
-
-        <CodeBlock
-          language="typescript"
-          title="teams-task-decomposition.ts"
-          code={`// Team Lead 的任务分解策略：
-// 3-5 个 teammates，每个 5-6 个 tasks
-
-// ═══ Team Lead ═══
-// 职责：任务分解、依赖管理、最终验收
-// 不直接写代码
-
-// ═══ Teammate: backend ═══
-// Tasks:
-// 1. 创建 Notification 数据模型和 migration
-// 2. 实现 GET /api/notifications 端点（分页）
-// 3. 实现 PATCH /api/notifications/:id（标记已读）
-// 4. 实现 POST /api/notifications/read-all（批量标记）
-// 5. 添加 WebSocket 推送通知事件
-// File ownership: src/models/*, src/routes/notifications*
-
-// ═══ Teammate: frontend ═══
-// Tasks:
-// 1. 创建 NotificationBell 组件（显示未读数）
-// 2. 创建 NotificationList 组件（下拉列表）
-// 3. 实现 useNotifications hook（数据获取+缓存）
-// 4. 集成 WebSocket 实时更新
-// 5. 添加"全部标记已读"交互
-// File ownership: src/components/notification/*, src/hooks/*
-
-// ═══ Teammate: test ═══
-// Tasks:
-// 1. 后端 API 单元测试
-// 2. 前端组件渲染测试
-// 3. WebSocket 集成测试
-// 4. 端到端测试：创建通知→显示→标记已读
-// File ownership: tests/*, __tests__/*
-
-// ═══ 依赖管理（blockedBy / blocks）═══
-// frontend.task3 blockedBy backend.task2  (hook 依赖 API)
-// frontend.task4 blockedBy backend.task5  (WS 客户端依赖服务端)
-// test.task1 blockedBy backend.task2      (API 测试依赖 API 实现)
-// test.task4 blockedBy frontend.task5     (E2E 依赖全部完成)
-
-// ═══ 关键约束 ═══
-// - File ownership 防止冲突：
-//   backend 只能改 src/models/ 和 src/routes/
-//   frontend 只能改 src/components/ 和 src/hooks/
-//   test 只能改 tests/ 和 __tests__/
-// - Teammates 不能直接修改其他人的文件`}
-          highlightLines={[33, 34, 35, 36]}
-        />
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          <strong style={{ color: 'var(--color-text-primary)' }}>File Ownership</strong> 是 Teams
-          中最重要的约束 —— 它相当于传统团队中的"代码负责制"。没有文件所有权划分，
-          多个 teammate 可能同时修改同一个文件，导致冲突和覆盖。
-        </p>
-
-        {/* ── 通信限制 ── */}
+        {/* ── Layer 1: Auto-format ── */}
         <h3
           className="text-lg font-semibold mt-10"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          通信限制：文件和任务是唯一的桥梁
+          Layer 1: 自动格式化（PostToolUse + command + Prettier）
         </h3>
 
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          这是 Agent Teams 中最容易被误解的部分：teammate 之间<strong style={{ color: 'var(--color-text-primary)' }}>不能直接对话</strong>。
-          一个 teammate 的文本输出对其他 teammate 是不可见的。它们之间唯一的通信渠道是：
+          目标：Claude 每次编辑或创建文件后，自动运行 Prettier 格式化。
+          这是最简单的 Hook，也是理解整个系统的切入点。
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div
-            className="rounded-xl p-5"
-            style={{
-              background: 'var(--color-bg-secondary)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <h4
-              className="text-sm font-semibold mb-2 flex items-center gap-2"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              <span style={{ color: 'var(--color-accent)' }}>1</span> 文件系统
-            </h4>
-            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              Backend teammate 创建了 <code style={{ color: 'var(--color-accent)' }}>src/routes/notifications.ts</code>，
-              Frontend teammate 可以读取它来了解 API 结构。
-              这是最可靠的信息传递方式。
-            </p>
-          </div>
-          <div
-            className="rounded-xl p-5"
-            style={{
-              background: 'var(--color-bg-secondary)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <h4
-              className="text-sm font-semibold mb-2 flex items-center gap-2"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              <span style={{ color: 'var(--color-accent)' }}>2</span> 任务状态更新
-            </h4>
-            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              Backend teammate 完成 task2 后更新状态为"done"，
-              Frontend teammate 的被阻塞任务自动解除，开始执行。
-              任务状态是协调进度的核心机制。
-            </p>
-          </div>
-        </div>
-
-        <QualityCallout title="Teams 的通信哲学">
-          <p>
-            Teams 刻意限制了 teammate 之间的直接通信 —— 这不是缺陷，而是设计。
-            如果允许自由对话，N 个 teammate 之间会产生 N*(N-1)/2 条通信链路，
-            上下文爆炸且不可预测。通过文件和任务状态这种"结构化通信"，
-            信息传递变得可追溯、可审计。这和微服务之间用 API 而非共享内存通信是同一个道理。
-          </p>
-        </QualityCallout>
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 7.3: 高级模式
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          7.3 高级模式
-        </h2>
-
-        {/* ── 竞争假说 ── */}
-        <h3
-          className="text-lg font-semibold mt-4"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          模式 1：竞争假说 —— 多角度排查同一个问题
-        </h3>
-
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          当面对一个复杂 bug 或架构决策时，让 3 个 teammate 从不同角度同时调查，
-          最终由 Team Lead 综合各方分析做出判断。
+          先写 Hook 脚本。它通过 stdin 接收 JSON payload（包含工具名和输入参数），
+          提取文件路径后运行 Prettier。脚本的 exit code 决定 Claude 下一步怎么做。
         </p>
 
         <CodeBlock
-          language="typescript"
-          title="competing-hypotheses.ts"
-          code={`// 场景：API 响应变慢，P99 延迟从 200ms 上升到 800ms
-// 不确定是数据库、应用层还是网络问题
+          language="bash"
+          title=".claude/hooks/auto-format.sh"
+          code={`#!/bin/bash
+# PostToolUse hook: 自动格式化被修改的文件
+# 通过 stdin 接收 JSON payload，提取文件路径后运行 prettier
 
-// ═══ Teammate: db-investigator ═══
-// 假说："数据库查询慢了"
-// 调查方向：
-// - 分析慢查询日志
-// - 检查索引使用情况
-// - 查看数据库连接池状态
-// - 检查最近的 migration 是否影响了查询计划
+set -euo pipefail
 
-// ═══ Teammate: app-investigator ═══
-// 假说："应用层有性能退化"
-// 调查方向：
-// - 检查最近 10 次部署的代码变更
-// - 分析内存使用趋势
-// - 检查是否有 N+1 查询引入
-// - 查看中间件链是否有阻塞操作
+# 1. 从 stdin 读取事件 payload
+PAYLOAD=$(cat)
 
-// ═══ Teammate: infra-investigator ═══
-// 假说："基础设施/网络问题"
-// 调查方向：
-// - 检查 CDN 和负载均衡配置变更
-// - 分析网络延迟指标
-// - 检查容器资源限制
-// - 查看是否有其他服务争抢资源
+# 2. 提取工具名和文件路径
+TOOL_NAME=$(echo "$PAYLOAD" | jq -r '.tool_name // empty')
+FILE_PATH=$(echo "$PAYLOAD" | jq -r '.tool_input.file_path // .tool_input.path // empty')
 
-// ═══ Team Lead 汇总 ═══
-// 三个角度的调查结果汇总后：
-// - db-investigator: "发现一个缺少索引的查询，但影响只有 ~50ms"
-// - app-investigator: "发现最近一次部署引入了同步日志写入"
-// - infra-investigator: "基础设施正常，无异常"
-//
-// 结论：主因是同步日志（~500ms），次因是缺少索引（~50ms）
-// 如果只从一个角度调查，可能只找到部分原因`}
+# 3. 只处理 Edit 和 Write 工具
+if [[ "$TOOL_NAME" != "Edit" && "$TOOL_NAME" != "Write" ]]; then
+  exit 0
+fi
+
+# 4. 文件路径为空则跳过
+if [[ -z "$FILE_PATH" || ! -f "$FILE_PATH" ]]; then
+  exit 0
+fi
+
+# 5. 文件类型过滤
+case "$FILE_PATH" in
+  *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.scss|*.html|*.md|*.yaml|*.yml)
+    ;; # 支持的文件类型，继续
+  *)
+    exit 0 ;; # 不支持的文件类型，跳过
+esac
+
+# 6. 运行 prettier，失败时降级（不阻断工作流）
+if npx prettier --write "$FILE_PATH" 2>/dev/null; then
+  echo "Formatted: $FILE_PATH"
+else
+  echo "Prettier skipped: $FILE_PATH" >&2
+fi
+
+exit 0`}
+          highlightLines={[8, 11, 15, 34]}
         />
 
-        {/* ── 9-Agent Code Review ── */}
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          然后在 settings.json 中注册这个 Hook：
+        </p>
+
+        <ConfigExample
+          title=".claude/settings.json -- Layer 1"
+          language="json"
+          code={`{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "type": "command",
+        "command": "bash .claude/hooks/auto-format.sh"
+      }
+    ]
+  }
+}`}
+          annotations={[
+            { line: 3, text: 'PostToolUse: 工具执行完成后触发。这里指 Edit/Write 执行完毕后。' },
+            { line: 5, text: 'matcher: 正则匹配工具名。"Edit|Write" 只在 Edit 或 Write 工具触发时执行此 Hook。' },
+            { line: 6, text: 'type: "command" 表示执行本地脚本。零 token 消耗，毫秒级完成。' },
+            { line: 7, text: 'command: 要执行的 shell 命令。事件 payload 通过 stdin 传入。' },
+          ]}
+        />
+
+        <QualityCallout title="你刚学到的概念">
+          <strong>PostToolUse 事件</strong> -- 工具执行完毕后触发。<br />
+          <strong>command handler</strong> -- 执行本地脚本，通过 stdin 接收 JSON、通过 exit code 返回决策。<br />
+          <strong>matcher</strong> -- 正则表达式，过滤哪些工具触发此 Hook。<br />
+          <strong>exit 0</strong> -- Allow（放行），操作继续。stdout 输出作为上下文反馈给 Claude。
+        </QualityCallout>
+
+        {/* ── Layer 2: Auto-lint ── */}
         <h3
           className="text-lg font-semibold mt-10"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          模式 2：多 Agent 代码审查
+          Layer 2: 自动 Lint（PostToolUse + command + ESLint）
         </h3>
 
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          这是 Teams 最成熟的应用场景之一。HAMY Labs 公开了他们的 9-agent code review 方案，
-          Anthropic 自己也有一个 5-reviewer 的代码审查系统。
+          原理和 Layer 1 相同，只是换了工具。关键新知识：<strong>同一事件可以注册多个 Hook，按声明顺序执行。</strong>
+          所以我们先 format 再 lint -- 顺序在 settings.json 中体现。
         </p>
 
-        <div
-          className="rounded-xl p-5"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <h4
-            className="text-sm font-semibold mb-4"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            HAMY Labs 9-Agent Code Review
-          </h4>
-          <div className="space-y-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <p>9 个专项审查 Agent，各自聚焦一个维度：</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>1</span>
-                安全漏洞
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>2</span>
-                性能回退
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>3</span>
-                API 兼容性
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>4</span>
-                错误处理
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>5</span>
-                测试覆盖
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>6</span>
-                代码风格
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>7</span>
-                文档完整性
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>8</span>
-                依赖管理
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>9</span>
-                架构一致性
-              </div>
-            </div>
-          </div>
-        </div>
+        <CodeBlock
+          language="bash"
+          title=".claude/hooks/auto-lint.sh"
+          code={`#!/bin/bash
+# PostToolUse hook: 自动 lint 修复被修改的文件
+set -euo pipefail
 
-        <div
-          className="rounded-xl p-5 mt-4"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <h4
-            className="text-sm font-semibold mb-4"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            Anthropic 内部代码审查系统
-          </h4>
-          <div className="space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <p>Anthropic 自己用 AI 审查 AI 的代码，数据很有说服力：</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-              <div
-                className="rounded-lg p-4 text-center"
-                style={{
-                  background: 'var(--color-bg-tertiary)',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <div className="text-2xl font-bold" style={{ color: 'var(--color-accent)' }}>5</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>独立 Reviewer</div>
-              </div>
-              <div
-                className="rounded-lg p-4 text-center"
-                style={{
-                  background: 'var(--color-bg-tertiary)',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <div className="text-2xl font-bold" style={{ color: '#4ade80' }}>54%</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>实质性意见占比</div>
-              </div>
-              <div
-                className="rounded-lg p-4 text-center"
-                style={{
-                  background: 'var(--color-bg-tertiary)',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <div className="text-2xl font-bold" style={{ color: '#4ade80' }}>&lt;1%</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>误报率</div>
-              </div>
-            </div>
-            <p className="mt-3">
-              置信度评分机制：每条审查意见附带 0-100 的置信度分数。
-              只有置信度 &gt;80 的意见才会展示给人类 reviewer，这就是为什么误报率能低于 1%。
-            </p>
-          </div>
-        </div>
+PAYLOAD=$(cat)
+TOOL_NAME=$(echo "$PAYLOAD" | jq -r '.tool_name // empty')
+FILE_PATH=$(echo "$PAYLOAD" | jq -r '.tool_input.file_path // .tool_input.path // empty')
 
-        <QualityCallout title="大规模变更的审查策略">
-          <p>
-            Teams 的成本随 teammate 数量线性增长 —— 它不是在省钱，而是在省时间。
-            对于大规模变更（15-50+ 文件），推荐三层审查策略：
-          </p>
-          <ol className="list-decimal pl-5 mt-2 space-y-1">
-            <li><strong>自动化检查</strong>：lint、type check、测试 —— 零成本筛掉基础问题</li>
-            <li><strong>AI Review AI</strong>：多 Agent 并行审查 —— 以每分钟数百行的速度捕获 80% 的实质性问题</li>
-            <li><strong>人类战略审查</strong>：使用风险加权采样 —— 只深度审查高风险模块（安全、支付、核心业务逻辑），其余信任 AI 审查结果</li>
-          </ol>
+if [[ "$TOOL_NAME" != "Edit" && "$TOOL_NAME" != "Write" ]]; then
+  exit 0
+fi
+
+if [[ -z "$FILE_PATH" || ! -f "$FILE_PATH" ]]; then
+  exit 0
+fi
+
+# ESLint 只处理 JS/TS 文件
+case "$FILE_PATH" in
+  *.ts|*.tsx|*.js|*.jsx) ;;
+  *) exit 0 ;;
+esac
+
+# --fix 自动修复，失败时记录但不阻断
+if npx eslint --fix "$FILE_PATH" 2>/dev/null; then
+  echo "Linted: $FILE_PATH"
+else
+  echo "ESLint issues in: $FILE_PATH" >&2
+fi
+
+exit 0`}
+        />
+
+        {/* ── Layer 3: Completion check ── */}
+        <h3
+          className="text-lg font-semibold mt-10"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Layer 3: 完成度检查（Stop + prompt handler）
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Layer 1-2 是事后清理，Layer 3 是"拦截 Claude 想停下来的那一刻"。
+          当 Claude 认为任务完成、准备停止时，<strong>Stop 事件</strong>触发。
+          我们用一个 <strong>prompt handler</strong> 让 LLM 做一次语义检查 -- 判断任务是否真的完成了。
+        </p>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          prompt handler 不需要外部脚本，直接在配置中写 prompt。LLM 读取当前上下文，
+          返回 EXIT_CODE=0（完成）或 EXIT_CODE=1（有遗漏）。
+        </p>
+
+        <ConfigExample
+          title="Stop hook -- prompt handler"
+          language="json"
+          code={`{
+  "hooks": {
+    "Stop": [
+      {
+        "type": "prompt",
+        "prompt": "Review the conversation and all changes made. Check:\\n1. Were ALL tasks in the original request completed?\\n2. Were tests written or updated for new/changed code?\\n3. Are there any leftover TODO or FIXME comments?\\n4. Were any files left in a broken state?\\n\\nIf everything is complete, respond EXIT_CODE=0.\\nIf anything is missing, respond EXIT_CODE=1 and list what's incomplete."
+      }
+    ]
+  }
+}`}
+          annotations={[
+            { line: 3, text: 'Stop: Claude 准备停止时触发。没有 matcher -- Stop 是全局事件。' },
+            { line: 5, text: 'type: "prompt" 表示发送一个 prompt 给 LLM 做单轮判断。消耗约 200-500 token。' },
+            { line: 6, text: 'prompt 内容直接发送给 LLM。LLM 通过 EXIT_CODE=N 返回决策。' },
+          ]}
+        />
+
+        <QualityCallout title="新概念：exit code 语义">
+          <strong>exit 0 = Allow</strong> -- 放行，操作继续。<br />
+          <strong>exit 1 = Ask</strong> -- 暂停，让用户决定是否继续。适合"不确定"的灰色地带。<br />
+          <strong>exit 2 = Deny</strong> -- 直接拒绝，操作取消。适合确定性的安全规则。<br />
+          Layer 3 用 exit 1（Ask） -- 因为完成度判断是主观的，应该让用户拍板。
         </QualityCallout>
+
+        {/* ── Layer 4: Security gate ── */}
+        <h3
+          className="text-lg font-semibold mt-10"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Layer 4: 安全门禁（PreToolUse + command + 正则）
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          前三层都是"事后"Hook（PostToolUse、Stop），Layer 4 是"事前"拦截：
+          在 Claude 执行 Bash 命令<em>之前</em>，检查命令是否包含危险模式。
+          这是 <strong>PreToolUse 事件</strong>的核心用途。
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title=".claude/hooks/block-dangerous.sh"
+          code={`#!/bin/bash
+# PreToolUse hook: 拦截危险的 Bash 命令
+set -euo pipefail
+
+PAYLOAD=$(cat)
+TOOL_NAME=$(echo "$PAYLOAD" | jq -r '.tool_name // empty')
+
+# 只检查 Bash 工具
+if [[ "$TOOL_NAME" != "Bash" ]]; then
+  exit 0
+fi
+
+COMMAND=$(echo "$PAYLOAD" | jq -r '.tool_input.command // empty')
+
+# 危险命令黑名单（正则匹配）
+DANGEROUS_PATTERNS=(
+  "rm -rf /"
+  "rm -rf ~"
+  "rm -rf \\."
+  "DROP TABLE"
+  "DROP DATABASE"
+  "TRUNCATE TABLE"
+  "git push.*--force"
+  "git push.*-f "
+  "git reset --hard"
+  "chmod 777"
+  ":(){ :|:& };:"
+  "> /dev/sda"
+  "mkfs\\."
+  "dd if=.*of=/dev/"
+)
+
+for pattern in "\${DANGEROUS_PATTERNS[@]}"; do
+  if echo "$COMMAND" | grep -qiE "$pattern"; then
+    echo "BLOCKED: 检测到危险命令模式 '$pattern'" >&2
+    echo "原始命令: $COMMAND" >&2
+    echo "如需执行，请在终端中手动运行。" >&2
+    exit 2  # Deny -- 直接拒绝，不询问用户
+  fi
+done
+
+exit 0`}
+          highlightLines={[16, 39]}
+        />
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          注意 exit 2（Deny） -- 危险命令不是"可能有问题"，是"确定不该执行"。
+          Deny 意味着操作直接取消，不给用户选择的余地。
+          这是和 exit 1（Ask）的关键区别。
+        </p>
+
+        <QualityCallout title="新概念：PreToolUse 事件">
+          <strong>PreToolUse</strong> -- 工具调用<em>前</em>触发，可以拦截或修改操作。<br />
+          <strong>PostToolUse</strong> -- 工具调用<em>后</em>触发，用于后处理和反馈。<br />
+          Pre 可以 Deny 阻止操作，Post 只能反馈结果。这是两个事件的本质区别。
+        </QualityCallout>
+
+        {/* ── Complete pipeline ── */}
+        <h3
+          className="text-lg font-semibold mt-10"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          完整流水线：四层 Hook 整合
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+          把四层 Hook 组合到一个 settings.json 中。声明顺序就是同事件内的执行顺序。
+        </p>
+
+        <ConfigExample
+          title=".claude/settings.json -- 完整质量流水线"
+          language="json"
+          code={`{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "type": "command",
+        "command": "bash .claude/hooks/block-dangerous.sh"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "type": "command",
+        "command": "bash .claude/hooks/auto-format.sh"
+      },
+      {
+        "matcher": "Edit|Write",
+        "type": "command",
+        "command": "bash .claude/hooks/auto-lint.sh"
+      }
+    ],
+    "Stop": [
+      {
+        "type": "prompt",
+        "prompt": "Review all changes. Check: 1) All tasks done? 2) Tests written? 3) No TODOs left? 4) No broken files? EXIT_CODE=0 if complete, EXIT_CODE=1 if not."
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npx prettier*)",
+      "Bash(npx eslint*)"
+    ]
+  }
+}`}
+          annotations={[
+            { line: 3, text: 'PreToolUse: 工具执行前触发。安全门禁放在这里，在危险操作发生前拦截。' },
+            { line: 5, text: 'matcher: "Bash" 只匹配 Bash 工具调用。其他工具（Edit/Write）不触发此 Hook。' },
+            { line: 10, text: 'PostToolUse: 工具执行后触发。格式化和 lint 都在编辑完成后运行。' },
+            { line: 12, text: '"Edit|Write" 用正则 OR 语法匹配两个工具。' },
+            { line: 16, text: '同事件多个 Hook 按声明顺序执行：先 format（行 14）再 lint（行 19）。' },
+            { line: 22, text: 'Stop 事件不需要 matcher -- 全局触发。prompt handler 做语义检查。' },
+            { line: 29, text: 'permissions.allow 白名单让 Hook 脚本调用的工具不会被权限拦截。' },
+          ]}
+        />
+
+        <QualityCallout title="最严格胜出（Most Strict Wins）">
+          当同一事件注册多个 Hook 时，所有 Hook 都会执行（不会短路），最终取最严格的结果：
+          任何一个 Hook 返回 exit 2 → 整体 Deny；没有 Deny 但有 exit 1 → 整体 Ask；
+          全部 exit 0 → Allow。一个安全 Hook 的 Deny 就能否决所有其他 Hook 的 Allow。
+        </QualityCallout>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          恭喜！你已经构建了一条完整的质量流水线。回顾一下你学到的核心概念：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="concepts-learned.txt"
+          code={`通过构建流水线，你掌握了：
+
+事件（Events）
+  PreToolUse    工具执行前触发（可拦截）
+  PostToolUse   工具执行后触发（可反馈）
+  Stop          Claude 准备停止时触发
+
+Handler 类型
+  command       本地脚本，零 token，确定性执行
+  prompt        单轮 LLM 判断，少量 token
+
+配置元素
+  matcher       正则匹配工具名，过滤触发条件
+  exit code     0=Allow  1=Ask  2=Deny
+  执行顺序       声明顺序 = 执行顺序
+  最严格胜出     多个 Hook 结果取最严格的`}
+        />
+
+        <ExerciseCard
+          tier="l1"
+          title="构建你的质量流水线"
+          description="在你自己的项目中配置 Layer 1-4 的完整质量流水线。创建 .claude/hooks/ 目录，编写脚本，配置 settings.json。然后让 Claude 编辑一个文件，观察 PostToolUse Hook 是否自动触发格式化和 lint。"
+          checkpoints={[
+            '创建 .claude/hooks/ 目录和 3 个脚本文件',
+            '.claude/settings.json 包含 PreToolUse、PostToolUse、Stop 三个事件',
+            'Claude 编辑文件后自动格式化（观察 stdout 输出 "Formatted: ..."）',
+            '尝试让 Claude 执行 rm -rf /，确认被 Deny 拦截',
+            'permissions.allow 包含必要的白名单规则',
+          ]}
+        />
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 7.4: MCP —— 连接外部系统
+          Section 7.3: 进阶模式
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -603,427 +590,450 @@ claude
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          7.4 MCP：连接外部系统
+          7.3 进阶模式
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          到目前为止，Claude Code 只能操作文件系统和终端。
-          MCP（Model Context Protocol）让 Claude Code 可以连接任何外部系统 ——
-          浏览器、数据库、GitHub、Slack、你自己的内部工具。
+          7.2 用到了 command 和 prompt 两种 handler。实际上 Hook 系统还支持 agent 和 http handler，
+          以及条件执行、异步执行等进阶能力。掌握这些模式，你可以应对更复杂的自动化场景。
         </p>
 
-        {/* ── MCP 协议概述 ── */}
+        {/* ── Agent handler ── */}
         <h3
           className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          MCP 协议：三种传输方式
+          Agent Handler：多轮深度验证
         </h3>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          agent handler 启动一个子 Agent（最多 50 轮对话），可以使用工具（读文件、执行 Bash 等）做深度验证。
+          功能最强，但 token 消耗也最大 -- 一次执行可能消耗数千 token。
+          只在需要跨文件验证、运行测试等复杂场景下使用。
+        </p>
+
+        <CodeBlock
+          language="json"
+          title="agent-hook-example.json"
+          code={`{
+  "hooks": {
+    "Stop": [
+      {
+        "type": "agent",
+        "prompt": "Verify all changes in this session: 1) Read modified files and check for code quality issues. 2) Run 'npm test' and verify all tests pass. 3) Check that no console.log statements were left in production code. Report issues found.",
+        "maxTurns": 20
+      }
+    ]
+  }
+}`}
+        />
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          agent handler 和 prompt handler 的区别：prompt 只做单轮判断（"看一眼得出结论"），
+          agent 可以多轮操作（"打开文件看看、跑个测试、分析结果"）。
+          代价是 agent 需要 3-10 秒启动时间，且每轮都消耗 token。
+        </p>
+
+        {/* ── HTTP handler ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          HTTP Handler：团队策略与审计
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          http handler 将事件 payload 通过 HTTP POST 发送到外部端点。
+          远程服务收到 payload 后，通过 HTTP 响应返回决策。
+          这是团队级别集中式策略管控和审计日志的理想方案。
+        </p>
+
+        <CodeBlock
+          language="json"
+          title="http-hook-example.json"
+          code={`{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "type": "http",
+        "url": "https://your-team-server.com/api/claude-audit",
+        "headers": {
+          "Authorization": "Bearer $TEAM_AUDIT_TOKEN"
+        }
+      }
+    ]
+  }
+}`}
+        />
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          典型场景：团队安全服务做集中式代码审查、Slack 通知 Channel 记录 Claude 的操作日志、
+          或调用第三方安全扫描 API（如 Snyk、Semgrep）。HTTP 响应体 JSON 中包含{' '}
+          <code style={{ color: 'var(--color-accent)' }}>exitCode</code> 和{' '}
+          <code style={{ color: 'var(--color-accent)' }}>message</code> 字段，
+          语义与 command handler 的 exit code 相同。
+        </p>
+
+        {/* ── Four types comparison ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          四种 Handler 对比
+        </h3>
+
+        <div
+          className="rounded-lg overflow-hidden my-4"
+          style={{
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+          }}
+        >
+          <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>传输方式</th>
-                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>特点</th>
-                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>典型场景</th>
+              <tr
+                style={{
+                  background: 'var(--color-bg-tertiary)',
+                  borderBottom: '1px solid var(--color-border)',
+                }}
+              >
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>类型</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>执行方式</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>Token 消耗</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>适用场景</th>
               </tr>
             </thead>
-            <tbody style={{ color: 'var(--color-text-secondary)' }}>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td className="py-3 px-4 font-mono text-xs" style={{ color: 'var(--color-accent)' }}>stdio</td>
-                <td className="py-3 px-4">本地进程通信，Claude Code 启动并管理 MCP Server 进程</td>
-                <td className="py-3 px-4">本地工具（Playwright、数据库客户端）</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td className="py-3 px-4 font-mono text-xs" style={{ color: 'var(--color-accent)' }}>SSE</td>
-                <td className="py-3 px-4">Server-Sent Events，HTTP 长连接</td>
-                <td className="py-3 px-4">远程服务（云上的工具服务）</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td className="py-3 px-4 font-mono text-xs" style={{ color: 'var(--color-accent)' }}>Streamable HTTP</td>
-                <td className="py-3 px-4">双向流式 HTTP，最新标准</td>
-                <td className="py-3 px-4">需要高吞吐的场景</td>
-              </tr>
+            <tbody>
+              {[
+                {
+                  type: 'command',
+                  exec: '本地脚本，stdin/stdout',
+                  tokens: '零',
+                  use: '格式化、lint、路径拦截、密钥扫描',
+                  color: 'var(--color-tier-l1)',
+                },
+                {
+                  type: 'prompt',
+                  exec: '单轮 LLM 判断',
+                  tokens: '200-500',
+                  use: '完成度检查、代码质量评估',
+                  color: 'var(--color-tier-l2)',
+                },
+                {
+                  type: 'agent',
+                  exec: '多轮子 Agent（最多 50 轮）',
+                  tokens: '数千+',
+                  use: '深度 review、跨文件验证、运行测试',
+                  color: 'var(--color-tier-l3)',
+                },
+                {
+                  type: 'http',
+                  exec: 'HTTP POST 到外部端点',
+                  tokens: '零（本地）',
+                  use: '团队策略、审计日志、第三方扫描',
+                  color: 'var(--color-tier-l2)',
+                },
+              ].map((row) => (
+                <tr
+                  key={row.type}
+                  style={{ borderBottom: '1px solid var(--color-border)' }}
+                >
+                  <td className="px-4 py-3 font-semibold" style={{ color: row.color }}>
+                    {row.type}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {row.exec}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {row.tokens}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {row.use}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
-        {/* ── Playwright MCP ── */}
+        {/* ── Decision tree ── */}
         <h3
-          className="text-lg font-semibold mt-10"
+          className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          实战：连接 Playwright MCP 做浏览器自动化
+          选型决策树
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+          不确定该用哪种 handler？点击下面的决策树，按需求特征走到推荐结果。
+        </p>
+
+        <DecisionTree
+          root={handlerTypeTree}
+          title="Handler 类型选择器"
+        />
+
+        {/* ── Conditional execution ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          条件执行：if 字段
         </h3>
 
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Playwright MCP 让 Claude Code 可以控制浏览器 —— 导航页面、点击按钮、填写表单、
-          截图、读取 DOM。这意味着你可以让 Claude Code 做端到端测试、爬取数据、
-          甚至帮你操作 Web UI。
+          有时你只想在特定条件下触发 Hook。<code style={{ color: 'var(--color-accent)' }}>if</code> 字段
+          接受一个 shell 命令，只有命令返回 exit 0 时 Hook 才会执行。
+          这比在脚本内部做条件判断更清晰，也让 settings.json 成为"一眼就能看懂"的配置。
         </p>
 
-        <ConfigExample
+        <CodeBlock
+          language="json"
+          title="conditional-hook.json"
           code={`{
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest"],
-      "type": "stdio"
-    }
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "type": "command",
+        "command": "bash .claude/hooks/auto-format.sh",
+        "if": "test -f node_modules/.bin/prettier"
+      }
+    ]
   }
 }`}
-          language="json"
-          title=".claude/settings.json — Playwright MCP"
-          annotations={[
-            { line: 3, text: '服务器名称，会作为工具前缀出现（如 mcp__playwright__navigate）' },
-            { line: 4, text: '启动命令 —— npx 会自动下载并运行最新版本' },
-            { line: 5, text: '传递给命令的参数' },
-            { line: 6, text: 'stdio 传输 —— Claude Code 直接管理这个进程' },
-          ]}
         />
 
-        <CodeBlock
-          language="bash"
-          title="playwright-mcp-demo.sh"
-          code={`# 配置好 Playwright MCP 后，你可以直接对 Claude 说：
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          上例中，只有当项目安装了 Prettier 时（<code style={{ color: 'var(--color-accent)' }}>test -f</code> 检查文件存在），
+          格式化 Hook 才会执行。在没有 Prettier 的项目中，这个 Hook 自动跳过。
+        </p>
 
-# "打开 http://localhost:3000，截一张首页的截图"
-# → Claude 调用 mcp__playwright__navigate + mcp__playwright__screenshot
-
-# "在登录页面填写用户名 test@example.com 和密码，然后点登录"
-# → Claude 调用 mcp__playwright__fill + mcp__playwright__click
-
-# "检查登录后是否跳转到了 /dashboard"
-# → Claude 调用 mcp__playwright__snapshot 读取当前 URL
-
-# "滚动到页面底部，找到 footer 中的版本号"
-# → Claude 调用 mcp__playwright__evaluate 执行 JS
-
-# 这本质上就是 E2E 测试，但不需要写代码！
-# Claude 理解自然语言，自动翻译为浏览器操作`}
-        />
-
-        {/* ── 构建自定义 MCP Server ── */}
+        {/* ── Async hooks ── */}
         <h3
-          className="text-lg font-semibold mt-10"
+          className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          构建自定义 MCP Server：数据库查询工具
+          异步执行：async 字段
         </h3>
 
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          当你需要 Claude Code 访问项目数据库时，可以构建一个自定义的 MCP Server。
-          下面分别展示 Python（FastMCP）和 TypeScript（SDK）的实现。
+          默认情况下，Hook 是同步执行的 -- Claude 会等待 Hook 完成后才继续。
+          对于不需要阻塞工作流的操作（如日志记录、通知），可以设置{' '}
+          <code style={{ color: 'var(--color-accent)' }}>{"\"async\": true"}</code> 让 Hook 在后台执行。
         </p>
 
         <CodeBlock
-          language="python"
-          title="mcp_db_server.py — Python FastMCP 实现"
-          code={`"""
-自定义 MCP Server：安全的数据库查询工具
-让 Claude Code 能够查询数据库，但只允许 SELECT 操作
-"""
-from fastmcp import FastMCP
-import asyncpg
-import os
-
-mcp = FastMCP("db-query")
-
-# 数据库连接池（复用连接，避免每次查询都建连接）
-pool = None
-
-async def get_pool():
-    global pool
-    if pool is None:
-        pool = await asyncpg.create_pool(
-            os.environ["DATABASE_URL"],
-            min_size=2,
-            max_size=10,
-        )
-    return pool
-
-@mcp.tool()
-async def query_database(sql: str, params: list[str] = []) -> str:
-    """
-    执行只读 SQL 查询。仅允许 SELECT 语句。
-
-    Args:
-        sql: SQL 查询语句（必须是 SELECT）
-        params: 查询参数（防止 SQL 注入）
-
-    Returns:
-        JSON 格式的查询结果
-    """
-    # 安全检查：只允许 SELECT
-    normalized = sql.strip().upper()
-    if not normalized.startswith("SELECT"):
-        return "ERROR: 只允许 SELECT 查询。禁止 INSERT/UPDATE/DELETE/DROP。"
-
-    # 额外安全：禁止危险关键词
-    dangerous = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "TRUNCATE"]
-    for keyword in dangerous:
-        if keyword in normalized:
-            return f"ERROR: 检测到禁止的关键词 {keyword}"
-
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(sql, *params)
-        # 返回前 100 行，防止结果太大
-        result = [dict(row) for row in rows[:100]]
-        total = len(rows)
-        return {
-            "rows": result,
-            "total": total,
-            "truncated": total > 100,
-        }
-
-@mcp.tool()
-async def list_tables() -> str:
-    """列出数据库中的所有表和字段信息"""
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        tables = await conn.fetch("""
-            SELECT table_name, column_name, data_type
-            FROM information_schema.columns
-            WHERE table_schema = 'public'
-            ORDER BY table_name, ordinal_position
-        """)
-        return [dict(row) for row in tables]
-
-@mcp.tool()
-async def explain_query(sql: str) -> str:
-    """分析查询的执行计划，帮助优化慢查询"""
-    normalized = sql.strip().upper()
-    if not normalized.startswith("SELECT"):
-        return "ERROR: 只允许分析 SELECT 查询"
-
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        plan = await conn.fetch(f"EXPLAIN ANALYZE {sql}")
-        return "\\n".join([row[0] for row in plan])
-
-if __name__ == "__main__":
-    mcp.run(transport="stdio")`}
-          highlightLines={[36, 37, 38, 44, 45, 46]}
-        />
-
-        <CodeBlock
-          language="typescript"
-          title="mcp-db-server.ts — TypeScript SDK 实现"
-          code={`import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
-import pg from "pg";
-
-const server = new McpServer({
-  name: "db-query",
-  version: "1.0.0",
-});
-
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 10,
-});
-
-server.tool(
-  "query_database",
-  "执行只读 SQL 查询。仅允许 SELECT 语句。",
-  {
-    sql: z.string().describe("SQL 查询语句（必须是 SELECT）"),
-    params: z.array(z.string()).optional().describe("查询参数"),
-  },
-  async ({ sql, params = [] }) => {
-    const normalized = sql.trim().toUpperCase();
-    if (!normalized.startsWith("SELECT")) {
-      return {
-        content: [{ type: "text", text: "ERROR: 只允许 SELECT 查询" }],
-      };
-    }
-
-    const dangerous = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER"];
-    for (const kw of dangerous) {
-      if (normalized.includes(kw)) {
-        return {
-          content: [{ type: "text", text: \`ERROR: 禁止的关键词 \${kw}\` }],
-        };
+          language="json"
+          title="async-hook.json"
+          code={`{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "type": "http",
+        "url": "https://your-team.com/api/audit-log",
+        "async": true
       }
-    }
-
-    const result = await pool.query(sql, params);
-    const rows = result.rows.slice(0, 100);
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify({
-          rows,
-          total: result.rowCount,
-          truncated: (result.rowCount ?? 0) > 100,
-        }, null, 2),
-      }],
-    };
+    ]
   }
-);
-
-server.tool(
-  "list_tables",
-  "列出数据库中的所有表和字段信息",
-  {},
-  async () => {
-    const result = await pool.query(\`
-      SELECT table_name, column_name, data_type
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-      ORDER BY table_name, ordinal_position
-    \`);
-    return {
-      content: [{ type: "text", text: JSON.stringify(result.rows, null, 2) }],
-    };
-  }
-);
-
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-}
-
-main().catch(console.error);`}
+}`}
         />
 
-        {/* ── MCP Inspector ── */}
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          async Hook 的 exit code 会被忽略 -- 因为 Claude 不等它完成。
+          所以 async 只适合"发出去就行"的场景，不适合需要决策（Allow/Ask/Deny）的安全检查。
+        </p>
+
+        <ExerciseCard
+          tier="l2"
+          title="给流水线增加安全层"
+          description="在 7.2 的质量流水线基础上，增加两个安全 Hook：1) 受保护文件拦截（PreToolUse，阻止修改 .env、credentials.json 等），注意 matcher 要包含 Bash 工具防止绕过；2) 密钥泄露扫描（PostToolUse，正则匹配 AWS/OpenAI/Anthropic API key 模式）。密钥扫描用 exit 1（Ask），文件保护用 exit 2（Deny）。"
+          checkpoints={[
+            '受保护文件 Hook 的 matcher 包含 "Edit|Write|Bash" -- 防止 Bash 绕过',
+            '密钥扫描用 exit 1（Ask 用户确认），文件保护用 exit 2（Deny 直接拒绝）',
+            '密钥扫描跳过测试文件（*.test.* / __mocks__/ 等）避免误报',
+            'Bash 工具的文件保护检查 redirect 模式（>、>>、tee 等）',
+            '测试：让 Claude 尝试修改 .env 文件，确认被拦截',
+          ]}
+        />
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 7.4: 权限模型深入
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          7.4 权限模型深入
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Ch01 介绍了 Claude Code 的三级权限模型（Ask / AcceptEdits / Auto）。
+          现在你已经理解了 Hooks，我们可以更深入地看权限模型如何与 Hooks 协同工作。
+        </p>
+
+        {/* ── Permission modes ── */}
         <h3
-          className="text-lg font-semibold mt-10"
+          className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          用 MCP Inspector 测试
+          三级权限与 Hook 的关系
         </h3>
 
         <CodeBlock
           language="bash"
-          title="mcp-inspector.sh"
-          code={`# MCP Inspector 是官方的调试工具
-# 可以独立测试 MCP Server，不需要连接 Claude Code
+          title="permission-modes.txt"
+          code={`权限模式                执行                    Hook 交互
+═══════════════════     ═══════════════════     ═══════════════════
+Ask（默认）             每次工具调用前询问用户   Hooks 在用户确认后、工具执行前触发
+AcceptEdits             文件编辑需确认，         PreToolUse Hook 在确认后触发
+                        Bash 自动执行            PostToolUse Hook 在执行后触发
+Auto                    所有操作自动执行         Hooks 是你唯一的安全保障！
 
-# 测试 Python 实现
-npx @modelcontextprotocol/inspector python mcp_db_server.py
-
-# 测试 TypeScript 实现
-npx @modelcontextprotocol/inspector node mcp-db-server.js
-
-# Inspector 提供一个 Web UI：
-# - 查看所有注册的工具和参数
-# - 手动调用工具并查看结果
-# - 检查错误信息
-# - 验证输入/输出格式
-
-# 确保所有工具在 Inspector 中正常工作后，
-# 再配置到 Claude Code 中`}
+关键理解:
+- 权限系统决定"用户是否允许操作"
+- Hooks 决定"系统是否允许操作"
+- 两者是 AND 关系: 权限放行 + Hook 放行 = 操作执行
+- Hook 的 Deny 可以覆盖权限的放行（但不能反过来）`}
         />
 
-        {/* ── Multi-MCP + Scoping ── */}
+        <QualityCallout title="Auto 模式下 Hook 尤为重要">
+          当你使用 <code style={{ color: 'var(--color-accent)' }}>--auto</code> 参数运行 Claude Code 时，
+          所有操作自动执行，不再有人工确认环节。此时 Hooks 是你唯一的安全屏障。
+          建议：在 Auto 模式下，至少配置危险命令拦截和受保护文件拦截两个 PreToolUse Hook。
+        </QualityCallout>
+
+        {/* ── settings.json allow/deny ── */}
         <h3
-          className="text-lg font-semibold mt-10"
+          className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          多 MCP 编排 + 作用域限定
+          settings.json 的 allow/deny 规则
         </h3>
 
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          真实项目中，你可能需要同时连接多个 MCP Server。
-          但每个 MCP Server 的工具描述都会占用上下文空间。
-          Claude Code 通过两种机制来管理这个问题。
+          除了 Hook exit code，settings.json 的 <code style={{ color: 'var(--color-accent)' }}>permissions</code> 字段
+          提供了一套声明式的权限规则。它定义哪些工具调用自动放行（allow）、哪些直接拒绝（deny）。
         </p>
 
         <ConfigExample
+          title="permissions 配置"
+          language="json"
           code={`{
-  "mcpServers": {
-    "db": {
-      "command": "python",
-      "args": ["mcp_db_server.py"],
-      "type": "stdio"
-    },
-    "github": {
-      "command": "npx",
-      "args": ["@modelcontextprotocol/server-github"],
-      "type": "stdio",
-      "env": {
-        "GITHUB_TOKEN": "ghp_xxxxx"
-      }
-    },
-    "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest"],
-      "type": "stdio"
-    }
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(npm test)",
+      "Bash(npx prettier*)",
+      "Bash(npx eslint*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git status)"
+    ],
+    "deny": [
+      "Bash(curl*)",
+      "Bash(wget*)",
+      "Bash(ssh*)",
+      "Bash(rm -rf*)"
+    ]
   }
 }`}
-          language="json"
-          title=".claude/settings.json — 多 MCP 配置"
           annotations={[
-            { line: 3, text: '数据库查询 —— 你自己构建的 MCP Server' },
-            { line: 8, text: 'GitHub 操作 —— 创建 PR、查看 Issues、管理 Releases' },
-            { line: 15, text: 'Playwright 浏览器自动化 —— 控制浏览器做 E2E 测试' },
+            { line: 3, text: 'allow: 自动放行的工具调用，跳过用户确认。用通配符 * 匹配参数前缀。' },
+            { line: 7, text: '允许 Hook 脚本调用的工具（prettier、eslint）自动执行，避免每次弹确认框。' },
+            { line: 14, text: 'deny: 直接拒绝的工具调用。优先级高于 allow -- deny 总是胜出。' },
+            { line: 15, text: '禁止 Claude 下载外部文件，防止引入未知代码。' },
           ]}
         />
+
+        {/* ── Execution priority ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          执行优先级
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          当同一事件注册了来自不同来源的 Hook 时，按以下优先级执行。
+          高层级来源的 Deny 不可被低层级覆盖。
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="hook-priority.txt"
+          code={`执行顺序（从高到低）：
+
+1. Managed Hooks     — Anthropic 内置安全规则（不可覆盖）
+2. Global Hooks      — ~/.claude/settings.json 中定义
+3. Project Hooks     — .claude/settings.json 中定义
+4. Plugin Hooks      — 通过插件注册
+
+规则：
+- 所有来源的 Hook 都会执行（不会短路）
+- 最终结果取"最严格"的
+- Managed Hook 的 Deny 绝对生效
+- 公司管理员可以通过 Global Hooks 设置团队安全底线`}
+        />
+
+        {/* ── Team strategy ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          团队权限策略建议
+        </h3>
 
         <div
-          className="rounded-xl p-5 mt-4"
+          className="rounded-lg p-5 space-y-4"
           style={{
             background: 'var(--color-bg-secondary)',
             border: '1px solid var(--color-border)',
           }}
         >
-          <h4
-            className="text-sm font-semibold mb-3"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            上下文管理：Scoping + Tool Search 自动延迟加载
-          </h4>
-          <div className="space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <p>
-              <strong style={{ color: 'var(--color-text-primary)' }}>问题：</strong>
-              如果 3 个 MCP Server 一共提供 50 个工具，每个工具的描述约 100 tokens，
-              光工具描述就占用了 5000 tokens 的上下文空间。
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
+              Global（~/.claude/settings.json）-- 安全底线
             </p>
-            <p>
-              <strong style={{ color: 'var(--color-accent)' }}>方案 1 — MCP 作用域限定：</strong>
-              在自定义 Agent 的 frontmatter 中用 <code style={{ color: 'var(--color-accent)' }}>mcpServers</code> 指定该 Agent 可用的 MCP。
-              例如：测试 Agent 只需要 Playwright，不需要看到 db 和 github 的工具。
+            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+              由运维或安全团队统一配置。包含：危险命令拦截、密钥泄露扫描、受保护路径规则。
+              所有项目自动继承，开发者不能覆盖 Deny 规则。
             </p>
-            <p>
-              <strong style={{ color: 'var(--color-accent)' }}>方案 2 — Tool Search 自动延迟加载：</strong>
-              Claude Code 默认只在上下文中注入常用工具的描述。当 Claude 需要一个不在当前列表中的工具时，
-              它会通过 Tool Search 动态查找和加载。这种机制可以减少约 <strong style={{ color: 'var(--color-text-primary)' }}>85%</strong> 的工具描述占用。
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
+              Project（.claude/settings.json）-- 项目定制
+            </p>
+            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+              随代码库提交到 git。包含：项目特有的格式化规则、lint 配置、完成度检查标准。
+              可以在 Global 基础上添加更严格的规则，但不能放松 Global 的限制。
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
+              个人偏好 -- 不要放安全相关 Hook
+            </p>
+            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+              个人可以添加便利性 Hook（如自动格式化偏好），但安全规则必须在 Global 或 Project 层面定义。
+              个人的 allow 规则不能突破 Global/Project 的 deny。
             </p>
           </div>
         </div>
-
-        <ConfigExample
-          code={`---
-name: "e2e-tester"
-description: "使用 Playwright 运行端到端测试"
-tools:
-  - Read
-  - Bash
-mcpServers:
-  - playwright
-maxTurns: 20
----
-
-# E2E Tester Agent
-
-只使用 Playwright MCP 进行浏览器测试。
-不需要数据库和 GitHub 的工具。`}
-          language="markdown"
-          title=".claude/agents/e2e-tester.md — MCP 作用域限定"
-          annotations={[
-            { line: 7, text: '只加载 playwright MCP 的工具 —— db 和 github 的工具不会出现在这个 Agent 的上下文中' },
-          ]}
-        />
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 7.5: MCP 安全
+          Section 7.5: 常见问题排查
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -1033,217 +1043,452 @@ maxTurns: 20
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          7.5 MCP 安全
+          7.5 常见问题排查
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          MCP 是一个开放协议 —— 任何人都可以发布 MCP Server。
-          这意味着供应链攻击是一个真实的威胁。
+          Hook 配错了通常不会报错 -- 它只是"不触发"或"没效果"。以下是三个最常见的问题及诊断方法。
         </p>
 
-        {/* ── 供应链风险 ── */}
+        {/* ── Problem 1 ── */}
         <h3
           className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          供应链风险：Cline / OpenClaw 事件
+          问题 1：Hook 不触发
         </h3>
 
         <div
-          className="rounded-xl overflow-hidden"
+          className="rounded-lg p-5 space-y-3"
           style={{
-            border: '1px solid rgba(248, 113, 113, 0.3)',
             background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
           }}
         >
-          <div
-            className="px-5 py-3 text-sm font-semibold flex items-center gap-2"
-            style={{
-              background: 'rgba(248, 113, 113, 0.08)',
-              borderBottom: '1px solid rgba(248, 113, 113, 0.3)',
-              color: '#f87171',
-            }}
-          >
-            安全事件案例
-          </div>
-          <div className="px-5 py-4 space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <p>
-              Cline 的 MCP 市场（OpenClaw）曾发现 <strong style={{ color: '#f87171' }}>1184 个恶意 skills</strong>。
-              这些恶意扩展伪装成正常的开发工具，但实际上会：
-            </p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>在工具描述中隐藏恶意指令（Prompt Injection）</li>
-              <li>在执行命令时偷偷读取环境变量和凭证文件</li>
-              <li>将敏感数据发送到外部服务器</li>
-              <li>修改代码引入后门</li>
-            </ul>
-            <p className="mt-2">
-              这不是假设性的风险 —— 它已经在真实世界中发生了。
-            </p>
-          </div>
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+            检查清单：
+          </p>
+          <ul className="text-sm space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
+            <li>
+              <strong>事件名拼写</strong> -- 区分大小写！是 <code style={{ color: 'var(--color-accent)' }}>PostToolUse</code> 不是{' '}
+              <code style={{ color: 'var(--color-text-muted)' }}>postToolUse</code> 或{' '}
+              <code style={{ color: 'var(--color-text-muted)' }}>post_tool_use</code>。
+            </li>
+            <li>
+              <strong>matcher 正则</strong> -- 确认 matcher 能匹配到目标工具。
+              <code style={{ color: 'var(--color-accent)' }}>"Edit|Write"</code> 匹配 Edit 和 Write，
+              但 <code style={{ color: 'var(--color-text-muted)' }}>"edit|write"</code> 不匹配（区分大小写）。
+            </li>
+            <li>
+              <strong>settings.json 位置</strong> -- 项目级 Hook 放在 <code style={{ color: 'var(--color-accent)' }}>.claude/settings.json</code>（项目根目录），
+              不是 <code style={{ color: 'var(--color-text-muted)' }}>~/.claude/settings.json</code>（那是全局配置）。
+            </li>
+            <li>
+              <strong>JSON 语法</strong> -- settings.json 必须是合法 JSON。多余的逗号、缺少引号都会导致整个文件失效。
+            </li>
+            <li>
+              <strong>if 条件</strong> -- 如果配置了 <code style={{ color: 'var(--color-accent)' }}>if</code> 字段，
+              检查条件命令是否返回 exit 0。
+            </li>
+          </ul>
         </div>
 
-        {/* ── 安全策略 ── */}
+        {/* ── Problem 2 ── */}
         <h3
-          className="text-lg font-semibold mt-10"
+          className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          防御策略：信任边界与 Deny Rules
+          问题 2：Hook 触发了但没效果
         </h3>
 
-        <CodeBlock
-          language="typescript"
-          title="mcp-security-checklist.ts"
-          code={`// ═══ MCP 安全检查清单 ═══
-
-// 1. 信任边界（Trust Boundaries）
-// - 只安装你信任的 MCP Server
-// - 优先使用官方维护的 Server（@modelcontextprotocol/*）
-// - 第三方 Server 必须审查源码
-// - 永远不要从不明来源安装 MCP Server
-
-// 2. 最小权限原则
-// - 数据库 MCP 只给 SELECT 权限，不给 DML
-// - GitHub MCP 只给 read 权限，除非确实需要写入
-// - Playwright MCP 限制可访问的域名
-
-// 3. 环境变量隔离
-// - 不要在 MCP 配置中硬编码凭证
-// - 使用环境变量或密钥管理服务
-// - 为每个 MCP Server 创建专用的、最小权限的凭证
-
-// 4. Deny Rules（拒绝规则）
-// 在 .claude/settings.json 中配置：
-const denyRulesExample = {
-  "permissions": {
-    "deny": [
-      // 禁止 MCP 工具读取敏感路径
-      "mcp__*__read_file:.env*",
-      "mcp__*__read_file:*credentials*",
-      "mcp__*__read_file:*secret*",
-
-      // 禁止数据库 MCP 执行非 SELECT 操作
-      // （即使 Server 端已做了限制，也要在客户端再限制一次）
-      "mcp__db__execute_mutation:*",
-
-      // 禁止 Playwright 访问外部域名
-      "mcp__playwright__navigate:*://external-domain.com/*",
-    ]
-  }
-};
-
-// 5. 审计日志
-// Claude Code 记录了所有 MCP 工具调用
-// 定期检查是否有意外的工具调用模式
-// 路径：~/.claude/logs/`}
-          highlightLines={[24, 25, 26, 27, 28]}
-        />
-
-        <PromptCompare
-          bad={{
-            label: '不安全的配置',
-            prompt: `{
-  "mcpServers": {
-    "magic-tools": {
-      "command": "npx",
-      "args": ["some-random-mcp-package"]
-    }
-  }
-}
-// 从 npm 安装未审查的第三方 MCP
-// 使用默认权限（全部允许）
-// 没有 deny rules`,
-            explanation: '未审查的第三方包可能包含恶意代码。没有 deny rules 意味着 MCP Server 可以读取任何文件、执行任何操作。',
-          }}
-          good={{
-            label: '安全的配置',
-            prompt: `{
-  "mcpServers": {
-    "db": {
-      "command": "python",
-      "args": ["./tools/mcp_db_server.py"]
-    }
-  },
-  "permissions": {
-    "deny": [
-      "mcp__*__read_file:.env*",
-      "mcp__*__read_file:*secret*"
-    ]
-  }
-}
-// 使用自建的 MCP Server（源码可控）
-// 配置了 deny rules 保护敏感文件`,
-            explanation: '自建 MCP Server 源码完全可控。Deny rules 作为第二道防线，即使 Server 有漏洞，也无法访问敏感文件。',
-          }}
-        />
-
-        <QualityCallout title="安全底线">
-          <p>
-            MCP 的安全哲学和 npm 包管理类似 —— 生态越开放，供应链攻击面越大。
-            记住三条底线：
-          </p>
-          <ol className="list-decimal pl-5 mt-2 space-y-1">
-            <li><strong>只安装你审查过的 MCP Server</strong> —— 对待 MCP 安装和对待 npm install 一样谨慎</li>
-            <li><strong>始终配置 deny rules</strong> —— 即使你信任 Server 源码，也要限制敏感路径的访问</li>
-            <li><strong>为每个 MCP Server 创建最小权限凭证</strong> —— 数据库只给 SELECT，GitHub 只给 read</li>
-          </ol>
-        </QualityCallout>
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section: Exercises
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
+        <div
+          className="rounded-lg p-5 space-y-3"
           style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
           }}
         >
-          练习
-        </h2>
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+            检查清单：
+          </p>
+          <ul className="text-sm space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
+            <li>
+              <strong>exit code 错误</strong> -- 想拦截操作但用了 exit 0（Allow）？要用 exit 2（Deny）。
+              想让用户确认但用了 exit 0？要用 exit 1（Ask）。
+            </li>
+            <li>
+              <strong>脚本权限</strong> -- 确认脚本有执行权限：
+              <code style={{ color: 'var(--color-accent)' }}>chmod +x .claude/hooks/your-script.sh</code>。
+              或者在 command 中用 <code style={{ color: 'var(--color-accent)' }}>bash .claude/hooks/your-script.sh</code> 显式调用。
+            </li>
+            <li>
+              <strong>jq 未安装</strong> -- command handler 脚本通常依赖 jq 解析 JSON。
+              如果 jq 未安装，脚本会静默失败。
+            </li>
+            <li>
+              <strong>prompt handler 输出格式</strong> -- prompt handler 必须在输出中包含{' '}
+              <code style={{ color: 'var(--color-accent)' }}>EXIT_CODE=N</code>，否则默认为 exit 0。
+            </li>
+          </ul>
+        </div>
+
+        {/* ── Problem 3 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          问题 3：如何调试 Hook
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Hook 的 stdout 输出会作为上下文反馈给 Claude（你能在对话中看到），
+          stderr 输出会显示在 Claude Code 的状态栏或日志中。利用这两个通道做调试：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="debug-hook.sh"
+          code={`#!/bin/bash
+# 调试技巧: 在 Hook 脚本开头添加日志
+
+PAYLOAD=$(cat)
+
+# 将 payload 写入日志文件（调试用，上线后删除）
+echo "[$(date)] Hook triggered" >> /tmp/claude-hook-debug.log
+echo "$PAYLOAD" | jq '.' >> /tmp/claude-hook-debug.log
+
+# stderr 输出会显示在 Claude Code 状态栏
+echo "DEBUG: tool_name=$(echo $PAYLOAD | jq -r '.tool_name')" >&2
+
+# stdout 输出会作为上下文反馈给 Claude
+echo "Hook processed successfully"
+
+exit 0`}
+        />
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          调试完成后记得移除日志输出。生产环境中 Hook 应该尽量安静 --
+          只在有意义的时候（如检测到问题）才输出信息。
+        </p>
 
         <ExerciseCard
           tier="l1"
-          title="启用 Agent Teams，运行一个 2 人协作任务"
-          description="设置 CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 环境变量，然后让 Claude 用 Teams 模式完成一个简单的任务：一个 teammate 写一个工具函数，另一个 teammate 写对应的测试。观察它们如何通过文件系统协调。"
+          title="诊断一个不工作的 Hook"
+          description="故意制造一个不工作的 Hook 来练习排查技能：1) 在 settings.json 中故意把事件名写成 'postToolUse'（小写），观察 Hook 不触发；2) 修正后用 exit 0 替代 exit 2，观察 Hook 触发但不拦截；3) 使用 /tmp/claude-hook-debug.log 方法检查 payload 内容。"
           checkpoints={[
-            '成功启用了 Agent Teams 功能',
-            'Claude 创建了 2 个 teammate，各自有明确的任务',
-            'Teammate 之间通过文件系统（而非直接对话）传递信息',
-            '最终产出包含功能代码和对应的测试代码',
-            '测试可以正常运行并通过',
-          ]}
-        />
-
-        <ExerciseCard
-          tier="l2"
-          title="连接 Playwright MCP 并自动化一个浏览器测试"
-          description="配置 Playwright MCP Server，然后让 Claude Code 帮你完成一个端到端测试：打开你的项目的某个页面，进行一系列交互（点击、输入、导航），最后验证页面状态是否符合预期。"
-          checkpoints={[
-            '.claude/settings.json 中正确配置了 Playwright MCP',
-            'Claude 可以成功导航到指定 URL',
-            'Claude 可以执行至少 3 种不同的浏览器操作（点击、输入、截图等）',
-            'Claude 能正确验证页面最终状态',
-            '整个过程用自然语言指令完成，没有手写 Playwright 代码',
-          ]}
-        />
-
-        <ExerciseCard
-          tier="l3"
-          title="构建自定义 MCP Server 并集成到项目中"
-          description="为你的项目数据库构建一个自定义 MCP Server（参考 7.4 节的代码）。实现至少 3 个工具：list_tables、query_database（只读）、explain_query。用 MCP Inspector 测试通过后，配置到 Claude Code 中，并添加 deny rules 保护敏感数据。"
-          checkpoints={[
-            'MCP Server 实现了至少 3 个工具',
-            'query_database 只允许 SELECT，禁止所有 DML 操作',
-            'MCP Inspector 测试全部通过',
-            '.claude/settings.json 中正确配置了自定义 MCP Server',
-            '配置了 deny rules 保护 .env 和凭证文件',
-            'Claude Code 可以通过自然语言查询数据库（如"查看用户表有多少条数据"）',
+            '能识别事件名大小写错误导致的"不触发"问题',
+            '能区分 exit 0/1/2 的行为差异',
+            '能通过日志文件查看 Hook 接收到的 JSON payload',
+            '能通过 stderr 在 Claude Code 中看到调试信息',
           ]}
         />
       </section>
+
+      {/* ═══════════════════════════════════════════════
+          Reference Section
+          ═══════════════════════════════════════════════ */}
+      <ReferenceSection version="Claude Code 2025">
+        <div className="space-y-8">
+
+          {/* ── 21+ Events ── */}
+          <div>
+            <h3
+              className="text-base font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              完整事件列表（21+ 事件）
+            </h3>
+            <div
+              className="rounded-lg overflow-hidden"
+              style={{
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-bg-secondary)',
+              }}
+            >
+              <table className="w-full text-xs">
+                <thead>
+                  <tr
+                    style={{
+                      background: 'var(--color-bg-tertiary)',
+                      borderBottom: '1px solid var(--color-border)',
+                    }}
+                  >
+                    <th className="text-left px-3 py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>事件</th>
+                    <th className="text-left px-3 py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>触发时机</th>
+                    <th className="text-left px-3 py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>Matcher</th>
+                    <th className="text-left px-3 py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>典型用途</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { event: 'SessionStart', when: '会话开始（仅一次）', matcher: '无', use: '环境初始化、日志开始' },
+                    { event: 'UserPromptSubmit', when: '用户按回车后、发 LLM 前', matcher: '无', use: '输入过滤、注入检测' },
+                    { event: 'PreToolUse', when: '工具调用前', matcher: 'tool_name', use: '安全拦截、权限控制' },
+                    { event: 'PostToolUse', when: '工具调用后', matcher: 'tool_name', use: '格式化、lint、密钥扫描' },
+                    { event: 'Stop', when: 'Claude 准备停止前', matcher: '无', use: '完成度检查、摘要生成' },
+                    { event: 'StopFailure', when: 'Stop hook 返回非零后', matcher: '无', use: '失败后的补救措施' },
+                    { event: 'SubagentStart', when: '子 Agent 启动时', matcher: '无', use: '子任务日志、资源限制' },
+                    { event: 'SubagentStop', when: '子 Agent 结束时', matcher: '无', use: '子任务结果收集' },
+                    { event: 'PreCompact', when: '上下文压缩前', matcher: '无', use: '注入关键信息防丢失' },
+                    { event: 'PostCompact', when: '上下文压缩后', matcher: '无', use: '验证压缩质量' },
+                    { event: 'TaskCreated', when: '任务创建时', matcher: '无', use: '任务审计、通知' },
+                    { event: 'TaskCompleted', when: '任务完成时', matcher: '无', use: '结果收集、下一步触发' },
+                    { event: 'Notification', when: '需通知用户时', matcher: '无', use: '自定义通知渠道' },
+                    { event: 'CwdChanged', when: '工作目录变更', matcher: '无', use: '环境感知、路径校验' },
+                    { event: 'FileChanged', when: '文件被外部修改', matcher: '无', use: '热重载、冲突检测' },
+                    { event: 'InstructionsLoaded', when: '指令文件加载后', matcher: '无', use: '指令审计、自定义注入' },
+                    { event: 'TeammateIdle', when: '团队模式中其他 Agent 空闲', matcher: '无', use: '负载均衡、任务分发' },
+                    { event: 'WorktreeCreate', when: 'Git worktree 创建时', matcher: '无', use: '环境隔离初始化' },
+                    { event: 'WorktreeRemove', when: 'Git worktree 移除时', matcher: '无', use: '资源清理' },
+                  ].map((row) => (
+                    <tr
+                      key={row.event}
+                      style={{ borderBottom: '1px solid var(--color-border)' }}
+                    >
+                      <td className="px-3 py-2 font-mono font-semibold" style={{ color: 'var(--color-accent)' }}>
+                        {row.event}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--color-text-secondary)' }}>
+                        {row.when}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--color-text-muted)' }}>
+                        {row.matcher}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--color-text-secondary)' }}>
+                        {row.use}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── JSON Schema ── */}
+          <div>
+            <h3
+              className="text-base font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Hook 配置 JSON Schema
+            </h3>
+            <CodeBlock
+              language="json"
+              title="hook-config-schema.json"
+              code={`{
+  "hooks": {
+    "<EventName>": [
+      {
+        "matcher": "regex_pattern",       // 可选，正则匹配工具名
+        "type": "command | prompt | agent | http",
+        "command": "shell command",        // type=command 时必填
+        "prompt": "LLM prompt text",       // type=prompt|agent 时必填
+        "url": "https://endpoint",         // type=http 时必填
+        "headers": { "key": "value" },     // type=http 时可选
+        "maxTurns": 20,                    // type=agent 时可选（默认 50）
+        "if": "shell condition command",   // 可选，条件执行
+        "async": false                     // 可选，异步执行（默认 false）
+      }
+    ]
+  }
+}`}
+            />
+          </div>
+
+          {/* ── Matcher syntax ── */}
+          <div>
+            <h3
+              className="text-base font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Matcher 语法参考
+            </h3>
+            <CodeBlock
+              language="bash"
+              title="matcher-syntax.txt"
+              code={`Matcher 是正则表达式，匹配工具名（区分大小写）
+
+常用模式：
+  "Bash"              仅匹配 Bash 工具
+  "Edit|Write"        匹配 Edit 或 Write
+  "Edit|Write|Bash"   匹配三个工具（防绕过）
+  ".*"                匹配所有工具（慎用）
+  "Read|Glob|Grep"    匹配只读工具
+
+内置工具名：
+  Edit       编辑文件
+  Write      创建/覆盖文件
+  Read       读取文件
+  Bash       执行 shell 命令
+  Glob       文件模式搜索
+  Grep       内容搜索
+  WebFetch   HTTP 请求
+  WebSearch  网页搜索
+  TodoRead   读取待办
+  TodoWrite  写入待办
+
+MCP 工具名格式：
+  mcp__<server>_<tool>    如 mcp__playwright_navigate`}
+            />
+          </div>
+
+          {/* ── Exit code reference ── */}
+          <div>
+            <h3
+              className="text-base font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Exit Code 速查
+            </h3>
+            <CodeBlock
+              language="bash"
+              title="exit-codes.txt"
+              code={`Exit Code   含义      行为                        适用场景
+═════════   ═══════   ═══════════════════════════  ═══════════════════════
+0           Allow     放行，操作继续执行           格式化成功、lint 通过
+                      stdout → Claude 上下文
+1           Ask       暂停，询问用户是否继续       密钥疑似泄露、完成度不确定
+                      stderr → 状态栏显示
+2           Deny      拒绝，操作直接取消           危险命令、受保护文件
+                      stderr → 状态栏显示
+
+多 Hook 合并规则（最严格胜出）：
+  任何一个 exit 2 → 整体 Deny
+  没有 2 但有 1   → 整体 Ask
+  全部 0          → Allow`}
+            />
+          </div>
+
+          {/* ── Hook templates ── */}
+          <div>
+            <h3
+              className="text-base font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              常用 Hook 模板
+            </h3>
+
+            <p
+              className="text-xs mb-3"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              以下模板可直接复制到你的项目中使用。
+            </p>
+
+            <CodeBlock
+              language="json"
+              title="template-precompact.json -- 上下文保留"
+              code={`{
+  "hooks": {
+    "PreCompact": [
+      {
+        "type": "command",
+        "command": "echo 'PRESERVE: 项目用 Express+TS, JWT RS256, PostgreSQL+Prisma, Zod 校验, Vitest 测试'"
+      }
+    ]
+  }
+}`}
+            />
+
+            <CodeBlock
+              language="json"
+              title="template-injection-scan.json -- 注入检测"
+              code={`{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Read|Glob|Grep",
+        "type": "command",
+        "command": "bash .claude/hooks/injection-scan.sh"
+      }
+    ]
+  }
+}`}
+            />
+
+            <CodeBlock
+              language="json"
+              title="template-session-log.json -- 会话审计日志"
+              code={`{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "echo \"Session started at $(date) in $(pwd)\" >> .claude/audit.log"
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "echo \"Session stopped at $(date)\" >> .claude/audit.log"
+      }
+    ]
+  }
+}`}
+            />
+
+            <CodeBlock
+              language="json"
+              title="template-protected-files.json -- 受保护文件"
+              code={`{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "type": "command",
+        "command": "bash .claude/hooks/protect-files.sh"
+      }
+    ]
+  }
+}`}
+            />
+          </div>
+
+          {/* ── Payload examples ── */}
+          <div>
+            <h3
+              className="text-base font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              事件 Payload 示例
+            </h3>
+            <CodeBlock
+              language="json"
+              title="payload-examples.json"
+              code={`// PreToolUse / PostToolUse payload
+{
+  "session_id": "abc-123",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/project/src/index.ts",
+    "old_string": "console.log('debug')",
+    "new_string": ""
+  },
+  "tool_output": "..."  // 仅 PostToolUse 有此字段
+}
+
+// Stop payload
+{
+  "session_id": "abc-123",
+  "reason": "task_complete",
+  "summary": "Implemented user authentication with JWT"
+}
+
+// SessionStart payload
+{
+  "session_id": "abc-123",
+  "cwd": "/Users/dev/my-project"
+}
+
+// UserPromptSubmit payload
+{
+  "session_id": "abc-123",
+  "prompt_text": "Add input validation to the login endpoint"
+}`}
+            />
+          </div>
+        </div>
+      </ReferenceSection>
     </div>
   )
 }

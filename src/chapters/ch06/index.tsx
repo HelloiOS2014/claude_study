@@ -1,102 +1,11 @@
-import { lazy } from 'react'
 import { CodeBlock } from '../../components/content/CodeBlock'
-import { PromptCompare } from '../../components/content/PromptCompare'
 import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
-import { DecisionTree } from '../../components/content/DecisionTree'
-import type { TreeNode } from '../../components/content/DecisionTree'
-import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
-
-const LazySubagentFanout = lazy(() => import('../../remotion/ch06/SubagentFanout'))
+import { ReferenceSection } from '../../components/content/ReferenceSection'
 
 /* ═══════════════════════════════════════════════
-   Decision Tree: 选择正确的 Subagent 类型
-   ═══════════════════════════════════════════════ */
-
-const subagentChoiceTree: TreeNode = {
-  id: 'root',
-  question: '你的任务需要什么能力？',
-  description: '根据任务特征选择最合适的 Subagent 类型，避免浪费 token 或给予过多权限。',
-  children: [
-    {
-      label: '只需要读代码 / 搜索',
-      node: {
-        id: 'read-only',
-        question: '对搜索精度要求高吗？',
-        children: [
-          {
-            label: '快速粗搜即可',
-            node: {
-              id: 'explore',
-              question: '推荐：Explore Subagent',
-              result: {
-                text: '使用内置 Explore subagent（Haiku 模型，只读权限）。成本极低（约 ¥0.05-0.1/次），适合快速定位文件、理解代码结构。',
-                tier: 'l1',
-              },
-            },
-          },
-          {
-            label: '需要深度理解代码逻辑',
-            node: {
-              id: 'plan',
-              question: '推荐：Plan Subagent',
-              result: {
-                text: '使用 Plan subagent（继承主模型，只读权限）。能深入分析代码逻辑和依赖关系，生成实施计划，但不会修改任何文件。',
-                tier: 'l2',
-              },
-            },
-          },
-        ],
-      },
-    },
-    {
-      label: '需要修改文件',
-      node: {
-        id: 'write',
-        question: '修改范围有多大？',
-        children: [
-          {
-            label: '单文件 / 小范围',
-            node: {
-              id: 'general',
-              question: '推荐：General-purpose Subagent',
-              result: {
-                text: '使用 General-purpose subagent（继承模型，所有工具）。有完整的读写能力，适合独立完成一个聚焦任务。设置 maxTurns 防止失控。',
-                tier: 'l2',
-              },
-            },
-          },
-          {
-            label: '跨多文件 / 可能搞乱主代码',
-            node: {
-              id: 'worktree',
-              question: '推荐：自定义 Agent + Worktree 隔离',
-              result: {
-                text: '创建自定义 agent 并设置 isolation: worktree。所有修改在独立副本中进行，主代码完全不受影响。验证通过后再合并。这是处理大范围变更的安全网。',
-                tier: 'l3',
-              },
-            },
-          },
-        ],
-      },
-    },
-    {
-      label: '需要执行 shell 命令',
-      node: {
-        id: 'bash',
-        question: '推荐：Bash Subagent',
-        result: {
-          text: '使用 Bash subagent 执行系统命令。适合运行测试、构建、部署脚本等。注意设置 maxTurns 和权限范围，避免执行危险命令。',
-          tier: 'l2',
-        },
-      },
-    },
-  ],
-}
-
-/* ═══════════════════════════════════════════════
-   Chapter 6 Component
+   Chapter 6: Skills 体系
    ═══════════════════════════════════════════════ */
 
 export default function Ch06() {
@@ -119,29 +28,28 @@ export default function Ch06() {
             className="text-xs uppercase tracking-widest font-medium"
             style={{ color: 'var(--color-text-muted)' }}
           >
-            Subagent Architecture
+            Capability Layer
           </span>
         </div>
         <h1
           className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          用 AI 做技术调研：Subagent 并行探索
+          Skills 体系：定义 Claude 能做什么
         </h1>
         <p
           className="text-lg leading-relaxed max-w-3xl"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          到目前为止，你的所有操作都在一个会话里完成。这就像让一个人同时做调研、写代码、跑测试 ——
-          上下文越来越长，Claude 越来越"健忘"，成本也在飞涨。
-          这一章我们引入 Subagent：Claude Code 的"分身术"。每个 Subagent 是一个独立的 AI 进程，
-          有自己的上下文、自己的工具权限、自己的执行空间。
-          主 Agent 只需要发指令、收结果 —— 就像一个技术 Lead 指挥一个小团队。
+          CLAUDE.md 告诉 Claude "你在哪个项目、遵循什么规范"，Hooks 自动化"什么时候做检查" --
+          但还缺一块：如何把复杂的工作流封装成一键触发的能力？
+          Skills 系统是 Harness 的能力层 -- 它定义了 Claude <strong>能做什么</strong>。
+          一个 SKILL.md 文件就是一项能力。写完这一章，你可以在 5 分钟内为你的项目创建自定义 Skill。
         </p>
       </header>
 
       {/* ═══════════════════════════════════════════════
-          Section 6.1: 上下文隔离模型
+          Section 6.1: Skills 是什么
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -151,105 +59,53 @@ export default function Ch06() {
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          6.1 上下文隔离模型
+          6.1 Skills 是什么
         </h2>
 
-        <AnimationWrapper
-          component={LazySubagentFanout}
-          durationInFrames={180}
-          fallbackText="Subagent 扇出动画加载失败"
-        />
-
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          理解 Subagent 的关键在于一个词：<strong style={{ color: 'var(--color-text-primary)' }}>隔离</strong>。
-          Subagent 不是"在主会话里打开一个新标签页"，而是一个完全独立的执行单元。
+          Skill 是 Claude Code 的首要扩展机制。一个 Skill 就是一个 SKILL.md 文件，
+          包含 YAML frontmatter（元数据）和 Markdown body（指令）。
+          当 Skill 被加载时，它的 Markdown 内容会注入 Claude 的上下文窗口，成为 Claude 遵循的指令。
         </p>
 
-        <div
-          className="rounded-xl p-6 space-y-4"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <h3
-            className="text-lg font-semibold"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            Subagent 收到什么
-          </h3>
-          <ul className="space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <li className="flex items-start gap-3">
-              <span className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>1</span>
-              <span><strong style={{ color: 'var(--color-text-primary)' }}>Prompt 字符串</strong> —— 主 Agent 发送的任务描述。仅此而已。</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>2</span>
-              <span><strong style={{ color: 'var(--color-text-primary)' }}>最小系统提示</strong> —— 定义角色、可用工具、权限边界。</span>
-            </li>
-          </ul>
-
-          <h3
-            className="text-lg font-semibold mt-6"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            Subagent 不收到什么
-          </h3>
-          <ul className="space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <li className="flex items-start gap-3">
-              <span className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }}>X</span>
-              <span>父会话的对话历史 —— 主 Agent 跟你聊了 200 轮的内容，Subagent 一个字都看不到。</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }}>X</span>
-              <span>父会话的工具调用记录 —— Subagent 不知道你之前搜索过什么文件、改过什么代码。</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }}>X</span>
-              <span>其他 Subagent 的结果 —— 即使并行运行了 5 个 Subagent，它们彼此完全不可见。</span>
-            </li>
-          </ul>
-        </div>
-
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Subagent 执行完后，返回给主 Agent 的是<strong style={{ color: 'var(--color-text-primary)' }}>摘要</strong>，
-          而不是完整的对话记录。完整的 transcript 独立存储，不受主会话 compact 的影响。
-          这意味着即使主会话被压缩，Subagent 的详细工作记录依然可以通过 ID 恢复。
+          这和 MCP 工具不同。MCP 是给 Claude 增加<strong>外部工具能力</strong>（在上下文之外执行操作），
+          而 Skills 是<strong>在上下文中加载 prompt 指令</strong>，让 Claude 按照特定方式思考和行动。
+          打个比方：MCP 像给 Claude 一把螺丝刀（新工具），Skill 像给 Claude 一份操作手册（新知识和规则）。
         </p>
 
         <CodeBlock
           language="bash"
-          title="subagent-lifecycle.sh"
-          code={`# 主 Agent 的视角：
-# 1. 发送任务 → Subagent 获得独立上下文
-# 2. Subagent 执行 → 自己调用工具，自己管理对话
-# 3. 返回摘要 → 主 Agent 只看到精炼的结果
-
-# 主 Agent 上下文：[你的对话] + [Subagent 摘要（~200 tokens）]
-# Subagent 上下文：[任务 prompt] + [自己的工具调用记录]
-# 两个上下文完全独立，互不影响
-
-# 关键优势：
-# - 主会话上下文不会因为调研任务膨胀
-# - Subagent 有干净的上下文，不被无关对话污染
-# - 多个 Subagent 可以并行执行，总时间 ≈ 最慢那个的时间`}
+          title="skill-vs-mcp.txt"
+          code={`Skills（Prompt 指令）                    MCP（外部工具）
+═══════════════════════                  ═══════════════════════
+在上下文中加载                            在上下文外执行
+SKILL.md 文件                            MCP Server 进程
+定义"怎么做"（指令 + 约束）                提供"做什么"（工具 + API）
+零额外进程开销                            需要启动/维护 Server
+遵循 AgentSkills.io 开放标准              遵循 MCP 协议
+例：code review 流程、部署流程              例：浏览器操作、数据库查询`}
         />
 
-        <QualityCallout title="为什么隔离是上下文管理的核武器">
-          <p>
-            传统做法：你在一个会话里先搜索代码、再分析架构、再写实现、再写测试。
-            200K token 的上下文窗口很快就被搜索结果和分析过程塞满，Claude 开始遗忘早期的约束。
-          </p>
-          <p className="mt-2">
-            Subagent 做法：搜索交给 Explore subagent（消耗它自己的上下文），分析交给 Plan subagent，
-            实现交给 General-purpose subagent。主会话只保留每个阶段的摘要结论，
-            上下文始终保持"战略级"的精炼。这就是为什么 Subagent 是上下文管理的核心武器。
-          </p>
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Skills 遵循{' '}
+          <strong>AgentSkills.io 开放标准</strong>
+          ，这意味着你写的 Skill 不仅能在 Claude Code 中使用，
+          也可以在其他支持该标准的 AI 工具中复用。这个标准由社区维护，Claude Code 是其首批采用者。
+        </p>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+          本教程以 TypeScript 项目为例，但原则适用于任何语言。Skills 本身是 Markdown 文件，语言无关。
+        </p>
+
+        <QualityCallout title="Skills 在 Harness 中的位置">
+          回顾 Harness Engineering 框架：CLAUDE.md 是"记忆层"（Claude 知道什么），Hooks 是"自动化层"（什么时候触发检查），
+          Skills 是"能力层"（Claude 能做什么）。三者组合，构成完整的 AI 工程化 Harness。
         </QualityCallout>
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 6.2: 内置 vs 自定义 Subagent
+          Section 6.2: 写你的第一个 Skill
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -259,236 +115,388 @@ export default function Ch06() {
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          6.2 内置 vs 自定义 Subagent
+          6.2 写你的第一个 Skill
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Claude Code 提供了 5 种内置 Subagent 类型，覆盖最常见的场景。
-          当内置类型不够用时，你可以用 <code style={{ color: 'var(--color-accent)' }}>.claude/agents/*.md</code> 创建完全自定义的 Agent。
+          先动手，再讲原理。我们通过两个完整的例子来学习 Skill 的核心机制。
         </p>
 
-        {/* ── 内置 5 种类型 ── */}
+        {/* ── Example 1: /deploy ── */}
         <h3
           className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          五种内置 Subagent
+          Example 1: /deploy -- 用户手动触发的部署流程
         </h3>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+        <p className="text-sm leading-relaxed mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+          这个 Skill 封装了一套标准化部署流程。用户输入 <code style={{ color: 'var(--color-accent)' }}>/deploy</code> 触发，
+          Claude 不能自动调用它（因为部署应该是人类主动发起的）。
+        </p>
+
+        <ConfigExample
+          title=".claude/skills/deploy/SKILL.md"
+          language="yaml"
+          code={`---
+name: deploy
+description: Deploy the current project to production
+disable-model-invocation: true
+allowed-tools: Bash
+---
+
+## Deploy Process
+
+1. Run tests: \`npm test\`
+2. Build: \`npm run build\`
+3. Deploy: \`./scripts/deploy.sh\`
+
+IMPORTANT: Always run tests before deploying. If tests fail, stop and report.`}
+          annotations={[
+            { line: 2, text: 'name: 定义斜杠命令名。在 Claude Code 中输入 /deploy 触发此 Skill。' },
+            { line: 3, text: 'description: 描述 Skill 的功能。Claude 根据此字段判断何时自动调用（此例中禁用了自动调用）。' },
+            { line: 4, text: 'disable-model-invocation: true 禁止 Claude 自动调用此 Skill。只能由用户手动输入 /deploy 触发。' },
+            { line: 5, text: 'allowed-tools: 限制此 Skill 只能使用 Bash 工具。防止它意外编辑文件。' },
+            { line: 8, text: '分隔线下方是 Markdown 指令体。加载时注入 Claude 的上下文，成为它遵循的操作手册。' },
+          ]}
+        />
+
+        {/* ── Example 2: code-reviewer ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Example 2: code-reviewer -- Claude 自动调用的 Review 能力
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+          这个 Skill 让 Claude 在检测到代码变更时可以自动加载 review 指令。
+          注意 <code style={{ color: 'var(--color-accent)' }}>user-invocable: false</code> --
+          用户不能用斜杠命令触发，只有 Claude 自己判断需要时才会加载。
+        </p>
+
+        <ConfigExample
+          title=".claude/skills/code-reviewer/SKILL.md"
+          language="yaml"
+          code={`---
+name: code-reviewer
+description: Review code changes for security vulnerabilities, performance issues, and style violations
+user-invocable: false
+model: sonnet
+effort: medium
+---
+
+Review the code changes and check for:
+- SQL injection, XSS, and other OWASP Top 10 vulnerabilities
+- N+1 queries and unnecessary database calls
+- Adherence to project conventions in CLAUDE.md`}
+          annotations={[
+            { line: 2, text: 'name: Skill 的唯一标识符。因为 user-invocable: false，用户不会用 /code-reviewer 触发。' },
+            { line: 3, text: 'description: 最重要的字段！Claude 根据此描述判断何时自动加载这个 Skill。写得越精准，触发越准确。' },
+            { line: 4, text: 'user-invocable: false 意味着用户不能用斜杠命令手动触发。Skill 只通过 Claude 的自动判断加载。' },
+            { line: 5, text: 'model: sonnet 覆盖当前会话的模型。Review 不需要最强生成能力，Sonnet 性价比更高。' },
+            { line: 6, text: 'effort: medium 覆盖推理深度。Review 不需要 Claude 深度思考每个细节，medium 足够。' },
+          ]}
+        />
+
+        {/* ── 5 Core Frontmatter Fields ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          5 个核心 Frontmatter 字段
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          从上面两个例子中，我们已经见到了最重要的 5 个 frontmatter 字段。它们控制 Skill 的身份、触发方式和执行行为。
+        </p>
+
+        <div
+          className="rounded-lg overflow-hidden my-4"
+          style={{
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+          }}
+        >
+          <div
+            className="px-4 py-3 text-sm font-medium"
+            style={{
+              borderBottom: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)',
+              background: 'var(--color-bg-tertiary)',
+            }}
+          >
+            核心 Frontmatter 字段
+          </div>
+          <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+            {[
+              {
+                field: 'name',
+                desc: 'Skill 的唯一名称，也是斜杠命令名（/name 触发）。必须在同一作用域内唯一。',
+                example: 'name: deploy',
+              },
+              {
+                field: 'description',
+                desc: '最重要的字段。Claude 根据描述判断何时自动加载此 Skill。写得像"搜索关键词"一样精准 -- 涵盖场景但不泛化。',
+                example: 'description: Review code for security and performance issues',
+              },
+              {
+                field: 'allowed-tools',
+                desc: '限制 Skill 可使用的工具，实现最小权限原则。Review Skill 不该有 Edit 权限；Deploy Skill 只需要 Bash。',
+                example: 'allowed-tools: Read, Bash, Glob, Grep',
+              },
+              {
+                field: 'model',
+                desc: '覆盖当前会话的模型。让简单任务用更快更便宜的模型，复杂任务用最强模型。',
+                example: 'model: sonnet',
+              },
+              {
+                field: 'effort',
+                desc: '覆盖推理深度（low / medium / high）。减少不必要的深度思考可以显著提升响应速度。',
+                example: 'effort: medium',
+              },
+            ].map((item) => (
+              <div key={item.field} className="px-4 py-3">
+                <div className="flex items-baseline gap-2 mb-1">
+                  <code
+                    className="text-sm font-semibold"
+                    style={{ color: 'var(--color-accent)' }}
+                  >
+                    {item.field}
+                  </code>
+                </div>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  {item.desc}
+                </p>
+                <code
+                  className="text-xs mt-1 block"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  {item.example}
+                </code>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Dynamic Injection ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          动态注入：让 Skill 获取实时信息
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Skill 的 Markdown 指令体支持两种动态机制：
+          <code style={{ color: 'var(--color-accent)' }}>{' `!command` '}</code>
+          在加载时执行 shell 命令并注入输出，以及变量替换（<code style={{ color: 'var(--color-accent)' }}>$ARGUMENTS</code>、
+          <code style={{ color: 'var(--color-accent)' }}>$N</code>、
+          <code style={{ color: 'var(--color-accent)' }}>{'${CLAUDE_SESSION_ID}'}</code> 等）。
+        </p>
+
+        <ConfigExample
+          title=".claude/skills/review-staged/SKILL.md"
+          language="markdown"
+          code={`---
+name: review-staged
+description: Review currently staged git changes
+allowed-tools: Read, Bash, Glob, Grep
+---
+
+# Review Staged Changes
+
+当前暂存区的变更:
+
+\`!git diff --cached --stat\`
+
+详细 diff:
+
+\`!git diff --cached\`
+
+Review 这些变更，重点关注:
+1. 逻辑错误和边界条件
+2. 安全漏洞
+3. 是否符合项目 CLAUDE.md 中的规范`}
+          annotations={[
+            { line: 11, text: '`!command` 语法：Skill 加载时执行此 shell 命令，输出替换到这个位置。每次调用都是最新数据。' },
+            { line: 15, text: '可以有多个 `!command`。它们按顺序执行，各自替换为执行结果。' },
+          ]}
+        />
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          变量替换让 Skill 接受用户传入的参数：
+        </p>
+
+        <CodeBlock
+          language="markdown"
+          title="variable-substitution.md"
+          code={`---
+name: explain
+description: Explain a file or function in detail
+---
+
+# Explain: $ARGUMENTS
+
+分析以下目标: $0
+
+$ARGUMENTS — 所有参数拼接为一个字符串
+$0        — 第一个参数
+$1        — 第二个参数
+\${CLAUDE_SESSION_ID} — 当前会话 ID
+
+用法:
+  /explain src/auth/jwt.ts        → $0 = "src/auth/jwt.ts"
+  /explain validateToken strict   → $0 = "validateToken", $1 = "strict"`}
+        />
+
+        <QualityCallout title="description 字段是自动调用的关键">
+          当 Claude 在对话中遇到一个任务时，它会扫描所有可用 Skill 的 description 字段，
+          判断是否有合适的 Skill 可以加载。所以 description 要写得像"搜索关键词" --
+          精准描述 Skill 的适用场景，但不要太泛化（否则会在不相关的场景中被误触发）。
+        </QualityCallout>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 6.3: Skill 的作用域与优先级
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          6.3 Skill 的作用域与优先级
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Skill 可以放在三个不同的位置，每个位置对应不同的使用场景和优先级。
+          理解作用域对于避免命名冲突和合理组织 Skill 至关重要。
+        </p>
+
+        {/* Scope Table */}
+        <div
+          className="rounded-lg overflow-hidden my-4"
+          style={{
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+          }}
+        >
+          <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>类型</th>
-                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>模型</th>
-                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>权限</th>
-                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>典型用途</th>
+              <tr
+                style={{
+                  background: 'var(--color-bg-tertiary)',
+                  borderBottom: '1px solid var(--color-border)',
+                }}
+              >
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>作用域</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>路径</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>适用场景</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>优先级</th>
               </tr>
             </thead>
-            <tbody style={{ color: 'var(--color-text-secondary)' }}>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td className="py-3 px-4 font-mono text-xs" style={{ color: 'var(--color-accent)' }}>Explore</td>
-                <td className="py-3 px-4">Haiku</td>
-                <td className="py-3 px-4">只读</td>
-                <td className="py-3 px-4">快速搜索代码、理解项目结构、定位文件</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td className="py-3 px-4 font-mono text-xs" style={{ color: 'var(--color-accent)' }}>Plan</td>
-                <td className="py-3 px-4">继承主模型</td>
-                <td className="py-3 px-4">只读</td>
-                <td className="py-3 px-4">深度代码分析、生成实施计划、架构评审</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td className="py-3 px-4 font-mono text-xs" style={{ color: 'var(--color-accent)' }}>General-purpose</td>
-                <td className="py-3 px-4">继承主模型</td>
-                <td className="py-3 px-4">所有工具</td>
-                <td className="py-3 px-4">独立完成一个完整任务（写代码、运行命令）</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td className="py-3 px-4 font-mono text-xs" style={{ color: 'var(--color-accent)' }}>Bash</td>
-                <td className="py-3 px-4">继承主模型</td>
-                <td className="py-3 px-4">Shell</td>
-                <td className="py-3 px-4">执行系统命令、运行测试、构建项目</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td className="py-3 px-4 font-mono text-xs" style={{ color: 'var(--color-accent)' }}>Guide</td>
-                <td className="py-3 px-4">继承主模型</td>
-                <td className="py-3 px-4">只读</td>
-                <td className="py-3 px-4">指导用户学习、解释概念、教学辅助</td>
-              </tr>
+            <tbody>
+              {[
+                {
+                  scope: 'Enterprise',
+                  path: '企业管理员配置',
+                  useCase: '公司级标准流程（安全审查、合规检查）。由管理员统一下发，开发者无法覆盖。',
+                  priority: '最高',
+                  color: 'var(--color-tier-l3)',
+                },
+                {
+                  scope: 'Personal',
+                  path: '~/.claude/skills/',
+                  useCase: '个人常用工作流（自己的 review 习惯、常用脚手架）。跨项目共享。',
+                  priority: '高',
+                  color: 'var(--color-tier-l2)',
+                },
+                {
+                  scope: 'Project',
+                  path: '.claude/skills/',
+                  useCase: '项目专属流程（部署、changelog、项目特定 review 规则）。随代码库分发。',
+                  priority: '标准',
+                  color: 'var(--color-tier-l1)',
+                },
+                {
+                  scope: 'Plugin',
+                  path: '通过 /install 安装',
+                  useCase: '社区或团队共享的能力包。自动命名空间隔离（plugin-name:skill-name）。',
+                  priority: '标准',
+                  color: 'var(--color-text-muted)',
+                },
+              ].map((row) => (
+                <tr
+                  key={row.scope}
+                  style={{ borderBottom: '1px solid var(--color-border)' }}
+                >
+                  <td className="px-4 py-3 font-semibold" style={{ color: row.color }}>
+                    {row.scope}
+                  </td>
+                  <td className="px-4 py-3">
+                    <code className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{row.path}</code>
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {row.useCase}
+                  </td>
+                  <td className="px-4 py-3 font-medium" style={{ color: row.color }}>
+                    {row.priority}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-          Explore 使用 Haiku（最便宜的模型）是刻意的设计：搜索代码不需要强推理能力，
-          用低成本模型做高频操作是最优 ROI 策略。
-        </p>
-
-        {/* ── 决策树 ── */}
-        <DecisionTree
-          root={subagentChoiceTree}
-          title="选择 Subagent 类型"
-        />
-
-        {/* ── 自定义 Agent ── */}
-        <h3
-          className="text-lg font-semibold mt-10"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          自定义 Agent：完全控制
-        </h3>
-
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          当内置类型不够用时，在 <code style={{ color: 'var(--color-accent)' }}>.claude/agents/</code> 目录下
-          创建 <code style={{ color: 'var(--color-accent)' }}>.md</code> 文件即可定义自定义 Agent。
-          每个文件有 15 个 frontmatter 配置字段，让你精确控制 Agent 的行为。
+          优先级规则：<strong>Enterprise &gt; Personal &gt; Project</strong>。
+          当同名 Skill 存在于多个作用域时，高优先级的会覆盖低优先级的。
+          Plugin 的 Skill 通过命名空间隔离（<code style={{ color: 'var(--color-accent)' }}>plugin-name:skill-name</code>），
+          不会和项目 Skill 冲突。
         </p>
 
-        <ConfigExample
-          code={`---
-name: "code-reviewer"
-description: "严格审查代码质量和安全性"
-tools:
-  - Read
-  - Grep
-  - Glob
-disallowedTools:
-  - Edit
-  - Write
-  - Bash
-model: "claude-sonnet-4-20250514"
-permissionMode: "plan"
-maxTurns: 15
-skills: []
-mcpServers: []
-hooks: {}
-memory: "project"
-background: false
-effort: "high"
-isolation: "none"
----
+        <CodeBlock
+          language="bash"
+          title="skill-scope-examples.sh"
+          code={`# 个人 Skill -- 你自己的 review 习惯，跨项目共享
+~/.claude/skills/my-review/SKILL.md
 
-# Code Reviewer Agent
+# 项目 Skill -- 项目专属部署流程，随 git 分发给团队
+.claude/skills/deploy/SKILL.md
 
-你是一个严格的代码审查员。你的职责是：
+# Plugin Skill -- 通过插件安装，自动命名空间隔离
+# 调用方式: /playwright:screenshot（plugin-name:skill-name）
+# 或直接 /screenshot（如果没有名称冲突）
 
-## 审查清单
-1. **安全性** - 检查注入、XSS、敏感数据泄露
-2. **性能** - 识别 N+1 查询、不必要的重复计算、内存泄露风险
-3. **可维护性** - 命名规范、函数长度、单一职责
-4. **测试覆盖** - 关键路径是否有测试、边界条件是否覆盖
-
-## 输出格式
-对每个问题：
-- 严重程度：🔴 Critical / 🟡 Warning / 🔵 Suggestion
-- 文件和行号
-- 问题描述
-- 修复建议（但不要直接修改文件）
-
-## 约束
-- 你只能读取代码，不能修改任何文件
-- 不要跳过任何文件，即使看起来没问题也要确认
-- 如果代码质量很好，明确说"通过审查"而非沉默`}
-          language="markdown"
-          title=".claude/agents/code-reviewer.md"
-          annotations={[
-            { line: 2, text: 'Agent 名称，在 /agent 命令和 UI 中显示' },
-            { line: 3, text: '描述文字，帮助主 Agent 理解何时调用这个 Agent' },
-            { line: 4, text: '允许使用的工具白名单 —— 只给 Read/Grep/Glob，确保只读' },
-            { line: 8, text: '不允许的工具黑名单 —— 显式禁止写入和执行' },
-            { line: 12, text: '使用 Sonnet 模型 —— 比 Opus 便宜但审查能力足够' },
-            { line: 13, text: 'plan 模式：执行工具前需要确认，增加安全性' },
-            { line: 14, text: '最多 15 轮对话 —— 防止无限循环消耗 token' },
-            { line: 18, text: 'project 级别记忆 —— Agent 会记住项目的代码规范和历史问题' },
-            { line: 20, text: 'effort: high —— 让模型在每个文件上花更多时间思考' },
-          ]}
+# 查看所有已加载的 Skills
+/skills`}
         />
 
-        <p className="text-base leading-relaxed mt-4" style={{ color: 'var(--color-text-secondary)' }}>
-          下面是一个完整的实现者 Agent 示例，展示了 <code style={{ color: 'var(--color-accent)' }}>isolation: worktree</code> 的用法：
-        </p>
+        <QualityCallout title="Skill 的组织建议">
+          把"个人偏好"放 Personal（如你习惯的 review 风格），把"团队标准"放 Project（如部署流程、changelog 格式）。
+          这样团队成员可以有自己的个人 Skill，同时共享项目级的标准流程。
+          Personal Skill 不会提交到 git，不会干扰团队。
+        </QualityCallout>
 
-        <ConfigExample
-          code={`---
-name: "implementer"
-description: "在隔离环境中实现功能，不影响主代码"
-tools:
-  - Read
-  - Grep
-  - Glob
-  - Edit
-  - Write
-  - Bash
-model: "claude-sonnet-4-20250514"
-permissionMode: "auto"
-maxTurns: 30
-memory: "project"
-background: false
-effort: "high"
-isolation: "worktree"
----
-
-# Implementer Agent
-
-你是一个专注的功能实现者。在独立的 worktree 中工作。
-
-## 工作流程
-1. 仔细阅读任务要求
-2. 搜索相关代码和依赖
-3. 编写实现代码
-4. 编写对应的测试
-5. 运行测试确保通过
-6. 提供变更摘要
-
-## 约束
-- 遵循项目已有的代码风格和模式
-- 每个函数不超过 50 行
-- 所有公共 API 必须有 JSDoc 注释
-- 新增代码必须有对应的单元测试`}
-          language="markdown"
-          title=".claude/agents/implementer.md"
-          annotations={[
-            { line: 12, text: 'auto 模式：Agent 可以自动执行工具，无需每次确认' },
-            { line: 13, text: '30 轮上限 —— 实现任务比审查需要更多轮次' },
-            { line: 17, text: 'worktree 隔离！所有文件修改在 git worktree 副本中进行，主代码不受影响' },
+        <ExerciseCard
+          tier="l1"
+          title="创建你的第一个 Skill"
+          description="在你的项目中创建 .claude/skills/greet/SKILL.md，写一个简单的 /greet Skill：接受一个名字参数，输出个性化的问候。在 Claude Code 中输入 /greet World 测试。"
+          checkpoints={[
+            '文件路径正确：.claude/skills/greet/SKILL.md',
+            'frontmatter 包含 name 和 description',
+            '指令体使用 $ARGUMENTS 或 $0 引用参数',
+            '在 Claude Code 中 /greet World 能正确触发',
+            '/skills 命令能看到 greet 已加载',
           ]}
         />
-
-        <div
-          className="rounded-xl p-5 mt-6"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <h4
-            className="text-sm font-semibold mb-3"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            14 个 Frontmatter 字段速查
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-            <div><code style={{ color: 'var(--color-accent)' }}>name</code> — Agent 显示名称</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>description</code> — 功能描述</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>tools</code> — 允许的工具列表</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>disallowedTools</code> — 禁止的工具</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>model</code> — 使用的模型</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>permissionMode</code> — 权限模式</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>maxTurns</code> — 最大对话轮次</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>skills</code> — 启用的技能</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>mcpServers</code> — MCP 服务器</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>hooks</code> — 生命周期钩子</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>memory</code> — 记忆级别</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>background</code> — 是否后台运行</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>effort</code> — 推理投入程度</div>
-            <div><code style={{ color: 'var(--color-accent)' }}>isolation</code> — 隔离模式</div>
-          </div>
-        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 6.3: 关键模式
+          Section 6.4: 从 Plugin 市场获取能力
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -498,587 +506,511 @@ isolation: "worktree"
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          6.3 关键模式
+          6.4 从 Plugin 市场获取能力
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          掌握了 Subagent 的基本概念后，下面是四种高级模式，每一种都解决一个真实的工程痛点。
+          自己写 Skill 很强大，但更多时候你不需要从零开始。
+          Claude Code 拥有一个丰富的 Plugin 生态 -- 百余个官方和社区 Plugin 覆盖了常见的开发场景。
+          每个 Plugin 就是一组打包好的 Skills（有时还包含 Hooks、MCP 配置），一条命令安装，立即可用。
         </p>
 
-        {/* ── Pattern 1: Worktree 隔离 ── */}
+        <CodeBlock
+          language="bash"
+          title="plugin-commands.sh"
+          code={`# 浏览 Plugin 市场
+/plugin
+
+# 安装一个 Plugin
+/install @anthropic/playwright
+
+# 查看已安装的 Plugin
+/plugins
+
+# 卸载 Plugin
+/uninstall @anthropic/playwright`}
+        />
+
         <h3
           className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          模式 1：Worktree 隔离 —— "安全网"
+          按场景推荐 Plugin
         </h3>
 
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          设置 <code style={{ color: 'var(--color-accent)' }}>isolation: worktree</code> 后，
-          Subagent 会在一个独立的 git worktree 中工作。它看到的是项目的完整副本，
-          但所有修改都局限在这个副本里。
+        <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+          以下是按开发场景分类的常用 Plugin。带有 <span style={{ color: 'var(--color-accent)' }}>Anthropic Verified</span> 标记
+          的 Plugin 经过 Anthropic 官方安全审查和质量验证。
         </p>
-
-        <CodeBlock
-          language="bash"
-          title="worktree-isolation-flow.sh"
-          code={`# Worktree 隔离的工作流程：
-
-# 1. 主 Agent 派发任务
-# → Claude 自动创建 git worktree：
-#    git worktree add /tmp/.claude-worktree-abc123 HEAD
-
-# 2. Subagent 在 worktree 中工作
-# → 所有 Read/Edit/Write/Bash 操作的根目录是 worktree
-# → 主项目目录完全不受影响
-
-# 3. Subagent 完成后
-# → 返回变更摘要给主 Agent
-# → 主 Agent 决定是否合并变更：
-#    git merge --no-ff worktree-branch
-
-# 4. 如果不满意
-# → 直接丢弃 worktree，零成本回退
-#    git worktree remove /tmp/.claude-worktree-abc123
-
-# 真实场景：让 Subagent 重构整个模块
-# 如果重构搞砸了 → 丢弃 worktree → 你的代码还是原样
-# 如果重构成功了 → 合并 → 就像一个 PR`}
-        />
-
-        <PromptCompare
-          bad={{
-            label: '无隔离',
-            prompt: `用 General-purpose subagent 重构 src/auth/ 模块
-
-→ Subagent 直接修改了 12 个文件
-→ 其中 3 个改错了
-→ git diff 有 400+ 行变更
-→ 需要手动逐个 revert 错误的修改`,
-            explanation: '没有隔离时，Subagent 的错误直接影响你的工作目录。回退成本高，而且可能漏掉一些意外修改。',
-          }}
-          good={{
-            label: 'Worktree 隔离',
-            prompt: `用 isolation: worktree 的 implementer subagent 重构 src/auth/ 模块
-
-→ Subagent 在独立副本中修改了 12 个文件
-→ 主代码完全不受影响
-→ 审查变更后决定合并或丢弃
-→ 一条命令搞定`,
-            explanation: 'Worktree 隔离让大范围修改变得安全。审查通过就合并，不满意就丢弃，零风险。',
-          }}
-        />
-
-        {/* ── Pattern 2: 持久记忆 ── */}
-        <h3
-          className="text-lg font-semibold mt-10"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          模式 2：持久记忆 —— Agent 越用越聪明
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          设置 <code style={{ color: 'var(--color-accent)' }}>memory: project</code> 后，
-          Agent 在每次调用中积累的知识会持久化到项目级别的记忆文件中。
-          下次调用同一个 Agent 时，它会自动加载之前的记忆。
-        </p>
-
-        <CodeBlock
-          language="typescript"
-          title="memory-evolution.ts"
-          code={`// 第 1 次调用 code-reviewer：
-// Agent 发现项目使用 ESLint + Prettier
-// → 记忆："项目代码规范：ESLint airbnb, Prettier, 4 空格缩进"
-
-// 第 3 次调用：
-// Agent 发现团队偏好函数式组件
-// → 记忆更新："React 组件一律使用函数式 + hooks，禁止 class 组件"
-
-// 第 5 次调用：
-// Agent 发现了一个反复出现的模式
-// → 记忆更新："API 路由统一使用 zod 做入参校验，错误用 AppError 类抛出"
-
-// 第 10 次调用：
-// Agent 已经积累了丰富的项目知识
-// → 审查效果接近一个熟悉项目的人类 reviewer
-// → 不再需要每次都在 prompt 中重复说明代码规范
-// → 能发现"虽然语法正确但不符合本项目惯例"的问题
-
-// memory 支持的级别：
-// "none"    — 无记忆，每次调用是全新的（适合一次性任务）
-// "session" — 会话级记忆，关闭终端即丢失
-// "project" — 项目级记忆，持久化到 .claude/ 目录（推荐）`}
-        />
-
-        {/* ── Pattern 3: 成本控制 ── */}
-        <h3
-          className="text-lg font-semibold mt-10"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          模式 3：成本控制 —— 分层模型策略
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          不是所有任务都需要最强的模型。Subagent 的关键优势之一是可以为不同任务分配不同的模型和资源上限。
-        </p>
-
-        <CodeBlock
-          language="yaml"
-          title="cost-strategy.yaml"
-          code={`# 分层模型策略（按任务类型分配模型）
-
-搜索/定位任务:
-  model: haiku          # 最便宜 ~¥0.05-0.1/次
-  maxTurns: 10          # 搜索任务不需要太多轮
-  effort: low           # 不需要深度推理
-  示例: "查找所有使用 deprecated API 的文件"
-
-实现/编码任务:
-  model: sonnet         # 性价比最优 ~¥0.5-2/次
-  maxTurns: 30          # 实现任务需要较多轮次
-  effort: high          # 需要仔细思考
-  示例: "实现用户权限模块，包含 RBAC 和测试"
-
-架构/决策任务:
-  model: opus           # 最强推理 ~¥2-5/次
-  maxTurns: 20          # 架构讨论不需要太多轮
-  effort: high          # 需要最深度的推理
-  示例: "评估当前架构能否支撑 10x 流量增长"
-
-# 实际成本对比（同一个功能开发）：
-# 全部用 Opus:     ¥15-25
-# 分层策略:        ¥5-8
-# 节省:            60-70%`}
-        />
-
-        <QualityCallout title="maxTurns 是你的成本保险">
-          <p>
-            Haiku 搜索约 ¥0.05-0.1/次，对比 20 分钟手动搜索，ROI 高达 500:1。
-            但如果忘记设置 maxTurns，一个失控的 Subagent 可能循环几十轮消耗大量 token。
-            <strong> 始终为每个 Agent 设置 maxTurns</strong> —— 这是防止失控成本的最后一道防线。
-          </p>
-        </QualityCallout>
-
-        {/* ── Pattern 4: 三阶段流水线 ── */}
-        <h3
-          className="text-lg font-semibold mt-10"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          模式 4：三阶段流水线 —— PM → Architect → Implementer
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          将一个完整的功能开发拆成三个阶段，每个阶段由专门的 Agent 处理，
-          前一阶段的输出是后一阶段的输入。
-        </p>
-
-        <CodeBlock
-          language="typescript"
-          title="three-stage-pipeline.ts"
-          code={`// ═══ Stage 1: PM Spec Agent ═══
-// 输入：用户的需求描述（自然语言）
-// 输出：结构化的产品规格文档
-
-// .claude/agents/pm-spec.md
-// model: sonnet | tools: Read, Grep | maxTurns: 10
-// 任务：将模糊需求转化为明确的验收标准
-
-// PM Agent 的输出示例：
-const pmOutput = {
-  feature: "用户通知系统",
-  userStories: [
-    "用户可以收到站内通知",
-    "用户可以标记通知为已读",
-    "用户可以设置通知偏好（邮件/站内/两者）",
-  ],
-  acceptanceCriteria: [
-    "通知列表支持分页，每页 20 条",
-    "未读通知有视觉标识",
-    "批量标记已读响应时间 < 200ms",
-  ],
-  outOfScope: ["推送通知", "通知模板自定义"],
-}
-
-// ═══ Stage 2: Architect Review Agent ═══
-// 输入：PM 的规格文档 + 现有代码库
-// 输出：技术设计方案 + 风险评估
-
-// .claude/agents/architect-review.md
-// model: opus | tools: Read, Grep, Glob | maxTurns: 15
-// 任务：设计技术方案，确保与现有架构一致
-
-// Architect Agent 的输出示例：
-const architectOutput = {
-  dataModel: "Notification 表 + NotificationPreference 表",
-  apiDesign: "REST: GET /notifications, PATCH /notifications/:id",
-  riskAssessment: [
-    { risk: "通知量大时查询性能", mitigation: "添加 user_id + created_at 复合索引" },
-    { risk: "与现有 WebSocket 的集成", mitigation: "复用已有的 ws 连接推送" },
-  ],
-  fileChanges: [
-    "新增: src/models/notification.ts",
-    "新增: src/routes/notifications.ts",
-    "修改: src/websocket/handler.ts (添加通知推送)",
-  ],
-}
-
-// ═══ Stage 3: Implementer + Tester Agent ═══
-// 输入：Architect 的设计方案
-// 输出：实现代码 + 测试代码
-
-// .claude/agents/implementer.md
-// model: sonnet | tools: ALL | maxTurns: 30 | isolation: worktree
-// 任务：按设计方案实现，并编写测试
-
-// 整个流水线由主 Agent 编排：
-// 1. 调用 pm-spec → 获得规格
-// 2. 将规格传给 architect-review → 获得设计
-// 3. 将设计传给 implementer → 获得实现
-// 每一步的输出是下一步的输入，主 Agent 只做"传话"和最终审核`}
-        />
-
-        {/* ── SendMessage 恢复 ── */}
-        <h3
-          className="text-lg font-semibold mt-10"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          SendMessage 恢复机制
-        </h3>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          每个 Subagent 都有唯一的 ID。如果 Subagent 被中断（网络问题、超时等），
-          可以通过 ID 恢复完整的上下文，从断点继续执行。
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title="subagent-resume.sh"
-          code={`# 每个 Subagent 执行时会生成唯一 ID
-# 例如: subagent-a1b2c3d4
-
-# 如果 Subagent 因超时中断：
-# 主 Agent 可以通过 SendMessage 恢复
-# → 不需要重新执行已完成的步骤
-# → 完整的工具调用历史被保留
-# → 从上次中断的位置继续
-
-# 这意味着：
-# - 长时间运行的任务不怕断线
-# - 可以手动暂停后恢复
-# - 调试时可以查看 Subagent 的完整执行记录`}
-        />
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 6.4: 实战 —— 并行 Bug 修复
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          6.4 实战：并行 Bug 修复
-        </h2>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          场景：你收到了一个 Bug 报告："用户登录后，在某些页面会被意外登出。"
-          这是一个典型的"需要调研才能修复"的问题。我们来看如何用 Subagent 并行化整个流程。
-        </p>
-
-        <CodeBlock
-          language="typescript"
-          title="parallel-bug-fix-flow.ts"
-          code={`// ═══ 第一阶段：主 Agent 制定计划 ═══
-
-// 你对主 Agent 说：
-// "用户反馈登录后在某些页面被意外登出，帮我排查和修复。"
-
-// 主 Agent 分析后，决定并行派发 3 个 Explore subagent：
-
-// ═══ 第二阶段：并行探索（3 个 Explore Subagent 同时执行）═══
-
-// Explore Subagent #1：搜索认证逻辑
-// Prompt: "搜索项目中所有与 authentication、session、
-//          token refresh 相关的代码。列出文件路径和关键函数。"
-
-// Explore Subagent #2：搜索路由守卫
-// Prompt: "搜索所有路由中间件和页面守卫逻辑，
-//          找出哪些页面有特殊的认证处理。"
-
-// Explore Subagent #3：搜索最近变更
-// Prompt: "查看最近 20 次 git commit，找出所有涉及
-//          auth、session、cookie 的变更。"
-
-// 三个 Subagent 并行执行！
-// 每个 ~30 秒完成，总共 ~30 秒（而非串行的 ~90 秒）
-
-// ═══ 第三阶段：主 Agent 汇总分析 ═══
-
-// 主 Agent 收到 3 个摘要：
-// #1: "认证使用 JWT，刷新逻辑在 src/auth/refresh.ts"
-// #2: "发现 /dashboard 和 /settings 有不同的 guard 实现"
-// #3: "3 天前有一个 commit 修改了 cookie 的 SameSite 属性"
-
-// 主 Agent 判断：cookie SameSite 属性变更 + 不一致的 guard 实现
-// 是最可能的原因。
-
-// ═══ 第四阶段：并行修复 + 测试 ═══
-
-// General-purpose Subagent #1（isolation: worktree）：
-// "修复 src/auth/refresh.ts 中的 SameSite 配置，
-//  确保与所有路由兼容。"
-
-// General-purpose Subagent #2（isolation: worktree）：
-// "为 /dashboard 和 /settings 的认证守卫编写
-//  端到端测试，覆盖 token 刷新场景。"
-
-// 两个 Subagent 在各自的 worktree 中独立工作
-// 修复代码的不会影响写测试的，反之亦然
-
-// ═══ 第五阶段：主 Agent 审查并合并 ═══
-// 审查两个 worktree 的变更 → 合并 → 运行完整测试套件 → 完成`}
-          highlightLines={[10, 11, 15, 16, 20, 21, 44, 45, 49, 50]}
-        />
 
         <div
-          className="rounded-xl p-5 mt-4"
+          className="rounded-lg overflow-hidden"
+          style={{
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+          }}
+        >
+          <div
+            className="px-4 py-3 text-sm font-medium"
+            style={{
+              borderBottom: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)',
+              background: 'var(--color-bg-tertiary)',
+            }}
+          >
+            常用 Plugin 推荐
+          </div>
+          <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+            {[
+              {
+                name: 'Playwright',
+                badge: 'Anthropic Verified',
+                desc: '浏览器自动化。截图、点击、表单填写、端到端测试。让 Claude 能直接操作浏览器验证 UI 变更。',
+                scenario: '前端开发 / E2E 测试',
+              },
+              {
+                name: 'GitHub',
+                badge: 'Anthropic Verified',
+                desc: 'GitHub 深度集成。创建 PR、review comments、管理 Issues、触发 Actions。将 Claude 融入 GitHub 工作流。',
+                scenario: '代码协作 / CI-CD',
+              },
+              {
+                name: 'Figma',
+                badge: 'Anthropic Verified',
+                desc: '设计稿转代码。读取 Figma 设计稿，生成对应的前端组件。支持设计系统变量和组件映射。',
+                scenario: '设计转开发',
+              },
+              {
+                name: 'Sentry',
+                badge: 'Partner',
+                desc: '错误监控集成。拉取 Sentry 错误报告、分析堆栈、定位到代码行。让 Claude 直接诊断线上问题。',
+                scenario: '线上运维 / Debug',
+              },
+              {
+                name: 'Chrome DevTools',
+                badge: 'Anthropic Verified',
+                desc: '浏览器调试。性能分析、网络请求检查、Console 日志、Lighthouse 审计。直接连接 Chrome 实例做调试。',
+                scenario: '前端调试 / 性能优化',
+              },
+            ].map((plugin) => (
+              <div key={plugin.name} className="px-4 py-3">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: 'var(--color-accent)' }}
+                  >
+                    {plugin.name}
+                  </span>
+                  <span
+                    className="text-xs px-1.5 py-0.5 rounded"
+                    style={{
+                      background: plugin.badge === 'Anthropic Verified'
+                        ? 'var(--color-accent-subtle)'
+                        : 'var(--color-bg-surface)',
+                      border: `1px solid ${plugin.badge === 'Anthropic Verified'
+                        ? 'var(--color-border-accent)'
+                        : 'var(--color-border)'}`,
+                      color: plugin.badge === 'Anthropic Verified'
+                        ? 'var(--color-accent)'
+                        : 'var(--color-text-muted)',
+                    }}
+                  >
+                    {plugin.badge}
+                  </span>
+                  <span
+                    className="text-xs px-1.5 py-0.5 rounded"
+                    style={{
+                      background: 'var(--color-bg-surface)',
+                      border: '1px solid var(--color-border)',
+                      color: 'var(--color-text-muted)',
+                    }}
+                  >
+                    {plugin.scenario}
+                  </span>
+                </div>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  {plugin.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── How to evaluate plugin quality ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          如何评估 Plugin 质量
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          安装第三方 Plugin 前，用以下清单快速评估其可靠性：
+        </p>
+
+        <div
+          className="rounded-lg p-5 space-y-3"
           style={{
             background: 'var(--color-bg-secondary)',
             border: '1px solid var(--color-border)',
           }}
         >
-          <h4
-            className="text-sm font-semibold mb-3"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            时间对比
-          </h4>
-          <div className="space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <div className="flex items-center gap-3">
-              <span className="shrink-0 font-mono text-xs px-2 py-1 rounded" style={{ background: 'rgba(248, 113, 113, 0.1)', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.2)' }}>串行</span>
-              <span>搜索(90s) + 分析(60s) + 修复(120s) + 测试(120s) = <strong>~6.5 分钟</strong></span>
+          {[
+            {
+              check: 'Anthropic Verified 标记',
+              desc: '经过官方安全审查，质量有保障。优先选择有此标记的 Plugin。',
+            },
+            {
+              check: 'GitHub Star 数和维护频率',
+              desc: '超过 100 star、最近 30 天内有 commit 的 Plugin 通常更可靠。',
+            },
+            {
+              check: 'allowed-tools 权限范围',
+              desc: '检查 Plugin 的 Skill 是否请求了过多的权限。一个 review Plugin 不需要 Write 权限。',
+            },
+            {
+              check: 'SKILL.md 可读性',
+              desc: 'Plugin 的核心就是 SKILL.md 文件。直接阅读它，确认指令合理、没有可疑命令。',
+            },
+            {
+              check: '社区评价和 Issue 数',
+              desc: '查看其他用户的反馈。未解决的安全相关 Issue 是危险信号。',
+            },
+          ].map((item) => (
+            <div key={item.check} className="flex items-start gap-2">
+              <span className="text-sm flex-shrink-0" style={{ color: 'var(--color-accent)' }}>-</span>
+              <div>
+                <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                  {item.check}
+                </span>
+                <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  {' '}{item.desc}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="shrink-0 font-mono text-xs px-2 py-1 rounded" style={{ background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', border: '1px solid rgba(74, 222, 128, 0.2)' }}>并行</span>
-              <span>搜索(30s) + 分析(60s) + 修复+测试(120s) = <strong>~3.5 分钟</strong></span>
-            </div>
-            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              并行化将可并行阶段的时间压缩到最慢单元的耗时。任务越多、可并行性越高，收益越大。
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section 6.5: 失败模式与对策
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          6.5 失败模式与对策
-        </h2>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Subagent 不是银弹。以下是三种最常见的失败模式，以及对应的解决方案。
-        </p>
-
-        {/* Failure 1 */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{
-            border: '1px solid rgba(248, 113, 113, 0.3)',
-            background: 'var(--color-bg-secondary)',
-          }}
-        >
-          <div
-            className="px-5 py-3 text-sm font-semibold flex items-center gap-2"
-            style={{
-              background: 'rgba(248, 113, 113, 0.08)',
-              borderBottom: '1px solid rgba(248, 113, 113, 0.3)',
-              color: '#f87171',
-            }}
-          >
-            失败模式 1：修改了错误的文件
-          </div>
-          <div className="px-5 py-4 space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <p>
-              <strong style={{ color: 'var(--color-text-primary)' }}>症状：</strong>
-              Subagent 完成任务后，你发现它修改了不在任务范围内的文件。
-              例如：让它修复 auth 模块，它还顺手"优化"了 utils。
-            </p>
-            <p>
-              <strong style={{ color: 'var(--color-text-primary)' }}>原因：</strong>
-              Subagent 的 prompt 中没有明确限定文件范围。
-            </p>
-            <p>
-              <strong style={{ color: 'var(--color-accent)' }}>对策：</strong>
-              使用 <code style={{ color: 'var(--color-accent)' }}>isolation: worktree</code> 作为安全网；
-              在 prompt 中明确列出"只修改以下文件"；
-              在 Agent 定义的 markdown 正文中添加"严禁修改范围外的文件"约束。
-            </p>
-          </div>
+          ))}
         </div>
 
-        {/* Failure 2 */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{
-            border: '1px solid rgba(248, 113, 113, 0.3)',
-            background: 'var(--color-bg-secondary)',
-          }}
-        >
-          <div
-            className="px-5 py-3 text-sm font-semibold flex items-center gap-2"
-            style={{
-              background: 'rgba(248, 113, 113, 0.08)',
-              borderBottom: '1px solid rgba(248, 113, 113, 0.3)',
-              color: '#f87171',
-            }}
-          >
-            失败模式 2：返回的结果是垃圾
-          </div>
-          <div className="px-5 py-4 space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <p>
-              <strong style={{ color: 'var(--color-text-primary)' }}>症状：</strong>
-              Subagent 返回的摘要模糊不清、生成的代码无法编译、或者完全偏离了任务。
-            </p>
-            <p>
-              <strong style={{ color: 'var(--color-text-primary)' }}>原因：</strong>
-              Prompt 中缺乏足够的上下文信息。记住：Subagent 看不到主会话的历史，
-              你认为"显而易见"的背景信息，对 Subagent 来说完全不存在。
-            </p>
-            <p>
-              <strong style={{ color: 'var(--color-accent)' }}>对策：</strong>
-              Prompt 必须是<strong>自包含的</strong> —— 包含所有必要的技术栈、文件路径、代码规范、
-              验收标准。把它当作写给一个新入职同事的任务单。
-            </p>
-          </div>
-        </div>
-
-        {/* Failure 3 */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{
-            border: '1px solid rgba(248, 113, 113, 0.3)',
-            background: 'var(--color-bg-secondary)',
-          }}
-        >
-          <div
-            className="px-5 py-3 text-sm font-semibold flex items-center gap-2"
-            style={{
-              background: 'rgba(248, 113, 113, 0.08)',
-              borderBottom: '1px solid rgba(248, 113, 113, 0.3)',
-              color: '#f87171',
-            }}
-          >
-            失败模式 3：耗尽了 maxTurns 还没完成
-          </div>
-          <div className="px-5 py-4 space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <p>
-              <strong style={{ color: 'var(--color-text-primary)' }}>症状：</strong>
-              Subagent 达到 maxTurns 限制后返回"任务未完成"的摘要。
-              最后几轮通常是在重复之前的尝试或在死胡同里打转。
-            </p>
-            <p>
-              <strong style={{ color: 'var(--color-text-primary)' }}>原因：</strong>
-              任务颗粒度太大。一个 Subagent 试图完成太多事情。
-            </p>
-            <p>
-              <strong style={{ color: 'var(--color-accent)' }}>对策：</strong>
-              将大任务拆分为多个小任务，每个交给独立的 Subagent。
-              经验法则：如果你觉得一个任务需要超过 20 轮对话才能完成，它一定需要被拆分。
-            </p>
-          </div>
-        </div>
-
-        <PromptCompare
-          bad={{
-            label: '信息不足的 Prompt',
-            prompt: `帮我修复用户模块的 bug`,
-            explanation: 'Subagent 不知道用户模块在哪里、什么技术栈、bug 的具体表现是什么。这几乎一定会返回垃圾结果。',
-          }}
-          good={{
-            label: '自包含的 Prompt',
-            prompt: `修复 src/modules/user/service.ts 中 getUserById 函数的 bug：
-- 技术栈：TypeScript + Prisma + PostgreSQL
-- 问题：当用户 ID 不存在时返回 500 而非 404
-- 预期：不存在时抛出 NotFoundException
-- 参考：src/modules/post/service.ts 的 getPostById 有正确实现
-- 约束：只修改 service.ts 和对应的 service.spec.ts`,
-            explanation: 'Prompt 包含了文件路径、技术栈、问题描述、预期行为、参考代码、修改范围 —— Subagent 有了完成任务所需的全部信息。',
-          }}
-        />
-
-        <QualityCallout title="成本与 ROI">
-          <p>
-            Haiku 搜索约 ¥0.05-0.1/次，对比你 20 分钟的手动搜索时间，ROI 高达 500:1。
-            但必须设置 maxTurns 防止失控 —— 一个没有 maxTurns 的 Subagent 可能在循环中
-            跑 100+ 轮，把成本从 ¥0.1 变成 ¥10。maxTurns 是你的成本保险丝，永远不要省略它。
-          </p>
+        <QualityCallout title="Plugin 的本质是透明的">
+          和很多闭源插件系统不同，Claude Code Plugin 的核心就是 SKILL.md 文件 -- 纯文本 Markdown。
+          你可以完整阅读它的每一行指令，清楚地知道它会让 Claude 做什么。
+          安装前花 2 分钟读一下 SKILL.md，比安装后出问题再排查划算得多。
         </QualityCallout>
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          Section: Exercises
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          练习
-        </h2>
 
         <ExerciseCard
           tier="l1"
-          title="使用内置 Explore Subagent 搜索代码库"
-          description="在你的项目中，使用 Explore subagent 搜索一个特定的代码模式。例如：'找到所有直接操作 DOM 的代码'或'找到所有没有错误处理的 async 函数'。观察 Subagent 的搜索速度和结果质量。"
+          title="安装并使用一个 Plugin"
+          description="在 Claude Code 中使用 /plugin 浏览市场，选择一个与你项目相关的 Plugin（如 Playwright 或 GitHub），安装并运行它的一个 Skill。"
           checkpoints={[
-            'Subagent 返回了结构化的搜索结果（文件路径 + 代码片段）',
-            '搜索结果覆盖了项目中的大部分相关代码',
-            '总耗时在 30 秒以内',
-            '主会话的上下文没有因搜索而显著膨胀',
-          ]}
-        />
-
-        <ExerciseCard
-          tier="l2"
-          title="编写自定义 code-reviewer Agent 并测试"
-          description="创建 .claude/agents/code-reviewer.md，定义一个只读的代码审查 Agent。设置合适的 tools（只给 Read/Grep/Glob）、model（Sonnet）、maxTurns（15）和 memory（project）。然后在你的项目上运行它，审查最近的一次代码变更。"
-          checkpoints={[
-            'Agent 定义文件包含完整的 frontmatter 和正文指令',
-            'tools 只包含只读工具，没有 Edit/Write/Bash',
-            '审查输出按严重程度分级（Critical/Warning/Suggestion）',
-            '每个问题都包含文件路径、行号和修复建议',
-            '运行两次后，观察 memory: project 是否让第二次审查更精准',
-          ]}
-        />
-
-        <ExerciseCard
-          tier="l3"
-          title="搭建三阶段流水线：Spec → Review → Implement"
-          description="为你的项目中一个真实的待开发功能，搭建完整的三阶段 Subagent 流水线。创建 pm-spec.md、architect-review.md 和 implementer.md 三个 Agent 定义，然后让主 Agent 依次调用它们。Implementer 必须使用 worktree 隔离。"
-          checkpoints={[
-            '三个 Agent 定义文件都已创建，各自有合理的 model 和 maxTurns 配置',
-            'PM Agent 产出了结构化的规格文档（用户故事 + 验收标准）',
-            'Architect Agent 产出了技术设计方案，包含风险评估',
-            'Implementer Agent 在 worktree 中完成了代码实现和测试',
-            '所有测试通过后，成功将 worktree 的变更合并到主分支',
-            '对比记录：三阶段流水线 vs 直接让一个 Agent 完成全部工作的质量差异',
+            '/plugin 命令能正常打开 Plugin 市场',
+            '成功安装一个 Plugin',
+            '/plugins 命令能看到已安装的 Plugin',
+            '成功运行 Plugin 提供的某个 Skill',
+            '阅读了 Plugin 的 SKILL.md 文件，理解它的指令内容',
           ]}
         />
       </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 6.5: 常见问题排查
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          6.5 常见问题排查
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Skills 系统的设计很直观，但初次使用时难免遇到一些问题。以下是最常见的三类问题及排查方法。
+          不要慌 -- 大多数问题都是路径或 frontmatter 格式导致的，修复只需几秒钟。
+        </p>
+
+        {/* ── Problem 1: Skill 没加载 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Skill 没有被加载
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          输入 /my-skill 后 Claude 不认识这个命令，或者期望自动触发的 Skill 没有加载。
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="debug-skill-not-loaded.sh"
+          code={`# Step 1: 确认文件位置正确
+# Skill 必须放在以下目录之一:
+ls ~/.claude/skills/          # 个人 Skills
+ls .claude/skills/            # 项目 Skills
+
+# Step 2: 确认目录结构
+# 每个 Skill 是一个目录，包含 SKILL.md
+# 正确:  .claude/skills/deploy/SKILL.md
+# 错误:  .claude/skills/deploy.md (没有 SKILL.md)
+
+# Step 3: 检查 frontmatter 格式
+# YAML frontmatter 必须以 --- 开头和结尾
+# 常见错误: 缩进不对、冒号后没空格、值未引号包裹
+
+# Step 4: 查看已加载的 Skills
+/skills
+
+# Step 5: 使用 /debug 获取详细诊断信息
+/debug`}
+        />
+
+        <div
+          className="rounded-lg p-4 text-sm space-y-2"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <p className="font-medium" style={{ color: 'var(--color-text-primary)' }}>常见原因速查：</p>
+          <ul className="space-y-1" style={{ color: 'var(--color-text-secondary)' }}>
+            <li>- 文件名不是 SKILL.md（注意大写）</li>
+            <li>- YAML frontmatter 中有语法错误（缩进必须用空格，不能用 Tab）</li>
+            <li>- name 字段缺失或为空</li>
+            <li>- 同名 Skill 在更高优先级的作用域中存在，覆盖了你的 Skill</li>
+            <li>- user-invocable: false 但你试图用斜杠命令触发</li>
+          </ul>
+        </div>
+
+        {/* ── Problem 2: Skill 冲突 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Skill 和其他 Skill 冲突
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          两个 Skill 的 description 太相似，导致 Claude 在不该触发时触发了错误的 Skill。
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="debug-skill-conflict.txt"
+          code={`# 问题场景:
+# Skill A: description: "Review code changes"
+# Skill B: description: "Review and fix code changes"
+# → Claude 看到代码变更时，可能随机选择 A 或 B
+
+# 解决方案 1: 让 description 更精确，减少重叠
+# Skill A: description: "Review staged git changes for security and logic issues"
+# Skill B: description: "Auto-fix linting and formatting issues in changed files"
+
+# 解决方案 2: 使用命名空间避免冲突
+# Plugin Skill 自动有命名空间: playwright:screenshot
+# 项目 Skill 可以用前缀: proj-review, proj-deploy
+
+# 解决方案 3: 查看优先级
+/skills  # 检查哪个 Skill 实际生效`}
+        />
+
+        {/* ── Problem 3: Dynamic injection issues ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          动态注入 (!command) 问题
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <code style={{ color: 'var(--color-accent)' }}>{'`!command`'}</code> 没有被执行，
+          输出为空，或者执行了错误的命令。
+        </p>
+
+        <div
+          className="rounded-lg p-4 text-sm space-y-2"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <p className="font-medium" style={{ color: 'var(--color-text-primary)' }}>排查步骤：</p>
+          <ul className="space-y-1" style={{ color: 'var(--color-text-secondary)' }}>
+            <li>- 确认语法正确：必须是反引号 + 感叹号 + 命令（<code style={{ color: 'var(--color-accent)' }}>{'`!git diff`'}</code>），不是 <code>{'!`git diff`'}</code></li>
+            <li>- 命令在当前工作目录下能独立执行吗？手动在终端跑一次确认</li>
+            <li>- 命令输出太大会被截断。用 <code style={{ color: 'var(--color-accent)' }}>{'`!git diff --stat`'}</code> 替代 <code>{'`!git diff`'}</code> 来减少输出量</li>
+            <li>- 命令执行失败（exit code 非 0）时，错误信息会被注入到上下文中。检查 Skill 输出里有没有报错</li>
+            <li>- $ARGUMENTS 替换发生在 !command 执行之前。如果命令中引用了 $0 且用户没传参数，命令可能异常</li>
+          </ul>
+        </div>
+
+        <QualityCallout title="排查万能方法：/debug">
+          遇到任何 Skill 相关问题，第一步都是跑 /debug。它会输出当前会话的完整诊断信息，
+          包括已加载的 Skills、搜索路径、冲突检测、frontmatter 解析结果。
+          这比盲目猜测高效得多。
+        </QualityCallout>
+
+        <ExerciseCard
+          tier="l2"
+          title="编写 Code Review Skill 并实战测试"
+          description={`基于本章所学，编写一个完整的 Code Review Skill。要求：(1) 使用 \`!command\` 动态注入 git diff；(2) 用 allowed-tools 限制为只读权限；(3) 用 model 指定更经济的模型。然后在一个真实的代码变更上测试它，评估 review 质量。`}
+          checkpoints={[
+            '.claude/skills/review/SKILL.md 文件正确创建',
+            'frontmatter 包含 name, description, allowed-tools, model',
+            '指令体使用 `!git diff` 动态注入变更内容',
+            'allowed-tools 只包含只读工具（Read, Bash, Glob, Grep）',
+            '在真实代码变更上测试：review 输出结构化、有文件行号引用',
+            '/skills 命令确认 Skill 已正确加载',
+          ]}
+        />
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Reference Section
+          ═══════════════════════════════════════════════ */}
+      <ReferenceSection version="Claude Code 2026">
+        <div className="space-y-8">
+          {/* ── Complete Frontmatter ── */}
+          <div>
+            <h3
+              className="text-sm font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              SKILL.md 完整 Frontmatter 字段
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <th className="text-left py-2 pr-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>字段</th>
+                    <th className="text-left py-2 pr-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>类型</th>
+                    <th className="text-left py-2 pr-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>默认值</th>
+                    <th className="text-left py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>说明</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { field: 'name', type: 'string', def: '(必填)', desc: '命令名，用 /name 触发' },
+                    { field: 'description', type: 'string', def: '""', desc: 'Skill 描述，Claude 自动调用的依据' },
+                    { field: 'disable-model-invocation', type: 'boolean', def: 'false', desc: '禁止 Claude 自动调用，仅手动触发' },
+                    { field: 'user-invocable', type: 'boolean', def: 'true', desc: '是否允许用户用斜杠命令触发' },
+                    { field: 'allowed-tools', type: 'string', def: '(全部)', desc: '逗号分隔的工具白名单' },
+                    { field: 'model', type: 'string', def: '(跟随会话)', desc: '覆盖模型选择' },
+                    { field: 'effort', type: 'string', def: '(跟随会话)', desc: '覆盖推理深度 (low/medium/high)' },
+                    { field: 'context', type: 'string', def: 'main', desc: 'fork: 隔离执行；main: 共享上下文' },
+                    { field: 'agent', type: 'boolean', def: 'false', desc: '作为子 Agent 执行（独立工具循环）' },
+                    { field: 'hooks', type: 'object', def: '{}', desc: 'Skill 专属 Hook 配置' },
+                    { field: 'paths', type: 'string[]', def: '[]', desc: '限制 Skill 的文件访问范围' },
+                    { field: 'shell', type: 'string', def: '(系统默认)', desc: '指定 !command 执行的 shell' },
+                  ].map((row) => (
+                    <tr key={row.field} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td className="py-2 pr-3">
+                        <code style={{ color: 'var(--color-accent)' }}>{row.field}</code>
+                      </td>
+                      <td className="py-2 pr-3 font-mono">{row.type}</td>
+                      <td className="py-2 pr-3 font-mono">{row.def}</td>
+                      <td className="py-2">{row.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Built-in Skills ── */}
+          <div>
+            <h3
+              className="text-sm font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              内置 Skills 列表
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <th className="text-left py-2 pr-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>命令</th>
+                    <th className="text-left py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>功能</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { cmd: '/commit', desc: '生成语义化 commit message 并提交' },
+                    { cmd: '/batch', desc: '批量处理多个文件的相同操作' },
+                    { cmd: '/loop', desc: '定时循环执行指定命令' },
+                    { cmd: '/simplify', desc: '审查代码复用性、质量和效率，修复问题' },
+                    { cmd: '/debug', desc: '输出会话诊断信息（已加载 Skills、Hooks、权限等）' },
+                    { cmd: '/review', desc: '对代码变更进行结构化 review' },
+                    { cmd: '/skills', desc: '列出所有已加载的 Skills' },
+                    { cmd: '/plugins', desc: '列出所有已安装的 Plugins' },
+                    { cmd: '/plugin', desc: '浏览 Plugin 市场' },
+                    { cmd: '/install', desc: '安装 Plugin' },
+                    { cmd: '/uninstall', desc: '卸载 Plugin' },
+                  ].map((row) => (
+                    <tr key={row.cmd} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td className="py-2 pr-3">
+                        <code style={{ color: 'var(--color-accent)' }}>{row.cmd}</code>
+                      </td>
+                      <td className="py-2">{row.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Popular Plugins by Category ── */}
+          <div>
+            <h3
+              className="text-sm font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              常用 Plugin（按分类）
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  category: '前端 / UI',
+                  plugins: ['Playwright (E2E 测试)', 'Chrome DevTools (调试)', 'Figma (设计稿转代码)', 'Storybook (组件文档)'],
+                },
+                {
+                  category: '代码协作',
+                  plugins: ['GitHub (PR/Issue)', 'GitLab (MR/Pipeline)', 'Linear (项目管理)', 'Jira (任务跟踪)'],
+                },
+                {
+                  category: '运维 / 监控',
+                  plugins: ['Sentry (错误监控)', 'Datadog (性能监控)', 'AWS (云资源管理)', 'Vercel (部署)'],
+                },
+                {
+                  category: '数据 / API',
+                  plugins: ['PostgreSQL (数据库)', 'Supabase (BaaS)', 'Stripe (支付)', 'Twilio (通信)'],
+                },
+              ].map((group) => (
+                <div
+                  key={group.category}
+                  className="rounded-lg p-3"
+                  style={{
+                    background: 'var(--color-bg-secondary)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <p className="text-xs font-semibold mb-2" style={{ color: 'var(--color-accent)' }}>
+                    {group.category}
+                  </p>
+                  <ul className="space-y-1">
+                    {group.plugins.map((p) => (
+                      <li key={p} className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                        - {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ReferenceSection>
     </div>
   )
 }

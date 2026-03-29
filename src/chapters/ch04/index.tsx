@@ -5,6 +5,7 @@ import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
 import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+import { ReferenceSection } from '../../components/content/ReferenceSection'
 
 const LazyClaudeMdHierarchy = lazy(() => import('../../remotion/ch04/ClaudeMdHierarchy'))
 
@@ -53,7 +54,50 @@ export default function Ch04() {
       </header>
 
       {/* ═══════════════════════════════════════════════
-          Section 4.1: 注入机制
+          Section 4.1: 快速开始
+          ═══════════════════════════════════════════════ */}
+      <section>
+        <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--color-text-primary)' }}>
+          4.1 快速开始：5 分钟写一个 CLAUDE.md
+        </h2>
+
+        <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+          不需要先理解全部原理——先抄一个能用的模板，用起来再说。
+        </p>
+
+        <CodeBlock
+          language="markdown"
+          title="CLAUDE.md 最小可用模板"
+          code={`# 项目名称
+
+## 技术栈
+- 语言: TypeScript
+- 框架: React 19 + Vite
+- 样式: Tailwind CSS
+
+## 构建与测试
+- 安装依赖: npm install
+- 开发服务器: npm run dev
+- 构建: npm run build
+- 测试: npm test
+
+## 核心约定
+- 使用函数式组件，不用 class 组件
+- 状态管理用 React hooks，不引入外部库
+- 所有 API 调用走 src/api/ 目录
+
+## 不要做的事
+IMPORTANT: 不要修改 src/core/ 下的文件，除非明确被要求`}
+        />
+
+        <p className="mt-4 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+          把上面的模板复制到项目根目录的 CLAUDE.md，替换成你的项目信息。
+          30 分钟上手路径的读者到这里可以先停——开始使用 Claude Code，遇到问题再回来看后续内容。
+        </p>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 4.2: 注入机制
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -63,7 +107,7 @@ export default function Ch04() {
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          4.1 注入机制：CLAUDE.md 是怎么工作的
+          4.2 注入机制与优先级
         </h2>
 
         <AnimationWrapper
@@ -162,7 +206,7 @@ export default function Ch04() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 4.2: 写好 CLAUDE.md 的科学
+          Section 4.3: 写好 CLAUDE.md 的方法
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -172,33 +216,17 @@ export default function Ch04() {
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          4.2 写好 CLAUDE.md 的科学
+          4.3 写好 CLAUDE.md 的方法
         </h2>
 
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          CLAUDE.md 不是"写得越多越好"。每一行都有成本 --
-          而且这个成本在每次对话中都会重复支付。让我们先算一笔账：
+        <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+          1M 上下文下，CLAUDE.md 的 token 成本已经微乎其微（50 行 ≈ 0.15% 的上下文窗口）。
+          优化 CLAUDE.md 不再是为了省空间，而是为了提升信噪比——让 Claude 的注意力集中在真正重要的信息上。
         </p>
 
-        <div
-          className="rounded-lg p-5"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
-            Token 成本计算
-          </h4>
-          <div className="font-mono text-sm space-y-1" style={{ color: 'var(--color-text-secondary)' }}>
-            <p>CLAUDE.md 50 行 x ~30 tokens/行 = ~1,500 tokens/次</p>
-            <p>每次对话 ~30 轮 x 1,500 tokens = ~45,000 tokens/会话</p>
-            <p>每天 5 个会话 x 45,000 = ~225,000 tokens/天</p>
-            <p className="mt-2 pt-2" style={{ borderTop: '1px solid var(--color-border)', color: 'var(--color-accent)' }}>
-              结论：CLAUDE.md 的每一行，每天被重复读取 ~150 次。值得吗？
-            </p>
-          </div>
-        </div>
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          CLAUDE.md 不是"写得越多越好"。让我们看看什么内容真正有价值：
+        </p>
 
         <h3
           className="text-lg font-semibold mt-8"
@@ -280,7 +308,7 @@ src/
         />
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          审计结果：30 行中只有约 10 行是真正有价值的。其余 20 行只是在浪费 token。
+          审计结果：30 行中只有约 10 行是真正有价值的。其余 20 行只是在降低信噪比。
           优化后的版本：
         </p>
 
@@ -299,7 +327,7 @@ src/
   types/      — TypeScript type definitions
   utils/      — Utility functions`,
             label: '低 ROI 内容',
-            explanation: '这 12 行产生 ~360 tokens 的持续消耗，但没有一行能改变 Claude 的行为。Claude 默认就会写整洁代码、遵循 ESLint、理解标准目录结构。',
+            explanation: '这 12 行没有一行能改变 Claude 的行为。Claude 默认就会写整洁代码、遵循 ESLint、理解标准目录结构。它们只是在稀释真正重要的规则。',
           }}
           good={{
             prompt: `# Build
@@ -312,7 +340,7 @@ Error codes: src/constants/errors.ts — do NOT invent new ones
 Tests: __tests__/ next to source, not top-level test/
 Auth: JWT + Redis refresh tokens (see src/middleware/auth.ts)`,
             label: '高 ROI 内容',
-            explanation: '8 行 ~240 tokens，但每一行都是 Claude 无法从代码中自动推断的项目特有知识。删掉任何一行，Claude 大概率会犯错。',
+            explanation: '8 行，但每一行都是 Claude 无法从代码中自动推断的项目特有知识。删掉任何一行，Claude 大概率会犯错。这才是 CLAUDE.md 应该有的内容。',
           }}
         />
 
@@ -380,7 +408,7 @@ MUST: Follow ESLint rules        # Claude 会自动检测`}
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <td className="py-3 px-4 font-mono text-xs">复制粘贴整个 API 文档</td>
-                <td className="py-3 px-4">巨大的 token 浪费，而且 Claude 可以自己读文档</td>
+                <td className="py-3 px-4">降低信噪比，而且 Claude 可以自己读文档</td>
                 <td className="py-3 px-4">只引用关键的非显而易见的约定</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
@@ -424,7 +452,7 @@ MUST: Follow ESLint rules        # Claude 会自动检测`}
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 4.3: Auto Memory 系统
+          Section 4.4: Auto Memory 系统
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -434,7 +462,7 @@ MUST: Follow ESLint rules        # Claude 会自动检测`}
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          4.3 Auto Memory 系统
+          4.4 Auto Memory 系统
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
@@ -544,219 +572,6 @@ MUST: Follow ESLint rules        # Claude 会自动检测`}
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 4.4: 团队 CLAUDE.md 治理
-          ═══════════════════════════════════════════════ */}
-      <section className="space-y-6">
-        <h2
-          className="text-2xl font-bold pb-2"
-          style={{
-            color: 'var(--color-text-primary)',
-            borderBottom: '1px solid var(--color-border)',
-          }}
-        >
-          4.4 团队 CLAUDE.md 治理
-        </h2>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          个人项目的 CLAUDE.md 你可以随意写。但团队项目的 CLAUDE.md 是一个<strong>共享资产</strong>——
-          它影响每个团队成员和 Claude 的交互方式。需要像对待代码一样对待它。
-        </p>
-
-        <QualityCallout title="核心原则">
-          <p>
-            <strong>CLAUDE.md 被 check 进 git = 你可以像 review 代码一样 review AI 行为规则。</strong>
-            这意味着：每次修改 CLAUDE.md 都应该通过 PR，团队成员可以讨论和审查规则的合理性。
-            AI 的行为不再是黑盒 -- 它的"配置文件"就在你的代码库里。
-          </p>
-        </QualityCallout>
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          谁来写
-        </h3>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          推荐模式：<strong>Tech Lead 起草，团队 PR Review</strong>。
-        </p>
-
-        <ul className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          <li className="flex items-start gap-2">
-            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
-            <span><strong>Tech Lead 起草</strong> -- 最了解项目架构和技术决策的人写初稿。这确保 CLAUDE.md 中的规则反映的是实际的架构意图，而不是个人偏好。</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
-            <span><strong>团队 PR Review</strong> -- 所有成员都有机会提出异议、补充遗漏、删除冗余。和 code review 一样的流程。</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
-            <span><strong>新成员有"添加权"</strong> -- 新加入的成员在 onboarding 过程中最容易发现 CLAUDE.md 的遗漏。鼓励他们提 PR 补充。</span>
-          </li>
-        </ul>
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          怎么测试 CLAUDE.md 的效果
-        </h3>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          修改 CLAUDE.md 后怎么知道是否有效？用<strong>同一任务对比法</strong>：
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title="测试 CLAUDE.md 变更的有效性"
-          code={`# Step 1: 准备一个标准化的测试任务
-# 例如："给 /api/products 添加分页功能"
-
-# Step 2: 在修改 CLAUDE.md 之前，用这个任务做一次
-# 记录：Claude 的行为、代码质量、是否违反了约定
-
-# Step 3: 修改 CLAUDE.md
-
-# Step 4: 开一个新会话，用同一个任务再做一次
-# 记录：行为变化、质量变化
-
-# Step 5: 对比
-# - 新增的规则是否被 Claude 遵守了？
-# - 删除的规则是否导致了质量下降？
-# - Token 消耗变化（更短的 CLAUDE.md 应该更省 token）`}
-          showLineNumbers={false}
-        />
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          什么时候修剪（Prune）
-        </h3>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          <strong>每月审计一次</strong>。审计流程：
-        </p>
-
-        <ol className="space-y-3 text-sm leading-relaxed list-decimal list-inside" style={{ color: 'var(--color-text-secondary)' }}>
-          <li>团队每个成员回顾过去一个月：哪些 CLAUDE.md 规则 Claude 仍然违反？（这些规则需要加强或改写）</li>
-          <li>哪些规则 Claude 从来没违反过？（可能是多余的 -- Claude 本来就会这样做）</li>
-          <li>有没有新的"坑"被发现？（需要添加新规则）</li>
-          <li>计算总行数和 token 成本，确保在合理范围内（建议不超过 80 行）</li>
-        </ol>
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Monorepo 策略
-        </h3>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          Monorepo 项目需要分层的 CLAUDE.md 策略：
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title="Monorepo CLAUDE.md 分层"
-          code={`my-monorepo/
-├── CLAUDE.md                    # 全局规则（适用于所有包）
-│   # - 通用构建命令
-│   # - Git commit message 格式
-│   # - PR 流程和 review 规范
-│   # - 共享的命名约定
-│
-├── packages/
-│   ├── api/
-│   │   └── CLAUDE.md            # API 包的特有规则
-│   │       # - API response wrapper 约定
-│   │       # - 数据库 migration 规范
-│   │       # - 认证/授权相关约定
-│   │
-│   ├── web/
-│   │   └── CLAUDE.md            # 前端包的特有规则
-│   │       # - 组件命名约定
-│   │       # - 状态管理偏好
-│   │       # - CSS/样式规范
-│   │
-│   └── shared/
-│       └── CLAUDE.md            # 共享库的特有规则
-│           # - 公共 API 设计原则
-│           # - 版本管理约定
-│           # - Breaking change 处理流程
-│
-└── .claude/
-    └── rules/
-        ├── api-routes.md        # 条件规则：处理 API 路由文件时加载
-        └── migrations.md        # 条件规则：处理 migration 文件时加载`}
-          showLineNumbers={false}
-        />
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          分层的好处：
-        </p>
-
-        <ul className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          <li className="flex items-start gap-2">
-            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
-            <span><strong>避免 token 浪费</strong> -- 当 Claude 只在处理前端代码时，API 的 migration 规范不会被加载。</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
-            <span><strong>职责清晰</strong> -- 每个包的维护者负责自己包的 CLAUDE.md，不用协调全局文件的修改。</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
-            <span><strong>规则不冲突</strong> -- 全局规则是"公约数"，包级别规则可以有不同的偏好（比如 API 用 kebab-case 路由，前端用 PascalCase 组件名）。</span>
-          </li>
-        </ul>
-
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          CLAUDE.md 生命周期
-        </h3>
-
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          一个健康的 CLAUDE.md 管理流程：
-        </p>
-
-        <CodeBlock
-          language="bash"
-          title="CLAUDE.md 生命周期"
-          code={`# Phase 1: 初始化
-/init                         # Claude 自动扫描项目，生成初始 CLAUDE.md
-# 审查生成的内容，删除冗余行
-
-# Phase 2: 日常使用
-# 正常使用 Claude Code 完成任务
-# 观察 Claude 哪些地方犯了错误
-
-# Phase 3: 发现问题，添加规则
-# Claude 把测试文件放在了 test/ 而不是 __tests__/
-# → 在 CLAUDE.md 中添加：
-#   "Test files go in __tests__/ next to source files"
-
-# Phase 4: 验证规则
-# 用同样的任务测试，确认 Claude 现在遵守了新规则
-
-# Phase 5: 月度审计
-# 回顾哪些规则仍在被违反（加强）
-# 哪些规则从未被违反（可能多余，考虑删除）
-# 计算 token 成本，确保 ROI 为正
-
-# Phase 6: 修剪
-# 删除多余规则，保持 CLAUDE.md 精简
-# 目标：每一行都通过"删掉这行 Claude 会犯错吗"测试
-
-# → 回到 Phase 2，持续循环`}
-          showLineNumbers={false}
-        />
-      </section>
-
-      {/* ═══════════════════════════════════════════════
           Exercises
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
@@ -811,6 +626,16 @@ MUST: Follow ESLint rules        # Claude 会自动检测`}
           ]}
         />
       </section>
+
+      {/* ═══ Reference Section ═══ */}
+      <ReferenceSection version="Claude Code v1.x">
+        <div className="text-sm space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
+          <p>完整优先级层级图（截至 vX.X）</p>
+          <p>Auto Memory frontmatter 字段参考</p>
+          <p>/context 命令说明（上下文健康检查工具）</p>
+          <p>Token 摊销数学（1M 下的新计算）</p>
+        </div>
+      </ReferenceSection>
     </div>
   )
 }
