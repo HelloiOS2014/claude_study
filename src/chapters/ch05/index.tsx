@@ -145,7 +145,7 @@ export default function Ch05() {
           className="text-lg leading-relaxed max-w-3xl"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          第 4 章我们学会了让 Claude 写代码。但写代码只是软件开发的一小部分 --
+          前面我们学会了让 Claude 写代码。但写代码只是软件开发的一小部分 --
           真正决定项目成败的是方案设计。这一章我们将学习如何用 Plan Mode
           把 Claude 从"代码生成器"变成"架构思考伙伴"，在动手之前先想清楚。
         </p>

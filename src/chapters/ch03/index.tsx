@@ -164,7 +164,7 @@ const controlLevelTree = {
               id: 'security',
               question: '推荐: Full Control',
               result: {
-                text: '必须使用 Full Control 模式。先写详细 spec, 再逐步实现。安全相关代码的每一行都必须经过你的审查和理解。考虑使用 Plan Mode (第 3 章) 来管理复杂度。',
+                text: '必须使用 Full Control 模式。先写详细 spec, 再逐步实现。安全相关代码的每一行都必须经过你的审查和理解。考虑使用 Plan Mode (Ch05) 来管理复杂度。',
                 tier: 'l3',
               },
             },
@@ -234,7 +234,7 @@ export default function Ch03() {
           className="text-lg leading-relaxed max-w-3xl"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          第 1 章我们学习了 Prompt 精确控制和 Token 效率优化。现在你已经能写出结构化的工程级 Prompt。
+          Ch02 我们学习了 Prompt 精确控制和 Token 效率优化。现在你已经能写出结构化的工程级 Prompt。
           但 "能用" 和 "用好" 之间有一条巨大的鸿沟 -- 这一章我们来探索这条鸿沟的边界,
           学会在 Vibe Coding 的自由和精确控制之间做出正确选择。
         </p>
@@ -631,7 +631,7 @@ app.post('/api/register', async (req, res) => {
         </h3>
 
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          第 3 章会详细讲 Plan Mode。这里先预览它的效果：你先写详细 spec，再让 Claude 分步执行。
+          Ch05 会详细讲 Plan Mode。这里先预览它的效果：你先写详细 spec，再让 Claude 分步执行。
         </p>
 
         <CodeBlock
