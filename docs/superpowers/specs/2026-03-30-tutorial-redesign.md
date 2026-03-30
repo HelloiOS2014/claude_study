@@ -294,7 +294,7 @@ L1 开发者用 Auto 模式，Claude 修改了核心支付模块引入微妙的 
 
 #### Ch05（小改动）
 
-- RBAC 案例显式连接到 TaskFlow
+- RBAC 案例显式连接到 DemoAPI
 - 补"Plan 执行失败的回退策略"小节
 
 ### P3 — 全教程横切改进
