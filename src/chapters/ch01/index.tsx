@@ -15,6 +15,28 @@ export default function Ch01() {
           Chapter Header
           ═══════════════════════════════════════════════════════ */}
       <div className="space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <span
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold"
+            style={{
+              background: 'var(--color-accent-subtle)',
+              color: 'var(--color-accent)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            01
+          </span>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded"
+            style={{
+              color: 'var(--color-accent)',
+              background: 'var(--color-accent-subtle)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            Harness / Foundation
+          </span>
+        </div>
         <p
           className="text-lg leading-relaxed"
           style={{ color: 'var(--color-text-secondary)' }}

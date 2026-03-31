@@ -179,6 +179,38 @@ export default function Ch08() {
   return (
     <div className="space-y-16">
 
+      {/* ═══ Chapter Header ═══ */}
+      <header>
+        <div className="flex items-center gap-3 mb-4">
+          <span
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold"
+            style={{
+              background: 'var(--color-accent-subtle)',
+              color: 'var(--color-accent)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            08
+          </span>
+          <span
+            className="text-xs uppercase tracking-widest font-medium"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            Orchestration
+          </span>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded"
+            style={{
+              color: 'var(--color-accent)',
+              background: 'var(--color-accent-subtle)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            Harness / 编排层
+          </span>
+        </div>
+      </header>
+
       {/* ═══════════════════════════════════════════════
           Section 8.1: 为什么需要 Subagent（上下文隔离模型）
           ═══════════════════════════════════════════════ */}

@@ -17,6 +17,28 @@ export default function Ch02() {
       {/* Chapter Intro                                                     */}
       {/* ================================================================ */}
       <section>
+        <div className="flex items-center gap-3 mb-4">
+          <span
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold"
+            style={{
+              background: 'var(--color-accent-subtle)',
+              color: 'var(--color-accent)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            02
+          </span>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded"
+            style={{
+              color: 'var(--color-accent)',
+              background: 'var(--color-accent-subtle)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            Harness / Foundation
+          </span>
+        </div>
         <p className="text-lg leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           大多数人使用 Claude Code 的方式是："帮我写一个 XX"。这就像你雇了一个世界级工程师，然后只让他搬砖。
           这一章我们要做的事情，是把"对话"升级为"精确控制"——让你从模糊地描述需求，变成像写合同一样精准地指挥 AI。
