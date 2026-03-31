@@ -28,6 +28,20 @@ export default function Ch02() {
         </p>
       </section>
 
+      {/* ── 读者定位 ── */}
+      <div
+        className="p-4 rounded-lg text-sm leading-relaxed"
+        style={{
+          background: 'var(--color-bg-secondary)',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text-secondary)',
+        }}
+      >
+        你可能已经会写 Prompt 了。这章教的不是基础 Prompt，而是 Claude{' '}
+        <strong style={{ color: 'var(--color-text-primary)' }}>特有的</strong>精确控制技巧
+        — XML 语义边界、权重词层级、effort 级别。这些是其他 AI 工具没有的。
+      </div>
+
       {/* ================================================================ */}
       {/* 2.1 Prompt 解剖实验室                                             */}
       {/* ================================================================ */}

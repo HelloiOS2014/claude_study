@@ -264,6 +264,19 @@ Normal Mode → Plan Mode → Accept Edits Mode → Normal Mode → ...
           5.3 实战：RBAC 功能实现
         </h2>
 
+        {/* ── DemoAPI 连接说明 ── */}
+        <div
+          className="p-4 rounded-lg text-sm leading-relaxed"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          我们以 Ch03 的 DemoAPI 为例 — 它目前没有任何认证机制，任何人都可以读写所有数据。
+          我们要用 Plan Mode 给它设计一个 RBAC 系统。
+        </div>
+
         {/* ── Stage 1: Explore ── */}
         <h3
           className="text-lg font-semibold mt-10"
@@ -946,6 +959,140 @@ Phase 2 的验证失败了：
           </ol>
           <p className="mt-2">
             如果任何一项答案为"否"，要求 Claude 补充。不要带着残缺的 Plan 开始 Execute。
+          </p>
+        </QualityCallout>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Plan 执行失败的回退策略
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          Plan 执行失败的回退策略
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Plan 执行到一半挂了 — 测试不过、依赖冲突、或者发现 Plan 本身有逻辑漏洞。
+          这是<strong>正常的</strong>，而不是灾难。因为 Plan 本身就是你最好的恢复文档。
+        </p>
+
+        {/* ── Step 1: Don't panic ── */}
+        <div
+          className="p-4 rounded-lg"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            第一反应：不要慌，也不要乱改
+          </h3>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+            Plan 不只是"执行清单" — 它是状态快照。每个 Phase 的验证步骤告诉你哪些已经通过、
+            哪些还没验证。失败时，Plan 帮你精确定位："我在 Phase 3 的第 2 步挂了，Phase 1 和 2 的验证都通过了。"
+            这比没有 Plan 时"不知道改了什么、坏在哪"强太多了。
+          </p>
+        </div>
+
+        {/* ── Step 2: Diagnose ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          定位失败点
+        </h3>
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          回到 Plan，找到失败的那个 Phase 和步骤。问两个问题：
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          <li><strong>是执行错误还是设计错误？</strong> — 代码写错了（typo、API 用错）vs Plan 本身的假设就不对（"以为有这个字段但其实没有"）。</li>
+          <li><strong>影响范围多大？</strong> — 只影响当前步骤，还是后续所有步骤的假设都要改？</li>
+        </ul>
+
+        {/* ── Step 3: Three options ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          三条回退路径
+        </h3>
+
+        <div className="space-y-4 mt-4">
+          {/* Option A */}
+          <div
+            className="rounded-lg overflow-hidden"
+            style={{
+              border: '1px solid var(--color-border)',
+              borderLeft: '3px solid var(--color-accent)',
+            }}
+          >
+            <div className="px-5 py-4">
+              <h4 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                A. 修复当前步骤，继续执行
+              </h4>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                适用于：执行错误（代码 bug），Plan 的设计是对的。直接修复当前步骤，
+                重新跑验证，通过后继续下一个 Phase。这是最轻量的路径。
+              </p>
+            </div>
+          </div>
+
+          {/* Option B */}
+          <div
+            className="rounded-lg overflow-hidden"
+            style={{
+              border: '1px solid var(--color-border)',
+              borderLeft: '3px solid #f59e0b',
+            }}
+          >
+            <div className="px-5 py-4">
+              <h4 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                B. 从失败点修订 Plan，带着教训继续
+              </h4>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                适用于：设计错误，但已完成的 Phase 不受影响。切回 Plan Mode，
+                把失败的原因和新发现的约束写进 Prompt，让 Claude 从当前 Phase 开始重新规划后续步骤。
+                已通过验证的 Phase 保持不动。
+              </p>
+            </div>
+          </div>
+
+          {/* Option C */}
+          <div
+            className="rounded-lg overflow-hidden"
+            style={{
+              border: '1px solid var(--color-border)',
+              borderLeft: '3px solid #f87171',
+            }}
+          >
+            <div className="px-5 py-4">
+              <h4 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                C. 放弃当前 Plan，用教训重新开始
+              </h4>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                适用于：根本性假设错误（比如以为是 REST 结果是 GraphQL），继续修补只会越改越乱。
+                用 Plan 的回滚方案恢复到初始状态，开新会话，把这次的失败教训作为新 Plan 的输入约束。
+                失败的 Plan 不是浪费 — 它是下一版 Plan 的需求文档。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Golden rule ── */}
+        <QualityCallout title="关键原则">
+          <p>
+            <strong>永远不要在执行过程中偷偷修改 Plan 而不检查下游影响。</strong>
+          </p>
+          <p className="mt-2">
+            如果你改了 Phase 2 的实现方式，Phase 3、4、5 的假设可能全部失效。
+            任何对 Plan 的修改都必须重新审视所有后续 Phase 的前置条件和验证步骤。
+            这就是为什么每个 Phase 要有明确的验证步骤 — 它们是你的"变更影响检测器"。
           </p>
         </QualityCallout>
       </section>
