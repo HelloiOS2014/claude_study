@@ -1107,6 +1107,13 @@ Phase 2 的验证失败了：
         </QualityCallout>
       </section>
 
+        <QualityCallout title="进阶：自动化整个流程">
+          <p>
+            Plan Mode 是手动结构化思考。如果你想让 Claude 自动走完 Spec → Plan → Execute → Review 的全流程，
+            见 <strong style={{ color: 'var(--color-accent)' }}>Ch12 让 Claude 编排 Claude</strong>。
+          </p>
+        </QualityCallout>
+
       {/* ═══════════════════════════════════════════════
           Exercises
           ═══════════════════════════════════════════════ */}

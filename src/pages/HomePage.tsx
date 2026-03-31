@@ -182,8 +182,8 @@ function TierOverview() {
     {
       tier: 'l3',
       title: 'L3 高阶',
-      desc: '规模化与治理。掌握多代理协作、SDK 集成、工作流设计、组织级治理，完成演进(Evolve)闭环。',
-      chapters: 'Ch08 - Ch11',
+      desc: '规模化与治理。掌握多代理协作、SDK 集成、工作流设计、组织级治理，学会编排与组合技，完成演进(Evolve)闭环。',
+      chapters: 'Ch08 - Ch13',
     },
   ]
 

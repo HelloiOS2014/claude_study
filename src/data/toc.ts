@@ -215,6 +215,43 @@ export const parts: Part[] = [
       },
     ],
   },
+  {
+    number: 5,
+    title: '进阶',
+    subtitle: 'Advanced Patterns',
+    description: '让 Claude 编排 Claude，把 Harness 组件组合成自动化流水线',
+    tier: 'l3',
+    chapters: [
+      {
+        id: 'ch12',
+        number: 12,
+        title: '让 Claude 编排 Claude',
+        subtitle: 'Superpowers 工作流、编排模式、团队适配',
+        tier: 'l3',
+        part: 5,
+        partTitle: '进阶',
+        partSubtitle: 'Advanced Patterns',
+        estimatedMinutes: 70,
+        skipCondition: '你已熟练使用 superpowers 或类似编排工作流',
+        prerequisites: ['ch08', 'ch09'],
+        hardDependencies: ['ch08'],
+      },
+      {
+        id: 'ch13',
+        number: 13,
+        title: '高阶组合技',
+        subtitle: '多维度 PR Review、大型重构编排、持续健康监控',
+        tier: 'l3',
+        part: 5,
+        partTitle: '进阶',
+        partSubtitle: 'Advanced Patterns',
+        estimatedMinutes: 60,
+        skipCondition: '你已搭建过多组件联动的自动化流水线',
+        prerequisites: ['ch12'],
+        hardDependencies: ['ch08', 'ch09'],
+      },
+    ],
+  },
 ]
 
 export const allChapters = parts.flatMap(p => p.chapters)
@@ -258,6 +295,12 @@ export const quickPaths: QuickPath[] = [
     target: '决定是否引入团队',
     chapters: ['ch01', 'ch04', 'ch08', 'ch11'],
     estimatedMinutes: 225,
+  },
+  {
+    label: '进阶玩法',
+    target: '自动化编排',
+    chapters: ['ch12', 'ch13'],
+    estimatedMinutes: 130,
   },
   {
     label: '完整路径',

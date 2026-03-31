@@ -16,6 +16,8 @@ const lazyChapters: Record<string, React.LazyExoticComponent<ComponentType>> = {
   ch09: lazy(() => import('../chapters/ch09/index')),
   ch10: lazy(() => import('../chapters/ch10/index')),
   ch11: lazy(() => import('../chapters/ch11/index')),
+  ch12: lazy(() => import('../chapters/ch12/index')),
+  ch13: lazy(() => import('../chapters/ch13/index')),
 }
 
 export function ChapterPage() {

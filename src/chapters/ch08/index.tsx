@@ -2291,6 +2291,13 @@ claude
             过早引入复杂拓扑是最常见的"过度工程"陷阱 —— 三个简单 Subagent 通常比一个精心设计的 Teams 拓扑更有效。
           </p>
         </QualityCallout>
+
+        <QualityCallout title="进阶：更多组合编排方案">
+          <p>
+            子代理是强大的构建块。想看完整的多代理重构编排、自动 PR Review 流水线等实战方案？
+            见 <strong style={{ color: 'var(--color-accent)' }}>Ch13 高阶组合技</strong>。
+          </p>
+        </QualityCallout>
       </section>
 
       {/* ═══════════════════════════════════════════════

@@ -1056,6 +1056,13 @@ SDK/CI: PR 创建时自动触发 Claude 审查 (headless)`}
         </ReferenceSection>
       </section>
 
+        <QualityCallout title="进阶：把原则变成可执行流水线">
+          <p>
+            本章教了设计原则和诊断框架。想把这些原则落地为自动化的编排流水线？
+            见 <strong style={{ color: 'var(--color-accent)' }}>Ch12 让 Claude 编排 Claude</strong>。
+          </p>
+        </QualityCallout>
+
       {/* ═══ References ═══ */}
       <ReferenceSection version="Claude Code v1.x">
         <div className="text-sm space-y-2" style={{ color: 'var(--color-text-secondary)' }}>

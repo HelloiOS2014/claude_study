@@ -1695,6 +1695,13 @@ git diff origin/main...HEAD | wc -l
         />
       </section>
 
+        <QualityCallout title="进阶：完整自动化流水线">
+          <p>
+            SDK 和 CI/CD 是自动化的基础。想看完整的 Spec → Plan → Execute → Review → Merge 自动化流水线？
+            见 <strong style={{ color: 'var(--color-accent)' }}>Ch12-13</strong>。
+          </p>
+        </QualityCallout>
+
       {/* ═══════════════════════════════════════════════
           Reference Section
           ═══════════════════════════════════════════════ */}
