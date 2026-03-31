@@ -54,6 +54,69 @@ export default function Ch04() {
       </header>
 
       {/* ═══════════════════════════════════════════════
+          Session Amnesia — 失忆场景
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <div
+          className="rounded-lg p-5"
+          style={{
+            background: 'rgba(239, 68, 68, 0.06)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+          }}
+        >
+          <p
+            className="text-base font-semibold mb-3"
+            style={{ color: 'rgb(239, 68, 68)' }}
+          >
+            你是否遇到过这个场景？
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+            昨天你花了一整个会话教会 Claude 项目规范：API 响应统一用{' '}
+            <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>{'{data, error}'}</code> 格式，
+            新文件放在 <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>src/routes/</code> 目录，
+            ID 用自增整数。今天开了一个新会话，同样的任务 -- Claude 全忘了。
+            响应格式变成了{' '}
+            <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>{'{success, result}'}</code>，
+            文件扔在根目录，ID 变成了 UUID。
+          </p>
+        </div>
+
+        <CodeBlock
+          language="bash"
+          title="昨天 vs 今天 -- 同一个项目，两种风格"
+          code={`# ── 昨天的会话（你教过规范后）──────────────────────
+# API 响应格式
+{ "data": { "id": 1, "title": "..." }, "error": null }
+# 文件位置
+src/routes/posts.ts
+# ID 策略
+id: serial PRIMARY KEY    # 自增整数
+
+# ── 今天的新会话（Claude 全忘了）──────────────────────
+# API 响应格式
+{ "success": true, "result": { "id": "a1b2c3", "title": "..." } }
+# 文件位置
+posts.ts                   # 直接扔在根目录
+# ID 策略
+id: uuid DEFAULT gen_random_uuid()    # UUID`}
+          showLineNumbers={false}
+        />
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          这就是 <strong>"会话失忆"（Session Amnesia）</strong> -- 每个新的 Claude Code 会话都从零开始，
+          不带任何前次会话的记忆。如果你在 Ch03 的 DemoAPI 实验中体验过风格漂移，这就是根因之一。
+          同样的提示词，不同的会话，Claude 给出完全不同的实现风格。
+        </p>
+
+        <p
+          className="text-base font-semibold leading-relaxed"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          CLAUDE.md 就是解决这个问题的。
+        </p>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
           Section 4.1: 快速开始
           ═══════════════════════════════════════════════ */}
       <section>
@@ -93,6 +156,120 @@ IMPORTANT: 不要修改 src/core/ 下的文件，除非明确被要求`}
         <p className="mt-4 text-sm" style={{ color: 'var(--color-text-muted)' }}>
           把上面的模板复制到项目根目录的 CLAUDE.md，替换成你的项目信息。
           30 分钟上手路径的读者到这里可以先停——开始使用 Claude Code，遇到问题再回来看后续内容。
+        </p>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section: DemoAPI 对比实验
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          DemoAPI 对比实验
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          还记得 Ch03 的 DemoAPI 吗？我们用 "加帖子功能"、"加评论功能" 两条提示词测试 Claude，
+          结果每次的响应格式、文件位置、ID 策略都不一样。现在让我们写一个 DemoAPI 专用的 CLAUDE.md，
+          看看效果对比。
+        </p>
+
+        <CodeBlock
+          language="markdown"
+          title="CLAUDE.md -- DemoAPI 专用版（基于 4.1 模板）"
+          code={`# DemoAPI
+
+## 技术栈
+- 语言: TypeScript
+- 框架: Express
+- 数据库: 内存数组（开发阶段）
+
+## 构建与测试
+- 安装依赖: npm install
+- 启动服务: npm run dev
+- 测试: npm test
+
+## 核心约定
+IMPORTANT: API 响应格式统一为 { data, error }
+IMPORTANT: 所有路由文件放在 src/routes/ 目录
+IMPORTANT: ID 使用自增整数，从 1 开始
+- 每个资源一个路由文件（posts.ts, comments.ts）
+- 错误响应: { data: null, error: "错误描述" }
+- 成功响应: { data: <资源对象>, error: null }`}
+        />
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          有了这个 CLAUDE.md，用同样的提示词再跑一次：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="有 CLAUDE.md 后的结果 -- 3 次运行全部一致"
+          code={`# 提示词: "给 DemoAPI 加帖子功能"
+# Run 1, Run 2, Run 3 -- 输出一致：
+
+# 文件位置
+src/routes/posts.ts           ✓ 一致
+
+# 响应格式
+{ "data": { "id": 1, "title": "Hello" }, "error": null }   ✓ 一致
+
+# ID 策略
+let nextId = 1                ✓ 自增整数
+
+# 提示词: "给 DemoAPI 加评论功能"
+# Run 1, Run 2, Run 3 -- 输出一致：
+
+# 文件位置
+src/routes/comments.ts        ✓ 一致
+
+# 响应格式
+{ "data": { "id": 1, "postId": 1, "body": "..." }, "error": null }   ✓ 一致`}
+          showLineNumbers={false}
+        />
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>维度</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'rgb(239, 68, 68)' }}>Before（Ch03 无 CLAUDE.md）</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'rgb(34, 197, 94)' }}>After（有 CLAUDE.md）</th>
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">响应格式</td>
+                <td className="py-3 px-4">{'{data, error}'} / {'{success, result}'} / {'{status, body}'} 随机</td>
+                <td className="py-3 px-4">始终 {'{data, error}'}</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">文件位置</td>
+                <td className="py-3 px-4">根目录 / src/ / routes/ 随机</td>
+                <td className="py-3 px-4">始终 src/routes/</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">ID 策略</td>
+                <td className="py-3 px-4">自增 / UUID / nanoid 随机</td>
+                <td className="py-3 px-4">始终自增整数</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">3 次一致性</td>
+                <td className="py-3 px-4">约 1/3</td>
+                <td className="py-3 px-4">3/3</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          6 行核心约定，把一致性从 ~33% 拉到 100%。这就是 CLAUDE.md 的价值 --
+          不是教 Claude 写代码，而是告诉它<strong>你的项目用哪种风格写代码</strong>。
         </p>
       </section>
 
@@ -493,11 +670,48 @@ MUST: Follow ESLint rules        # Claude 会自动检测`}
             <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
             <span><strong>按主题组织</strong> -- 记忆内容按主题分文件（topic files），只有相关主题的记忆才会被加载。</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
-            <span><strong>四种记忆类型</strong> -- 用户偏好（user）、对话反馈（feedback）、项目知识（project）、参考信息（reference）。</span>
-          </li>
         </ul>
+
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          四种记忆类型
+        </h3>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>类型</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>说明</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>示例</th>
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">user（用户偏好）</td>
+                <td className="py-3 px-4">你的角色、偏好、工作习惯</td>
+                <td className="py-3 px-4 font-mono text-xs">"用户是后端工程师，偏好函数式风格，不喜欢 class"</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">feedback（纠正/确认）</td>
+                <td className="py-3 px-4">你对 Claude 输出的纠正或认可</td>
+                <td className="py-3 px-4 font-mono text-xs">"用户纠正：error response 用 {'{ code, message }'} 而不是 {'{ error: string }'}"</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">project（项目上下文）</td>
+                <td className="py-3 px-4">正在进行的工作、阶段性状态</td>
+                <td className="py-3 px-4 font-mono text-xs">"当前在重构认证模块，从 session 迁移到 JWT"</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">reference（外部指针）</td>
+                <td className="py-3 px-4">外部系统、文档、工具的位置信息</td>
+                <td className="py-3 px-4 font-mono text-xs">"API 文档在 docs/api.md，设计稿在 Figma 链接 XXX"</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <CodeBlock
           language="bash"
@@ -514,6 +728,34 @@ MUST: Follow ESLint rules        # Claude 会自动检测`}
 /memory add "..."        # 添加记忆
 /memory search "..."     # 搜索记忆`}
           showLineNumbers={false}
+        />
+
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          值得记忆 vs 不值得记忆
+        </h3>
+
+        <PromptCompare
+          bad={{
+            prompt: `# 不值得记忆的内容
+"记住 TypeScript 的 interface 语法"     # 通用知识
+"记住 React 用 JSX"                    # Claude 本来就知道
+"记住今天调了 2 小时 bug"               # 一次性事件，无复用价值
+"记住 npm install 安装依赖"             # 太基础`,
+            label: '低价值记忆',
+            explanation: 'Claude 已经具备的通用知识，或者一次性事件、没有跨会话复用价值的信息。写进 Memory 只是浪费前 200 行的宝贵位置。',
+          }}
+          good={{
+            prompt: `# 值得记忆的内容
+"记住：部署前必须跑 npm run typecheck"  # 非标准流程
+"记住：这个项目的时区全部用 UTC"         # 容易犯错的约定
+"记住：测试数据库用 test_db 不是 dev_db" # 隐性知识
+"记住：PR 描述要 @ 对应的 issue 编号"    # 团队流程`,
+            label: '高价值记忆',
+            explanation: '项目特有的、容易遗忘的、跨会话需要一致遵守的知识。这些是 Memory 系统真正应该存储的内容。',
+          }}
         />
 
         <h3
@@ -569,6 +811,188 @@ MUST: Follow ESLint rules        # Claude 会自动检测`}
             定期审查 Memory，把重复出现的模式"毕业"到 CLAUDE.md。
           </p>
         </QualityCallout>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 4.5: 团队协作维护 CLAUDE.md
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          4.5 团队协作维护 CLAUDE.md
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          CLAUDE.md 不是一个人的文件 -- 它是团队共享的 AI 行为规范。像对待代码一样对待它。
+        </p>
+
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          版本控制
+        </h3>
+
+        <ul className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
+            <span><strong>CLAUDE.md 提交到 git</strong> -- 和 .eslintrc、tsconfig.json 一样，它是项目配置的一部分。每次修改通过 PR review，像审查代码一样审查规则变更。</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
+            <span><strong>个人偏好放 .claude/CLAUDE.md</strong> -- 这个文件在 .gitignore 中，不影响团队其他成员。比如你喜欢中文注释，但团队规范是英文注释 -- 个人偏好放 local。</span>
+          </li>
+        </ul>
+
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          季度信噪比审计
+        </h3>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          每个季度花 30 分钟做一次 CLAUDE.md 审计。方法很简单：逐行问一个问题 --
+          <strong>"删掉这行，Claude 会出错吗？"</strong> 如果答案是"不会"，删掉。
+          随着项目演进，曾经有价值的规则可能变得多余（比如技术栈迁移后旧框架的规则），
+          而新的坑需要被加进来。
+        </p>
+
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          组织策略片段
+        </h3>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          对于大型组织，可以用{' '}
+          <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>managed-settings.d/</code>{' '}
+          目录存放组织级别的策略片段。这些片段由管理员维护，自动合并到每个项目的 CLAUDE.md 上下文中。
+          适合统一的安全规范、合规要求等跨项目规则。具体配置方式参考官方文档。
+        </p>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 4.6: 验证：你的 CLAUDE.md 够好吗？
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          4.6 验证：你的 CLAUDE.md 够好吗？
+        </h2>
+
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          三次一致性检查
+        </h3>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          最简单的验证方法：用同一条提示词跑 3 次（每次新会话），检查三个维度：
+        </p>
+
+        <ul className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
+            <span><strong>(a) 响应格式一致</strong> -- 3 次输出的数据结构是否相同（如都用 {'{data, error}'}）</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
+            <span><strong>(b) 文件命名一致</strong> -- 3 次创建的文件是否在正确的目录、使用正确的命名格式</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
+            <span><strong>(c) ID 策略一致</strong> -- 3 次使用的 ID 生成策略是否相同</span>
+          </li>
+        </ul>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          3/3 一致 = 通过。2/3 或更低 = CLAUDE.md 中的对应规则需要加强（检查是否用了 IMPORTANT 前缀、
+          表述是否足够明确）。
+        </p>
+
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          精简阈值
+        </h3>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          如果你的 CLAUDE.md 超过 <strong>60 行</strong>，强制做一次审计。
+          60 行以上意味着大量信息在竞争 Claude 的注意力，真正重要的规则容易被淹没。
+          回到黄金法则："删掉这行，Claude 会犯错吗？" 大部分项目 30-50 行就够了。
+        </p>
+
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          排错指南
+        </h3>
+
+        <p className="text-base leading-relaxed mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+          如果 Claude 忽略了 CLAUDE.md 中的某条规则，按以下顺序排查：
+        </p>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>步骤</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>检查项</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>修复方法</th>
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">1. 优先级冲突</td>
+                <td className="py-3 px-4">是否有更高层级的 CLAUDE.md 覆盖了你的规则？</td>
+                <td className="py-3 px-4">检查全局 ~/.claude/CLAUDE.md 和祖先目录的 CLAUDE.md</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">2. 上下文加载</td>
+                <td className="py-3 px-4">CLAUDE.md 是否真的被加载了？</td>
+                <td className="py-3 px-4">在会话中问 Claude "你看到了哪些 CLAUDE.md 规则？"</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">3. 关键词权重</td>
+                <td className="py-3 px-4">规则的措辞是否足够强？</td>
+                <td className="py-3 px-4">用 MUST / IMPORTANT 替代 should / prefer。"MUST use X" 比 "prefer X" 遵守率高得多</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4 font-semibold">4. 信噪比</td>
+                <td className="py-3 px-4">CLAUDE.md 是否太长导致关键规则被淹没？</td>
+                <td className="py-3 px-4">精简到 60 行以内，把关键规则放在文件前半部分</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ExerciseCard
+          tier="l2"
+          title="为你的项目写 CLAUDE.md 并做三次一致性检查"
+          description="为你自己的项目（或用 DemoAPI）写一个 CLAUDE.md。包含至少 3 条 IMPORTANT 规则（响应格式、文件位置、命名规范）。然后用同一条提示词在 3 个新会话中运行，验证 (a) 响应格式一致 (b) 文件命名一致 (c) ID 策略一致。记录结果并优化未通过的规则。"
+          checkpoints={[
+            '写出了不超过 50 行的 CLAUDE.md',
+            '包含至少 3 条 IMPORTANT 规则',
+            '用同一提示词在 3 个新会话中测试',
+            '3 个维度（格式、命名、ID）全部 3/3 一致',
+            '如果未通过，记录了原因并优化了规则措辞',
+          ]}
+        />
       </section>
 
       {/* ═══════════════════════════════════════════════
