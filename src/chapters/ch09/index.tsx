@@ -128,6 +128,33 @@ export default function Ch09() {
         </p>
       </header>
 
+      {/* ═══ Failure Opening ═══ */}
+      <section
+        className="rounded-xl p-6 space-y-4"
+        style={{
+          background: 'var(--color-bg-secondary)',
+          border: '1px solid var(--color-border)',
+        }}
+      >
+        <h2
+          className="text-lg font-semibold"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          真实场景：人肉瓶颈
+        </h2>
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          你每次手动让 Claude 做 code review 要 10 分钟。一天 20 个 PR 就是 3 小时。
+          你度假一周，回来 PR 堆积 -- 因为整个流程依赖你坐在终端前。
+        </p>
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          如果 Claude 能自己在 CI/CD 中跑起来呢？
+        </p>
+        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+          这一章的目标：把 Claude Code 从"你的工具"变成"你的基础设施"。
+          从手动触发到自动运行，从一次性对话到可调度、可嵌入、可监控的服务。
+        </p>
+      </section>
+
       {/* ═══════════════════════════════════════════════
           Section 9.1: 为什么需要程序化接入
           ═══════════════════════════════════════════════ */}
@@ -364,6 +391,53 @@ claude -p "分析 src/auth.ts 的安全性" \\
   --bare`}
         />
 
+        {/* ── Batch CLI script ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          实战：批量 CLI 脚本
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          把上面的参数组合起来，就是一个完整的无人值守脚本。
+          下面这个例子扫描仓库中所有 TODO/FIXME/HACK 注释并按优先级分类：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="batch-todo-scan.sh"
+          code={`#!/bin/bash
+# batch-todo-scan.sh — 批量扫描仓库 TODO 生成报告
+set -euo pipefail
+REPO_DIR="\${1:-.}"
+OUTPUT="todo-report-$(date +%Y%m%d).md"
+
+claude -p "Scan all files in $REPO_DIR for TODO, FIXME, HACK comments. \\
+For each one, rate priority (P0-P3) based on: \\
+- P0: Security or data loss risk \\
+- P1: Bug or incorrect behavior \\
+- P2: Technical debt \\
+- P3: Nice to have \\
+Output as a markdown table: File, Line, Priority, Description" \\
+  --allowedTools "Read,Grep,Glob" \\
+  --output-format text \\
+  --max-turns 20 \\
+  --bare > "$OUTPUT"
+
+echo "Report: $OUTPUT ($(grep -c '|' "$OUTPUT" || echo 0) items)"`}
+        />
+
+        <QualityCallout title="脚本关键要素">
+          <p>
+            注意这个脚本的三个安全措施：
+            <strong>--allowedTools</strong> 只给读权限（不能修改文件）、
+            <strong>--max-turns 20</strong> 防止无限循环、
+            <strong>--bare</strong> 跳过自动发现确保行为可预测。
+            这三个参数是所有无人值守脚本的标配。
+          </p>
+        </QualityCallout>
+
         {/* ── Session management ── */}
         <h3
           className="text-lg font-semibold mt-8"
@@ -480,6 +554,57 @@ async def batch_review(files: list[str]):
     tasks = [review_code(f) for f in files]
     return await asyncio.gather(*tasks)`}
         />
+
+        {/* ── Minimal PR Review Bot ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          最小 PR Review Bot
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          上面是 SDK 的完整 API 用法。下面是一个可以直接跑的最小示例 --
+          用 30 行代码实现 PR 自动审查机器人：
+        </p>
+
+        <CodeBlock
+          language="python"
+          title="pr-review-bot.py"
+          code={`"""最小 PR Review Bot — 完整文档见 platform.claude.com/docs/en/agent-sdk/overview"""
+from claude_agent_sdk import AgentClient
+import subprocess, sys
+
+def review_pr(pr_number: int) -> str:
+    diff = subprocess.check_output(
+        ["gh", "pr", "diff", str(pr_number)], text=True
+    )
+    client = AgentClient()
+    result = client.run(
+        prompt=f"Review this PR diff for bugs, security issues, "
+               f"and style problems. Be concise.\\n\\n{diff[:50000]}",
+        allowed_tools=["Read", "Grep"],
+        max_turns=10,
+    )
+    return result.text
+
+if __name__ == "__main__":
+    review = review_pr(int(sys.argv[1]))
+    subprocess.run(
+        ["gh", "pr", "comment", sys.argv[1], "--body", review],
+        check=True,
+    )`}
+        />
+
+        <QualityCallout title="这不是完整的 SDK 教程">
+          <p>
+            完整文档见
+            <a href="https://platform.claude.com/docs/en/agent-sdk/overview" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)' }}> 官方 SDK 文档</a>。
+            这个示例让你 5 分钟内评估：SDK 适不适合我的场景？
+            如果你需要流式输出、会话管理、错误重试 -- 参考上面的完整示例。
+            如果你只是想在 CI 里跑 -- 用 CLI 模式更简单。
+          </p>
+        </QualityCallout>
 
         {/* ── TypeScript SDK ── */}
         <h3
@@ -706,6 +831,14 @@ jobs:
             { line: 36, text: '--bare 确保行为可预测' },
           ]}
         />
+
+        <QualityCallout title="Ch10 中的三原则版 CI/CD">
+          <p>
+            第 10 章（工作流设计原则）中有一个基于 Spec 驱动 + 上下文隔离 + 验证循环三原则的
+            PR Review Pipeline 设计和对应的 GitHub Actions 工作流（使用 claude-code-action@v1）。
+            如果你想看更高级的多 subagent 审查架构，参考 Ch10 的实战编排示例。
+          </p>
+        </QualityCallout>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           更进一步：让 Claude 不只是审查，还能自动修复简单问题并提交。
@@ -1303,6 +1436,212 @@ claude -p "分析代码" --bare
             '所有场景都遵循安全最佳实践（最小权限、--bare、Secrets 管理）',
             '能说清楚每个组件的成本预估',
           ]}
+        />
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 9.7: 无人值守安全
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          9.7 无人值守安全
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          程序化模式意味着没有人看着 Claude 运行。
+          交互模式下你可以随时按 Ctrl+C、拒绝危险操作。
+          无人值守模式下，你需要用代码来代替你的判断力。
+          以下三道防线缺一不可：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="unattended-safety.sh"
+          code={`# ═══ 防线 1: 超时熔断 ═══
+# --max-turns 限制 Claude 的最大对话轮数
+# 防止 Claude 陷入无限循环（比如反复尝试修复同一个测试）
+claude -p "修复所有 lint 问题" --max-turns 15
+# 15 轮后无论是否完成都会强制退出
+# 推荐值：审查任务 5-10 轮，修复任务 10-20 轮
+
+# ═══ 防线 2: 预算上限 ═══
+# CLAUDE_MAX_COST_CENTS 限制单次调用的最大花费（单位：美分）
+export CLAUDE_MAX_COST_CENTS=500
+# 超过 $5 后自动停止，防止意外的高额账单
+# 一次 PR 审查通常 $0.02-0.10，所以 $5 是很宽松的熔断线
+
+# ═══ 防线 3: 凭证清洗 ═══
+# 防止 Claude 通过子进程读取环境变量中的敏感信息
+export CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1
+# 开启后，Claude 调用 Bash 工具时，子进程不会继承
+# ANTHROPIC_API_KEY、AWS_SECRET_ACCESS_KEY 等敏感变量`}
+        />
+
+        <div
+          className="rounded-xl p-6 space-y-4"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <h4
+            className="text-base font-semibold"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            三道防线速记
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                title: '超时熔断',
+                flag: '--max-turns N',
+                desc: '限制对话轮数，防止无限循环。没有这个，一个失败的修复可以跑几十轮。',
+              },
+              {
+                title: '预算上限',
+                flag: 'CLAUDE_MAX_COST_CENTS',
+                desc: '限制单次调用花费。CI 中一个 bug 可能让 Claude 反复重试，账单失控。',
+              },
+              {
+                title: '凭证清洗',
+                flag: 'SUBPROCESS_ENV_SCRUB=1',
+                desc: '子进程不继承敏感环境变量。防止 Claude 通过 Bash 工具读取 API Key。',
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-lg p-4 space-y-2"
+                style={{
+                  background: 'var(--color-bg-primary)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                <h5
+                  className="text-sm font-semibold"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  {item.title}
+                </h5>
+                <code
+                  className="text-xs block"
+                  style={{ color: 'var(--color-accent)' }}
+                >
+                  {item.flag}
+                </code>
+                <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <QualityCallout title="安全不是可选的">
+          <p>
+            在无人值守场景中，每一道防线都是必须的，不是"建议"。
+            超时防止失控、预算防止账单、凭证清洗防止泄露。
+            缺少任何一道，你都可能在某天醒来发现一个惊喜。
+          </p>
+        </QualityCallout>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 9.8: 验证与排错
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          9.8 验证与排错
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          部署程序化接入后，如何确认它真的在工作？如何排查常见问题？
+        </p>
+
+        <div
+          className="rounded-xl p-6 space-y-4"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <h4
+            className="text-base font-semibold"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            质量验证清单
+          </h4>
+          <ul className="space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            {[
+              { metric: 'PR 审查覆盖率', target: '100%', detail: '每个 PR 都应该有 Claude 的审查评论。如果有遗漏，检查 Actions 触发条件' },
+              { metric: '响应时间', target: '< 5 分钟', detail: '从 PR 创建到审查评论发布。如果超时，检查 --max-turns 和 diff 大小' },
+              { metric: '误报率', target: '< 20%', detail: '审查意见中无实际问题的占比。过高说明 prompt 需要调整' },
+              { metric: '成本', target: '< $0.10/次', detail: '单次 PR 审查的成本。异常高说明 diff 过大或轮数过多' },
+            ].map((item) => (
+              <li key={item.metric} className="flex items-start gap-3">
+                <span
+                  className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded whitespace-nowrap"
+                  style={{
+                    background: 'var(--color-accent-subtle)',
+                    color: 'var(--color-accent)',
+                  }}
+                >
+                  {item.target}
+                </span>
+                <span>
+                  <strong style={{ color: 'var(--color-text-primary)' }}>{item.metric}</strong>
+                  {' -- '}
+                  {item.detail}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          CI 超时排错流程
+        </h3>
+
+        <CodeBlock
+          language="bash"
+          title="ci-timeout-troubleshooting.sh"
+          code={`# CI 中 Claude 超时？按这个顺序排查：
+
+# Step 1: 检查 --max-turns 是否设置
+# 没有 --max-turns 时，Claude 可能无限循环
+# 修复：添加 --max-turns 15（或更低）
+
+# Step 2: 检查 diff 大小
+git diff origin/main...HEAD | wc -l
+# 如果 diff 超过 2000 行，Claude 需要更多轮来分析
+# 修复：在 prompt 中限制范围（"只看 src/ 目录"）
+#        或用 --max-turns 强制截断
+
+# Step 3: 尝试 --bare
+# 没有 --bare 时，Claude 会扫描仓库元数据，大仓库可能很慢
+# 修复：添加 --bare
+
+# Step 4: 检查输出格式
+# --output-format json 比 text 多一次解析开销
+# 如果你不需要结构化数据，用 text
+
+# Step 5: 检查工具权限
+# 太多工具 = Claude 可能在不同工具间试错
+# 审查任务只需要 "Read,Grep,Glob"，不要给 Edit 或 Bash`}
         />
       </section>
 
