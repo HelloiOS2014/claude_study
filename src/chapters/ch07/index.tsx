@@ -6,6 +6,7 @@ import { ConfigExample } from '../../components/content/ConfigExample'
 import { DecisionTree } from '../../components/content/DecisionTree'
 import { ReferenceSection } from '../../components/content/ReferenceSection'
 import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+import { industryStats } from '../../data/industry-stats'
 
 const LazyHookEventFlow = lazy(() => import('../../remotion/ch05/HookEventFlow'))
 
@@ -139,6 +140,13 @@ export default function Ch07() {
           Hooks 系统在 Claude 的每个操作节点插入自动化检查，把"希望它做"变成"保证它做"。
           这一章，我们从零构建一条四层质量流水线，在实战中学会 21+ 事件、4 种 handler、exit code 语义。
         </p>
+        <p
+          className="text-base leading-relaxed max-w-3xl mt-3"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          在 Ch03-06 中我们逐步给 DemoAPI 加了规范（CLAUDE.md）、结构（Plan Mode）、能力（Skills）。
+          但 Claude 仍然可能在第 20 轮忘了跑 lint。现在我们给 DemoAPI 加上最后一道保障 -- Hooks。
+        </p>
       </header>
 
       {/* ═══════════════════════════════════════════════
@@ -187,7 +195,7 @@ token 消耗（每轮提醒）                    零 token 消耗（command han
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           数据佐证：LangChain 在仅修改 harness 配置（增加 Hooks 自动化检查、不改模型和 prompt）后，
-          SWE-bench 基准测试得分提升了 <strong>+13.7%</strong>。
+          SWE-bench 基准测试得分提升了 <strong>+{industryStats.hooksBenchImprovement}</strong>。
           这说明工程化 harness 对输出质量的影响可以和 prompt 工程相当。
         </p>
       </section>
@@ -615,7 +623,7 @@ Handler 类型
         >
           <div>
             <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
-              自动放行（约 93% 的请求）
+              自动放行（约 {industryStats.autoModeApprovalRate} 的请求）
             </p>
             <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
               常规文件读取、标准代码编辑、典型工具调用 -- 分类器判定为安全后自动放行，不打断工作流。

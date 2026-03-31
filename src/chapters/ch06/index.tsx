@@ -65,6 +65,14 @@ export default function Ch06() {
           但两者都无法表达"每次发布都执行这 5 个步骤，顺序不能错，步骤不能漏"。
           这正是 <strong>Skills</strong> 要解决的问题 -- Harness 的能力层，定义 Claude <strong>能做什么</strong>。
         </p>
+        <p
+          className="text-base leading-relaxed max-w-3xl mt-3"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          还记得 Ch03 的 DemoAPI 吗？每次你让 Claude 跑测试、构建、部署，都要重新写一遍步骤。
+          我们现在就为它写一个 <code>/api-test</code> Skill 和 <code>/deploy</code> Skill，
+          把这些可复用流程固化下来。
+        </p>
       </header>
 
       {/* ═══════════════════════════════════════════════

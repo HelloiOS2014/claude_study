@@ -6,6 +6,7 @@ import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { DecisionTree } from '../../components/content/DecisionTree'
 import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
 import { ReferenceSection } from '../../components/content/ReferenceSection'
+import { industryStats } from '../../data/industry-stats'
 
 const LazyVibeCodingCurve = lazy(() => import('../../remotion/ch02/VibeCodingCurve'))
 
@@ -517,8 +518,8 @@ export default router;`}
             Google 内部数据显示，完全委托给 AI 的代码片段，开发者的<strong>理解度评分平均下降 17%</strong>。
           </p>
           <p className="mb-2">
-            行业数据印证了这种风险：AI 生成的代码比人工编写的代码平均多 <strong>1.75 倍逻辑错误</strong>，
-            <strong>45%</strong> 含有安全漏洞，代码流转率高出 <strong>41%</strong>。
+            行业数据印证了这种风险：AI 生成的代码比人工编写的代码平均多 <strong>{industryStats.logicErrorMultiplier} 逻辑错误</strong>，
+            <strong>{industryStats.securityVulnerabilityRate}</strong> 含有安全漏洞，代码流转率高出 <strong>{industryStats.codeChurnIncrease}</strong>。
           </p>
           <p>
             Vibe Coding 是 "理解债务" 最大的来源。你写得越快，欠得越多。
