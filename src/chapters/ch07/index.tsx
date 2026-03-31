@@ -6,6 +6,7 @@ import { ConfigExample } from '../../components/content/ConfigExample'
 import { DecisionTree } from '../../components/content/DecisionTree'
 import { ReferenceSection } from '../../components/content/ReferenceSection'
 import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
+import { industryStats } from '../../data/industry-stats'
 
 const LazyHookEventFlow = lazy(() => import('../../remotion/ch05/HookEventFlow'))
 
@@ -113,6 +114,16 @@ export default function Ch07() {
           >
             Automation Layer
           </span>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded"
+            style={{
+              color: 'var(--color-accent)',
+              background: 'var(--color-accent-subtle)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            Harness / 保障层
+          </span>
         </div>
         <h1
           className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
@@ -128,6 +139,13 @@ export default function Ch07() {
           在第 20 轮对话中，Claude 可能忘记跑 ESLint。
           Hooks 系统在 Claude 的每个操作节点插入自动化检查，把"希望它做"变成"保证它做"。
           这一章，我们从零构建一条四层质量流水线，在实战中学会 21+ 事件、4 种 handler、exit code 语义。
+        </p>
+        <p
+          className="text-base leading-relaxed max-w-3xl mt-3"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          在 Ch03-06 中我们逐步给 DemoAPI 加了规范（CLAUDE.md）、结构（Plan Mode）、能力（Skills）。
+          但 Claude 仍然可能在第 20 轮忘了跑 lint。现在我们给 DemoAPI 加上最后一道保障 -- Hooks。
         </p>
       </header>
 
@@ -177,7 +195,7 @@ token 消耗（每轮提醒）                    零 token 消耗（command han
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           数据佐证：LangChain 在仅修改 harness 配置（增加 Hooks 自动化检查、不改模型和 prompt）后，
-          SWE-bench 基准测试得分提升了 <strong>+13.7%</strong>。
+          SWE-bench 基准测试得分提升了 <strong>+{industryStats.hooksBenchImprovement}</strong>。
           这说明工程化 harness 对输出质量的影响可以和 prompt 工程相当。
         </p>
       </section>
@@ -577,6 +595,114 @@ Handler 类型
             'permissions.allow 包含必要的白名单规则',
           ]}
         />
+
+        {/* ── 7.2.5 Auto Mode ── */}
+        <h3
+          className="text-lg font-semibold mt-10"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          7.2.5 Auto Mode：Claude 自带的安全分类器
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          你刚刚手工构建了四层 Hook 流水线。Claude Code 还内置了一个"零配置"的安全层 -- <strong>Auto Mode</strong>。
+          它和你的 Hook 互补，不是替代。
+        </p>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <strong>工作原理：</strong>当你启用 Auto Mode 后，一个独立的 Sonnet/Opus 分类器会在每个操作执行前做安全审查。
+          这个分类器和主 Agent 完全独立 -- 主 Agent 无法影响分类器的判断，分类器也不会干预主 Agent 的推理过程。
+        </p>
+
+        <div
+          className="rounded-lg p-5 space-y-4"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
+              自动放行（约 {industryStats.autoModeApprovalRate} 的请求）
+            </p>
+            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+              常规文件读取、标准代码编辑、典型工具调用 -- 分类器判定为安全后自动放行，不打断工作流。
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
+              自动拦截
+            </p>
+            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+              超出任务范围的操作升级、针对未识别基础设施的操作、破坏性命令 -- 分类器会阻止执行并提示用户。
+            </p>
+          </div>
+        </div>
+
+        <ConfigExample
+          title="启用 Auto Mode"
+          language="bash"
+          code={`# 方式 1：在会话中启用（交互式）
+> /auto-mode
+
+# 方式 2：通过管理员设置（Team plan）
+# Admin Console → Organization Settings → Auto Mode → Enable
+
+# 方式 3：CLI 参数
+claude --auto-mode`}
+          annotations={[
+            { line: 2, text: '在对话中输入 /auto-mode 即时切换。再次输入可关闭。' },
+            { line: 5, text: 'Team plan 管理员可以为整个组织统一启用或禁用。' },
+          ]}
+        />
+
+        <div
+          className="rounded-lg overflow-hidden my-4"
+          style={{
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+          }}
+        >
+          <table className="w-full text-sm">
+            <thead>
+              <tr
+                style={{
+                  background: 'var(--color-bg-tertiary)',
+                  borderBottom: '1px solid var(--color-border)',
+                }}
+              >
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>适合启用</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>不建议启用</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { yes: '已有成熟 deny 规则和 Hooks 的项目', no: '不熟悉的代码库（先手动了解再开）' },
+                { yes: '非安全关键的日常开发工作', no: '安全敏感操作（密钥管理、权限变更）' },
+                { yes: 'Team plan 用户（管理员可统一管控）', no: '生产基础设施访问（数据库、部署）' },
+              ].map((row, i) => (
+                <tr
+                  key={i}
+                  style={{ borderBottom: '1px solid var(--color-border)' }}
+                >
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {row.yes}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {row.no}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <QualityCallout title="Hook 与 Auto Mode 的关系">
+          Hook 是你定义的自动检查，Auto Mode 是 Claude 自带的安全分类器 -- 两者互补，不是替代。
+          你的 PreToolUse Hook 依然会执行，Auto Mode 的分类器在 Hook 之外独立运行。
+          最严格胜出原则依然适用：Hook Deny + Auto Mode Allow = Deny。
+        </QualityCallout>
       </section>
 
       {/* ═══════════════════════════════════════════════
@@ -612,20 +738,35 @@ Handler 类型
           只在需要跨文件验证、运行测试等复杂场景下使用。
         </p>
 
-        <CodeBlock
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          下面是一个完整的 agent handler 实战示例 -- 每次编辑文件后自动做 code review：
+        </p>
+
+        <ConfigExample
+          title="agent handler -- 自动 Code Review"
           language="json"
-          title="agent-hook-example.json"
           code={`{
   "hooks": {
-    "Stop": [
+    "PostToolUse": [
       {
+        "matcher": "Write|Edit",
         "type": "agent",
-        "prompt": "Verify all changes in this session: 1) Read modified files and check for code quality issues. 2) Run 'npm test' and verify all tests pass. 3) Check that no console.log statements were left in production code. Report issues found.",
-        "maxTurns": 20
+        "agent": {
+          "prompt": "Review the file that was just modified. Check: 1) TypeScript strict mode compliance 2) Security issues (injection, XSS, hardcoded secrets) 3) Proper error handling. Report issues found, or say 'No issues found' if clean.",
+          "model": "haiku",
+          "maxTurns": 5
+        }
       }
     ]
   }
 }`}
+          annotations={[
+            { line: 5, text: 'matcher: "Write|Edit" -- 只在文件被创建或编辑后触发 review。' },
+            { line: 6, text: 'type: "agent" -- 启动子 Agent 做多轮验证，区别于 "prompt" 的单轮判断。' },
+            { line: 8, text: 'agent.prompt: 子 Agent 的任务指令。它可以读文件、跑命令来验证。' },
+            { line: 9, text: 'agent.model: "haiku" 用快速小模型降低成本。也可选 "sonnet" 或 "opus"。' },
+            { line: 10, text: 'agent.maxTurns: 限制子 Agent 最多 5 轮交互。默认 50，建议按需缩小。' },
+          ]}
         />
 
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
@@ -633,6 +774,26 @@ Handler 类型
           agent 可以多轮操作（"打开文件看看、跑个测试、分析结果"）。
           代价是 agent 需要 3-10 秒启动时间，且每轮都消耗 token。
         </p>
+
+        <CodeBlock
+          language="bash"
+          title="agent-vs-prompt.txt"
+          code={`agent handler 字段说明：
+
+  matcher      正则匹配触发的工具名（同 command handler）
+  type         "agent" -- 启动子 Agent
+  agent.prompt 子 Agent 收到的任务指令
+  agent.model  子 Agent 使用的模型（haiku / sonnet / opus）
+               - haiku: 最快最便宜，适合格式检查
+               - sonnet: 平衡，适合 code review
+               - opus: 最强，适合架构验证
+  agent.maxTurns  最大交互轮数（默认 50，建议 5-20）
+                  轮数越多 = token 消耗越高
+
+何时用 agent 而非 prompt？
+  prompt: "这段代码有安全问题吗？" → 看一眼就能答
+  agent:  "检查所有修改的文件，跑测试，验证类型" → 需要多步操作`}
+        />
 
         {/* ── HTTP handler ── */}
         <h3
@@ -846,6 +1007,195 @@ Handler 类型
           所以 async 只适合"发出去就行"的场景，不适合需要决策（Allow/Ask/Deny）的安全检查。
         </p>
 
+        {/* ── SessionStart event ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          SessionStart：会话启动时的环境校验
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          SessionStart 在新会话开始时触发一次。最佳用途是<strong>环境验证</strong>（检查 Node 版本、必要工具是否安装）
+          和<strong>上下文注入</strong>（把项目状态、最近的 git log 注入到 Claude 的初始上下文）。
+        </p>
+
+        <ConfigExample
+          title="SessionStart -- 环境验证 + 上下文注入"
+          language="json"
+          code={`{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "bash .claude/hooks/session-init.sh"
+      }
+    ]
+  }
+}`}
+          annotations={[
+            { line: 3, text: 'SessionStart: 会话开始时触发一次。没有 matcher -- 全局事件。' },
+            { line: 6, text: '脚本检查环境并输出项目状态，stdout 会注入 Claude 初始上下文。' },
+          ]}
+        />
+
+        <CodeBlock
+          language="bash"
+          title=".claude/hooks/session-init.sh"
+          code={`#!/bin/bash
+# SessionStart hook: 环境验证 + 项目状态注入
+
+set -euo pipefail
+
+# 1. 环境验证 -- 缺少关键工具时警告（不阻断）
+MISSING=""
+command -v node  >/dev/null 2>&1 || MISSING="$MISSING node"
+command -v jq    >/dev/null 2>&1 || MISSING="$MISSING jq"
+command -v npx   >/dev/null 2>&1 || MISSING="$MISSING npx"
+
+if [[ -n "$MISSING" ]]; then
+  echo "WARNING: missing tools:$MISSING" >&2
+fi
+
+# 2. Node 版本检查
+NODE_VER=$(node -v 2>/dev/null || echo "unknown")
+echo "Environment: Node $NODE_VER, $(uname -s)"
+
+# 3. 项目状态注入 -- 让 Claude 一开始就了解当前情况
+if [[ -f package.json ]]; then
+  echo "Project: $(jq -r '.name // "unnamed"' package.json)"
+fi
+echo "Git branch: $(git branch --show-current 2>/dev/null || echo 'not a git repo')"
+echo "Last commit: $(git log --oneline -1 2>/dev/null || echo 'no commits')"
+
+exit 0`}
+        />
+
+        {/* ── PostCompact event ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          PostCompact：上下文压缩后保留关键决策
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          当对话变长时，Claude Code 会自动压缩上下文（compact）。压缩过程中，一些中间讨论和决策细节可能丢失。
+          PostCompact 在压缩完成后触发，可以用来<strong>把关键决策写入进度文件</strong>，防止重要信息随压缩消失。
+        </p>
+
+        <ConfigExample
+          title="PostCompact -- 保存关键决策"
+          language="json"
+          code={`{
+  "hooks": {
+    "PostCompact": [
+      {
+        "type": "command",
+        "command": "bash .claude/hooks/save-progress.sh"
+      }
+    ]
+  }
+}`}
+          annotations={[
+            { line: 3, text: 'PostCompact: 上下文压缩后触发。用来补救压缩可能丢失的信息。' },
+            { line: 6, text: '将当前进度和关键决策写入文件，Claude 下次可以读取。' },
+          ]}
+        />
+
+        <CodeBlock
+          language="bash"
+          title=".claude/hooks/save-progress.sh"
+          code={`#!/bin/bash
+# PostCompact hook: 保存关键决策到进度文件
+
+PROGRESS_FILE=".claude/progress.md"
+
+# 记录压缩发生的时间
+echo "---" >> "$PROGRESS_FILE"
+echo "Compact at: $(date '+%Y-%m-%d %H:%M')" >> "$PROGRESS_FILE"
+
+# 保存当前 git 状态作为进度快照
+echo "Modified files:" >> "$PROGRESS_FILE"
+git diff --name-only 2>/dev/null >> "$PROGRESS_FILE"
+
+# 提示 Claude 下次读取进度文件
+echo "Progress saved to $PROGRESS_FILE -- read it to restore context."
+
+exit 0`}
+        />
+
+        <QualityCallout title="SessionStart + PostCompact = 上下文保险">
+          SessionStart 在会话开头注入项目状态，PostCompact 在压缩后保留关键决策。
+          两者配合使用，即使在长对话中 Claude 也不会"失忆"。
+          搭配 PreCompact（压缩前注入关键信息），形成完整的上下文保护链。
+        </QualityCallout>
+
+        {/* ── Other events reference ── */}
+        <ReferenceSection version="其他 Hook 事件">
+          <div>
+            <p
+              className="text-xs mb-3"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              除了 PreToolUse、PostToolUse、Stop、SessionStart、PostCompact，Hook 系统还支持以下事件。
+              大多数项目不需要用到全部事件 -- 按需选用即可。
+            </p>
+            <div
+              className="rounded-lg overflow-hidden"
+              style={{
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-bg-secondary)',
+              }}
+            >
+              <table className="w-full text-xs">
+                <thead>
+                  <tr
+                    style={{
+                      background: 'var(--color-bg-tertiary)',
+                      borderBottom: '1px solid var(--color-border)',
+                    }}
+                  >
+                    <th className="text-left px-3 py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>事件</th>
+                    <th className="text-left px-3 py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>触发时机</th>
+                    <th className="text-left px-3 py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>典型用途</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { event: 'TaskCreated', when: '任务被创建时', use: '任务审计、Slack 通知' },
+                    { event: 'WorktreeCreate', when: 'Git worktree 创建时', use: '环境隔离初始化' },
+                    { event: 'WorktreeRemove', when: 'Git worktree 移除时', use: '资源清理' },
+                    { event: 'CwdChanged', when: '工作目录变更时', use: '环境感知、路径校验' },
+                    { event: 'FileChanged', when: '文件被外部修改时', use: '热重载、冲突检测' },
+                    { event: 'StopFailure', when: 'Stop hook 返回非零后', use: '失败后的补救措施' },
+                    { event: 'Elicitation', when: 'Claude 需要向用户提问时', use: '问题过滤、自动回答' },
+                    { event: 'ElicitationResult', when: '用户回答了 Claude 的问题后', use: '回答记录、分析' },
+                    { event: 'InstructionsLoaded', when: '指令文件加载后', use: '指令审计、动态注入' },
+                    { event: 'ConfigChange', when: '配置发生变更时', use: '配置审计、热重载' },
+                    { event: 'SessionEnd', when: '会话结束时', use: '清理资源、生成报告' },
+                  ].map((row) => (
+                    <tr
+                      key={row.event}
+                      style={{ borderBottom: '1px solid var(--color-border)' }}
+                    >
+                      <td className="px-3 py-2 font-mono font-semibold" style={{ color: 'var(--color-accent)' }}>
+                        {row.event}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--color-text-secondary)' }}>
+                        {row.when}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--color-text-secondary)' }}>
+                        {row.use}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </ReferenceSection>
+
         <ExerciseCard
           tier="l2"
           title="给流水线增加安全层"
@@ -1033,7 +1383,7 @@ Auto                    所有操作自动执行         Hooks 是你唯一的�
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 7.5: 常见问题排查
+          Section 7.5: 验证：你的 Hook 有效吗？
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -1043,7 +1393,161 @@ Auto                    所有操作自动执行         Hooks 是你唯一的�
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          7.5 常见问题排查
+          7.5 验证：你的 Hook 有效吗？
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          配好 Hook 不等于配对了 Hook。Hook 太严格，Claude 做大量无用功；Hook 太松，形同虚设。
+          本节提供度量标准、紧急旁路和排查流程，帮你验证 Hook 是否真正有效。
+        </p>
+
+        {/* ── Effectiveness metric ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          拦截率：Hook 有效性的核心指标
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <strong>Hook 拦截率</strong> = 被 Hook 拦截（exit 1 或 exit 2）的操作次数 / 总操作次数。
+          这是衡量 Hook 配置质量的最直观指标。
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="interception-rate.txt"
+          code={`Hook 拦截率健康区间：1% ~ 20%
+
+  > 20%  太严格 — Claude 频繁被拦截，做了大量"白费"的推理
+         → 检查 matcher 是否太宽泛（.* 匹配所有工具？）
+         → 检查脚本逻辑是否过于保守
+
+  1-20%  健康区间 — Hook 在关键时刻介入，大部分操作顺畅执行
+         → 定期检查拦截的操作是否都是"该拦的"
+
+  < 1%   太松 — Hook 几乎不触发，形同虚设
+         → 检查 matcher 是否太窄（只匹配了极少数工具？）
+         → 检查 exit code 是否总是返回 0
+
+如何测量？在 Hook 脚本中增加计数：
+  echo "[$(date)] tool=$TOOL_NAME exit=$EXIT_CODE" >> /tmp/hook-stats.log
+  一天后统计：grep -c "exit=[12]" /tmp/hook-stats.log`}
+        />
+
+        {/* ── Emergency bypass ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          紧急旁路：--no-hooks
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          当 Hook 出 bug 导致工作完全阻塞时，可以用{' '}
+          <code style={{ color: 'var(--color-accent)' }}>--no-hooks</code> 临时禁用所有 Hook：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="emergency-bypass.sh"
+          code={`# 紧急旁路：临时禁用所有 Hook
+claude --no-hooks
+
+# 重要：这只是急救措施，不是长期方案！
+# 用完后必须修复导致问题的 Hook，然后恢复正常运行。
+# 永远不要让 --no-hooks 成为常态。`}
+        />
+
+        <QualityCallout title="--no-hooks 是急救药，不是维生素">
+          如果你发现自己经常需要 --no-hooks，说明你的 Hook 配置有根本问题。
+          回到拦截率指标：检查是哪些 Hook 过于严格，修复它们，而不是绕过整个系统。
+        </QualityCallout>
+
+        {/* ── Troubleshooting table ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          排查流程：Hook 误拦截
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+          当 Hook 错误地阻止了合法操作，按以下步骤排查：
+        </p>
+
+        <div
+          className="rounded-lg overflow-hidden my-4"
+          style={{
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+          }}
+        >
+          <table className="w-full text-sm">
+            <thead>
+              <tr
+                style={{
+                  background: 'var(--color-bg-tertiary)',
+                  borderBottom: '1px solid var(--color-border)',
+                }}
+              >
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>步骤</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>检查内容</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { step: '1. matcher 模式', check: '正则是否太宽泛？', action: '".*" 改为具体工具名，如 "Bash"' },
+                { step: '2. exit code 逻辑', check: '脚本是否在不该拒绝时返回了 exit 2？', action: '检查条件分支，确认 Deny 只用于确定性危险' },
+                { step: '3. 手动测试脚本', check: '脚本单独运行是否正常？', action: 'echo \'{"tool_name":"Edit"}\' | bash .claude/hooks/your-hook.sh; echo $?' },
+                { step: '4. 最严格胜出', check: '是否有其他 Hook 返回了更严格的结果？', action: '检查同事件的所有 Hook，找到返回 Deny 的那个' },
+                { step: '5. 来源优先级', check: 'Global Hook 是否覆盖了 Project Hook？', action: '检查 ~/.claude/settings.json 中的 Hook 和 deny 规则' },
+              ].map((row) => (
+                <tr
+                  key={row.step}
+                  style={{ borderBottom: '1px solid var(--color-border)' }}
+                >
+                  <td className="px-4 py-3 font-semibold" style={{ color: 'var(--color-accent)' }}>
+                    {row.step}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {row.check}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    <code className="text-xs" style={{ color: 'var(--color-accent)' }}>{row.action}</code>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <ExerciseCard
+          tier="l2"
+          title="测量你的 Hook 拦截率"
+          description="在你的四层质量流水线上工作一天，测量 Hook 的拦截率。在每个 Hook 脚本中添加日志行记录 exit code，一天后统计拦截率。目标：保持在 1-20% 的健康区间。如果偏高，缩窄 matcher；如果偏低，检查脚本逻辑是否过于宽松。"
+          checkpoints={[
+            '每个 Hook 脚本末尾添加了 exit code 日志记录',
+            '一天后统计拦截率（exit 1 + exit 2 次数 / 总触发次数）',
+            '拦截率在 1-20% 区间内（或已调整 Hook 使其进入区间）',
+            '被拦截的操作都是"该拦的"，没有明显误报',
+          ]}
+        />
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 7.6: 常见问题排查
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          7.6 常见问题排查
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>

@@ -6,6 +6,7 @@ import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { DecisionTree } from '../../components/content/DecisionTree'
 import { AnimationWrapper } from '../../components/animation/AnimationWrapper'
 import { ReferenceSection } from '../../components/content/ReferenceSection'
+import { industryStats } from '../../data/industry-stats'
 
 const LazyVibeCodingCurve = lazy(() => import('../../remotion/ch02/VibeCodingCurve'))
 
@@ -223,6 +224,16 @@ export default function Ch03() {
           >
             Coding Phase
           </span>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded"
+            style={{
+              color: 'var(--color-accent)',
+              background: 'var(--color-accent-subtle)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            Harness / Foundation
+          </span>
         </div>
         <h1
           className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
@@ -234,9 +245,10 @@ export default function Ch03() {
           className="text-lg leading-relaxed max-w-3xl"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          Ch02 我们学习了 Prompt 精确控制和 Token 效率优化。现在你已经能写出结构化的工程级 Prompt。
-          但 "能用" 和 "用好" 之间有一条巨大的鸿沟 -- 这一章我们来探索这条鸿沟的边界,
-          学会在 Vibe Coding 的自由和精确控制之间做出正确选择。
+          如果你在 Cursor 或 Copilot 中经历过"写到后面越来越乱"，那就是 Vibe Coding 退化。
+          Andrej Karpathy 在 2026 年 2 月将解决方案命名为 <strong>Agentic Engineering</strong> —— 人负责架构决策，AI 负责实现。
+          这一章我们用一个真实的 Express API 项目（我们叫它 <strong>DemoAPI</strong>）来系统体验退化的过程。
+          <strong>这个项目将贯穿 Part 2（Ch04-07），你接下来会用 Harness Engineering 逐步修复它的所有问题。</strong>
         </p>
       </header>
 
@@ -256,7 +268,7 @@ export default function Ch03() {
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           让我们做一个实验：从零开始，用纯 Vibe Coding（只描述想要什么，不给任何技术约束）构建一个
-          Express REST API。我们逐轮观察代码质量的变化。
+          Express REST API —— 我们叫它 <strong>DemoAPI</strong>。我们逐轮观察代码质量的变化。
         </p>
 
         {/* Round 1 */}
@@ -504,6 +516,10 @@ export default router;`}
           <p className="mb-2">
             根据 GitClear 2024 研究，<strong>59% 的开发者</strong>承认自己在使用他们并不完全理解的 AI 生成代码。
             Google 内部数据显示，完全委托给 AI 的代码片段，开发者的<strong>理解度评分平均下降 17%</strong>。
+          </p>
+          <p className="mb-2">
+            行业数据印证了这种风险：AI 生成的代码比人工编写的代码平均多 <strong>{industryStats.logicErrorMultiplier} 逻辑错误</strong>，
+            <strong>{industryStats.securityVulnerabilityRate}</strong> 含有安全漏洞，代码流转率高出 <strong>{industryStats.codeChurnIncrease}</strong>。
           </p>
           <p>
             Vibe Coding 是 "理解债务" 最大的来源。你写得越快，欠得越多。
@@ -1458,6 +1474,68 @@ index 3a1b2c3..4d5e6f7 100644
           <p>Vibe Coding 常见陷阱检查表（待补充）</p>
         </div>
       </ReferenceSection>
+
+      {/* ═══════════════════════════════════════════════
+          Harness Preview: DemoAPI → Part 2
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          接下来：用 Harness Engineering 修复 DemoAPI
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          DemoAPI 的四轮退化暴露了 Vibe Coding 的系统性问题。Part 2（Ch04-07）将逐一用
+          Harness Engineering 的工具链修复它们。以下是问题到解决方案的映射：
+        </p>
+
+        <div className="overflow-x-auto my-4">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                <th className="text-left py-2 px-3 font-semibold" style={{ color: 'var(--color-text-primary)' }}>DemoAPI 问题</th>
+                <th className="text-left py-2 px-3 font-semibold" style={{ color: 'var(--color-text-primary)' }}>Harness 组件</th>
+                <th className="text-left py-2 px-3 font-semibold" style={{ color: 'var(--color-text-primary)' }}>章节</th>
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-2 px-3">响应格式不一致</td>
+                <td className="py-2 px-3 font-semibold" style={{ color: 'var(--color-accent)' }}>CLAUDE.md</td>
+                <td className="py-2 px-3">Ch04</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-2 px-3">复杂功能方向偏了</td>
+                <td className="py-2 px-3 font-semibold" style={{ color: 'var(--color-accent)' }}>Plan Mode</td>
+                <td className="py-2 px-3">Ch05</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-2 px-3">每次部署重复描述步骤</td>
+                <td className="py-2 px-3 font-semibold" style={{ color: 'var(--color-accent)' }}>Skills</td>
+                <td className="py-2 px-3">Ch06</td>
+              </tr>
+              <tr>
+                <td className="py-2 px-3">长对话忘了跑 lint</td>
+                <td className="py-2 px-3 font-semibold" style={{ color: 'var(--color-accent)' }}>Hooks</td>
+                <td className="py-2 px-3">Ch07</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <QualityCallout title="Harness Engineering 循环">
+          <p>
+            每一章的修复都遵循同一个循环：
+            <strong>观察失败</strong> → <strong>诊断根因</strong> → <strong>构建 Harness 响应</strong> → <strong>验证有效</strong>。
+            DemoAPI 是你在 Part 2 中持续使用的实验场 —— 你将亲手把它从"能跑但混乱"改造成"工程级可维护"。
+          </p>
+        </QualityCallout>
+      </section>
     </div>
   )
 }

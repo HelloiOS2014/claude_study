@@ -121,6 +121,16 @@ export default function Ch11() {
           >
             Governance & Adoption
           </span>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded"
+            style={{
+              color: 'var(--color-accent)',
+              background: 'var(--color-accent-subtle)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            Harness / 治理层
+          </span>
         </div>
         <h1
           className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
@@ -137,6 +147,68 @@ export default function Ch11() {
           这不是理论框架，而是你的团队下周就可以开始执行的操作手册。
         </p>
       </header>
+
+      {/* ═══════════════════════════════════════════════
+          Failure Opening: 支付精度 Bug 场景
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <div
+          className="p-5 rounded-lg"
+          style={{
+            background: 'rgba(248, 113, 113, 0.06)',
+            border: '1px solid rgba(248, 113, 113, 0.25)',
+          }}
+        >
+          <h3
+            className="text-lg font-semibold mb-3"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            真实场景：支付模块的精度 Bug
+          </h3>
+          <div className="text-sm leading-relaxed space-y-3" style={{ color: 'var(--color-text-secondary)' }}>
+            <p>
+              一个 L1 级别的开发者使用 Auto 模式让 Claude 重构支付模块。Claude 修改了一个金额计算函数——
+              将原本使用整数分（cents）的逻辑改成了浮点数运算。代码看起来简洁干净，通过了 Code Review，
+              因为 Reviewer 信任 Claude 的输出（"看起来没问题"）。
+            </p>
+            <CodeBlock
+              language="javascript"
+              title="payment-calc.js -- Claude 生成的代码"
+              code={`// Claude 重构后的代码 (看起来更"干净")
+function calculateTotal(items) {
+  return items.reduce((sum, item) => {
+    return sum + item.price * item.quantity * (1 - item.discount);
+  }, 0);
+}
+
+// 问题: 0.1 + 0.2 === 0.30000000000000004
+// 真实案例: $19.99 * 3 * 0.9 = $53.97299999999999
+// 正确做法: 用整数分计算, 最后转换
+// return Math.round(sum * 100) / 100  // 至少需要这个`}
+            />
+            <p>
+              三天后，财务发现交易金额有小数点误差。累积到月度对账时，差异已经达到数百美元。
+              根因：JavaScript 浮点精度问题（<code style={{ color: 'var(--color-accent)' }}>0.1 + 0.2 !== 0.3</code>）。
+            </p>
+            <p>
+              <strong style={{ color: 'var(--color-text-primary)' }}>这正是治理缺失的后果。</strong>
+              该开发者没有权限限制（L1 本应使用 Ask 模式，不是 Auto），
+              Reviewer 没有 AI 专用的 review checklist（没有检查数值精度），
+              没有预算监控来标记"L1 开发者修改核心支付模块"这一异常行为。
+              三层防御——权限、Review、监控——全部缺失。
+            </p>
+          </div>
+        </div>
+
+        <QualityCallout title="本章的目标">
+          <p>
+            这一章的每一节都在回答同一个问题：<strong style={{ color: 'var(--color-text-primary)' }}>如何确保上面这个场景不会发生在你的团队？</strong>
+            从权限分级（阻止 L1 使用 Auto 模式）到 Hook 保护（自动测试拦截精度问题）
+            到 Review 流程（AI 专用 checklist）到成本监控（异常修改告警）——
+            每一层都是防线，任何一层到位都能拦截这个 bug。
+          </p>
+        </QualityCallout>
+      </section>
 
       {/* ═══════════════════════════════════════════════
           Section 11.1: 四层纵深防御
@@ -361,6 +433,66 @@ Layer 4: 治理基础设施 (Governance)
 - 所有级别: Writer/Reviewer 双会话 + 人工 review
 - 额外要求: 安全 checklist + 渗透测试覆盖`}
         />
+
+        {/* ── L1→L2 升级标准（具体化） ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          L1 → L2 升级：具体标准参考
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+          上面的分级表给出了升级方向，但 Team Lead 需要更具体的参考标准。
+          以下是 L1 → L2 升级的建议门槛——<strong style={{ color: 'var(--color-text-primary)' }}>这些是参考值，不是硬性规定</strong>，
+          根据团队实际情况调整。
+        </p>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                {['标准', '具体要求', '验证方式'].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-3 py-2.5 font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              {[
+                ['使用时长', '在 L1 级别至少使用 3 个月', '入职日期 / 权限分配记录'],
+                ['Review 记录', '至少 10 次 paired review 且无严重 escalation', 'Code review 工具中的记录'],
+                ['Plan Mode 经验', '独立完成至少 1 个 Plan Mode 项目（设计 + 执行 + 验证）', 'Plan Mode 项目的 PR + 验收记录'],
+                ['Bug 率', '最近 3 个连续月的 AI PR bug 率不超过团队平均值', 'Issue tracker + git blame 统计'],
+              ].map((row, i) => (
+                <tr
+                  key={i}
+                  style={{ borderBottom: '1px solid var(--color-border)' }}
+                >
+                  <td className="px-3 py-2.5">
+                    <strong style={{ color: 'var(--color-text-primary)' }}>{row[0]}</strong>
+                  </td>
+                  <td className="px-3 py-2.5">{row[1]}</td>
+                  <td className="px-3 py-2.5">{row[2]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <QualityCallout title="升级标准的定位">
+          <p>
+            这些标准是给 Team Lead 的参考框架，不是 HR 的考核工具。
+            升级的核心判断是：<strong style={{ color: 'var(--color-text-primary)' }}>该成员是否已经证明了对 AI 产出的审慎态度和质量意识？</strong>
+            数据是辅助判断的依据，不是唯一依据。如果一个成员在 2 个月内就展现了优秀的判断力，
+            不必机械等到 3 个月。反过来，如果数据达标但 Review 中发现理解深度不足，也不应急于升级。
+          </p>
+        </QualityCallout>
       </section>
 
       {/* ═══════════════════════════════════════════════
@@ -515,6 +647,89 @@ Haiku 模型:      $0.25/M input + $1.25/M output tokens
 并行 worktree:   4 个同时工作 ≈ 4x 成本
 Agent 子代理:    成本乘数, 谨慎使用`}
         />
+
+        {/* ── 人均预算公式 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          人均日预算公式
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+          不要拍脑袋定预算。用公式推导每个开发者的合理日预算：
+        </p>
+
+        <CodeBlock
+          language="markdown"
+          title="budget-formula.md"
+          code={`# 人均日预算公式
+
+daily_budget = base_cost × complexity_multiplier × safety_margin
+
+┌──────────────────────┬──────────────┬────────────────────────┐
+│ 参数                 │ 推荐值       │ 说明                   │
+├──────────────────────┼──────────────┼────────────────────────┤
+│ base_cost            │ $2 - $5      │ 基础日均 API 成本      │
+│ complexity_multiplier│ 1.0 - 2.0    │ 项目复杂度系数         │
+│   - 简单 CRUD        │ 1.0          │ 标准业务逻辑           │
+│   - 中等复杂度       │ 1.5          │ 多服务交互/复杂状态    │
+│   - 高复杂度         │ 2.0          │ 分布式系统/性能优化    │
+│ safety_margin        │ 1.3          │ 30% 安全余量           │
+└──────────────────────┴──────────────┴────────────────────────┘
+
+# 示例计算
+
+普通项目:  $2 × 1.0 × 1.3 = $2.60/day  → 月预算 ~$57
+中等项目:  $2 × 1.5 × 1.3 = $3.90/day  → 月预算 ~$86
+复杂项目:  $3 × 2.0 × 1.3 = $7.80/day  → 月预算 ~$172
+
+# 异常告警阈值
+
+日消耗 > 3x 日均值 → 自动通知 Team Lead
+周消耗 > 2x 周均值 → 触发用量审查
+单次会话 > $10    → 建议拆分任务或新建会话`}
+        />
+
+        <CodeBlock
+          language="bash"
+          title="cost-monitor.sh — 简易成本监控脚本"
+          code={`#!/bin/bash
+# 简易日成本监控 — 配合 ccusage 使用
+# 将此脚本加入 cron: 0 9 * * * /path/to/cost-monitor.sh
+
+DAILY_BUDGET=5.00  # 日预算上限 (美元)
+ALERT_MULTIPLIER=3 # 异常倍数告警阈值
+TEAM_LEAD_EMAIL="lead@example.com"
+
+# 获取昨日用量
+YESTERDAY=$(date -d "yesterday" +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)
+COST=$(ccusage --days 1 --date "$YESTERDAY" --format json | jq -r '.total_cost')
+
+# 获取最近 7 天日均
+AVG_COST=$(ccusage --days 7 --format json | jq -r '.daily_average_cost')
+
+# 检查是否超过预算
+if (( $(echo "$COST > $DAILY_BUDGET" | bc -l) )); then
+  echo "[WARN] $YESTERDAY cost \$$COST exceeds budget \$$DAILY_BUDGET"
+fi
+
+# 检查是否异常偏高 (> 3x 日均)
+THRESHOLD=$(echo "$AVG_COST * $ALERT_MULTIPLIER" | bc -l)
+if (( $(echo "$COST > $THRESHOLD" | bc -l) )); then
+  echo "[ALERT] $YESTERDAY cost \$$COST is \${ALERT_MULTIPLIER}x above average \$$AVG_COST"
+  # 发送告警 (替换为你的通知方式)
+  # curl -X POST "$SLACK_WEBHOOK" -d "{\\"text\\": \\"Cost alert: \$$COST\\"}"
+fi
+
+echo "[$YESTERDAY] Cost: \$$COST | Budget: \$$DAILY_BUDGET | 7d Avg: \$$AVG_COST"`}
+        />
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <strong style={{ color: 'var(--color-text-primary)' }}>月度可视化：</strong>
+          建议按项目和按开发者两个维度做成本分拆。项目维度帮助评估 AI 在不同类型工作中的 ROI，
+          开发者维度帮助发现异常使用模式（如某人反复在大文件上 Read 而非 Grep）。
+        </p>
 
         {/* ── ccusage 团队分析 ── */}
         <h3
@@ -1116,6 +1331,119 @@ Phase 3: 深化 (持续)
           培训不是"上完课就结束"——每周需要有实际项目任务作为练习场景。
           建议指定一个 L3 成员作为 Mentor，每周做 15 分钟的 1:1 回顾。
         </p>
+
+        {/* ── 按团队规模的落地路线图 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          按团队规模的具体路线图
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+          上面的通用路线图需要根据团队规模调整节奏。以下是两个常见规模的参考方案。
+        </p>
+
+        {/* ── 小团队路线图 ── */}
+        <h4
+          className="text-base font-semibold mt-6"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          小团队（5-15 人）：1 个月启动计划
+        </h4>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                {['时间', '重点任务', '交付物', '负责人'].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-3 py-2.5 font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="px-3 py-2.5"><strong style={{ color: 'var(--color-text-primary)' }}>Week 1</strong></td>
+                <td className="px-3 py-2.5">统一 CLAUDE.md 模板 + 权限分级（所有人从 L1/Ask 模式开始）</td>
+                <td className="px-3 py-2.5">CLAUDE.md + settings.json 模板</td>
+                <td className="px-3 py-2.5">Tech Lead</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="px-3 py-2.5"><strong style={{ color: 'var(--color-text-primary)' }}>Week 2-3</strong></td>
+                <td className="px-3 py-2.5">Hook 管线（format + lint + test）+ Code Review 流程（AI 专用 checklist）</td>
+                <td className="px-3 py-2.5">Hook 套件 + Review checklist</td>
+                <td className="px-3 py-2.5">Tech Lead + 全员</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="px-3 py-2.5"><strong style={{ color: 'var(--color-text-primary)' }}>Week 4+</strong></td>
+                <td className="px-3 py-2.5">Subagent 试点（非核心功能）+ 成本监控（ccusage 日报）</td>
+                <td className="px-3 py-2.5">试点报告 + 成本面板</td>
+                <td className="px-3 py-2.5">先行者 1-2 人</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── 中大团队路线图 ── */}
+        <h4
+          className="text-base font-semibold mt-6"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          中大团队（50+ 人）：季度推进计划
+        </h4>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                {['时间', '重点任务', '交付物', '关键指标'].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-3 py-2.5 font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="px-3 py-2.5"><strong style={{ color: 'var(--color-text-primary)' }}>Month 1</strong></td>
+                <td className="px-3 py-2.5">Managed Policy 部署 + managed-settings.d/ 配置 + 识别 3-5 个 Champion</td>
+                <td className="px-3 py-2.5">组织级策略 + Champion 名单</td>
+                <td className="px-3 py-2.5">Champion 覆盖每个主要团队</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="px-3 py-2.5"><strong style={{ color: 'var(--color-text-primary)' }}>Month 2</strong></td>
+                <td className="px-3 py-2.5">SDK 集成到 CI/CD + 度量仪表盘（人均成本、bug 率、review 轮次）</td>
+                <td className="px-3 py-2.5">CI 集成 + Grafana 面板</td>
+                <td className="px-3 py-2.5">AI PR bug 率不超过人工基线</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="px-3 py-2.5"><strong style={{ color: 'var(--color-text-primary)' }}>Month 3</strong></td>
+                <td className="px-3 py-2.5">首批 L1 → L2 晋升周期 + 事故响应流程建立</td>
+                <td className="px-3 py-2.5">晋升标准文档 + 事故响应 SOP</td>
+                <td className="px-3 py-2.5">至少 30% L1 达到晋升标准</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <QualityCallout title="路线图的适应性">
+          <p>
+            这是参考方案，不是唯一正解。根据团队文化和项目风险调整节奏。
+            <strong style={{ color: 'var(--color-text-primary)' }}>核心原则是渐进验证</strong>——
+            每个阶段都有明确的成功标准，达标后再扩大范围。
+            如果某个阶段的指标不达标，停下来解决问题，而不是继续推进。
+          </p>
+        </QualityCallout>
       </section>
 
       {/* ═══════════════════════════════════════════════
@@ -1252,6 +1580,132 @@ Phase 3: 深化 (持续)
             当使用 AI 变得"习惯性"而不再引起审慎态度时，就是最危险的时候。
           </p>
         </QualityCallout>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 11.8: 事故响应
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          11.8 事故响应：AI 生成的 Bug 进入生产后
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          无论防御多严密，AI 生成的 bug 终究会进入生产环境。关键不是"能不能避免"，
+          而是<strong style={{ color: 'var(--color-text-primary)' }}>出了问题后如何响应</strong>——
+          既修复 bug 本身，又修复让 bug 通过的治理漏洞。
+        </p>
+
+        {/* ── 责任原则 ── */}
+        <div
+          className="p-5 rounded-lg"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <h3
+            className="text-lg font-semibold mb-3"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            核心原则：谁 Approve 谁负责
+          </h3>
+          <div className="text-sm leading-relaxed space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
+            <p>
+              AI 不承担责任——<strong style={{ color: 'var(--color-text-primary)' }}>审批 PR 的人对产出负责</strong>。
+              这不是推卸责任，而是明确责任链。当一个 AI 生成的 bug 进入生产：
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>写代码的开发者负责提交前的验证（是否运行了测试？是否理解了代码？）</li>
+              <li>Review 的人负责审查质量（是否仔细看了？是否有 AI 专用的 checklist？）</li>
+              <li>Team Lead 负责流程设计（权限是否合理？Hook 是否到位？Review 流程是否有效？）</li>
+            </ul>
+            <p>
+              <strong style={{ color: 'var(--color-text-primary)' }}>"Claude 写错了"不是有效的根因分析。</strong>
+              有效的根因是："为什么我们的防御体系没有拦截这个错误？"
+            </p>
+          </div>
+        </div>
+
+        {/* ── Post-mortem 模板 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          AI Bug Post-mortem 模板（5 项）
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+          每次 AI 生成的 bug 进入生产，都应该走这个 5 项复盘。重点不在追责，而在补漏。
+        </p>
+
+        <CodeBlock
+          language="markdown"
+          title="ai-bug-postmortem-template.md"
+          code={`# AI Bug Post-mortem
+
+## 1. 发生了什么 (What happened)
+> 描述可观察到的症状，不是猜测的原因
+> 例：3月15日-18日，部分订单金额出现 $0.01-$0.03 的误差
+
+## 2. 根因：哪一层防御失效 (Root cause — which Harness layer failed)
+> 对照四层纵深防御 (11.1)，标记失效的层：
+> - [ ] Layer 1 (事前): 权限/CLAUDE.md/Plan/Hook/Worktree
+> - [ ] Layer 2 (过程): 逐步执行/自动测试/成本监控
+> - [ ] Layer 3 (事后): Review/理解验证/AI Review
+> - [ ] Layer 4 (治理): 审计/Git Blame/度量
+> 例：Layer 1 失效 (L1 使用了 Auto 模式) + Layer 3 失效 (Review 未检查数值精度)
+
+## 3. 为什么没被拦截 (Why it wasn't caught)
+> 三种可能的 gap，至少标记一个：
+> - [ ] Review gap: Review 流程未覆盖此类问题
+> - [ ] Hook gap: 没有 Hook 检测此类错误
+> - [ ] Test gap: 测试用例未覆盖此场景
+> 例：Review gap (无 AI 专用 checklist) + Test gap (无浮点精度测试)
+
+## 4. 修复 (Fix — 修 bug + 修 Harness)
+> 两个修复缺一不可：
+> Bug 修复:
+>   - 具体的代码修复 (PR 链接)
+> Harness 修复:
+>   - 具体的流程/配置变更
+> 例：Bug: 改用整数分计算 | Harness: 添加 PostToolUse Hook 检测浮点运算
+
+## 5. 预防 (Prevention — 什么 Harness 变更能防止复发)
+> 不是"下次更仔细"——而是具体的系统性变更
+> 例：
+>   - 新增 Hook: 检测支付模块中的浮点运算 → 自动告警
+>   - 更新 CLAUDE.md: 金额计算必须使用整数分
+>   - 更新 Review checklist: 添加"数值精度检查"项`}
+        />
+
+        <QualityCallout title="Post-mortem 的关键原则">
+          <p>
+            Post-mortem 是<strong style={{ color: 'var(--color-text-primary)' }}>改进工具，不是追责工具</strong>。
+            如果团队害怕 post-mortem，他们会隐藏问题。确保每次 post-mortem 都以"我们的系统怎么改进"结束，
+            而不是"谁犯了错"。最有价值的 post-mortem 产出不是报告本身——而是第 4、5 项中的 Harness 变更。
+          </p>
+        </QualityCallout>
+
+        {/* ── 支付 Bug 场景练习 ── */}
+        <ExerciseCard
+          tier="l2"
+          title="Post-mortem 练习：支付精度 Bug"
+          description="回到本章开头的支付精度 Bug 场景。假设这个 bug 已经进入生产并导致了三天的金额误差。使用上面的 5 项 Post-mortem 模板，完成一份完整的事后复盘。"
+          checkpoints={[
+            '第 1 项：准确描述了可观察症状（金额误差范围、持续时间、影响订单数）',
+            '第 2 项：正确标记了失效的防御层（至少 Layer 1 和 Layer 3）',
+            '第 3 项：识别了具体的 gap 类型（Review gap + Test gap）',
+            '第 4 项：同时包含 bug 修复和 Harness 修复',
+            '第 5 项：提出了至少 2 个具体的系统性预防措施（非"下次更仔细"）',
+          ]}
+        />
       </section>
 
       {/* ═══════════════════════════════════════════════

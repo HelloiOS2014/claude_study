@@ -17,6 +17,28 @@ export default function Ch02() {
       {/* Chapter Intro                                                     */}
       {/* ================================================================ */}
       <section>
+        <div className="flex items-center gap-3 mb-4">
+          <span
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold"
+            style={{
+              background: 'var(--color-accent-subtle)',
+              color: 'var(--color-accent)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            02
+          </span>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded"
+            style={{
+              color: 'var(--color-accent)',
+              background: 'var(--color-accent-subtle)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            Harness / Foundation
+          </span>
+        </div>
         <p className="text-lg leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           大多数人使用 Claude Code 的方式是："帮我写一个 XX"。这就像你雇了一个世界级工程师，然后只让他搬砖。
           这一章我们要做的事情，是把"对话"升级为"精确控制"——让你从模糊地描述需求，变成像写合同一样精准地指挥 AI。
@@ -27,6 +49,20 @@ export default function Ch02() {
           以及当对话变长、Claude 开始"遗忘"时，如何诊断和修复。
         </p>
       </section>
+
+      {/* ── 读者定位 ── */}
+      <div
+        className="p-4 rounded-lg text-sm leading-relaxed"
+        style={{
+          background: 'var(--color-bg-secondary)',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text-secondary)',
+        }}
+      >
+        你可能已经会写 Prompt 了。这章教的不是基础 Prompt，而是 Claude{' '}
+        <strong style={{ color: 'var(--color-text-primary)' }}>特有的</strong>精确控制技巧
+        — XML 语义边界、权重词层级、effort 级别。这些是其他 AI 工具没有的。
+      </div>
 
       {/* ================================================================ */}
       {/* 2.1 Prompt 解剖实验室                                             */}

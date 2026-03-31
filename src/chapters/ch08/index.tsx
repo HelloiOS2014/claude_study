@@ -179,6 +179,38 @@ export default function Ch08() {
   return (
     <div className="space-y-16">
 
+      {/* ═══ Chapter Header ═══ */}
+      <header>
+        <div className="flex items-center gap-3 mb-4">
+          <span
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold"
+            style={{
+              background: 'var(--color-accent-subtle)',
+              color: 'var(--color-accent)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            08
+          </span>
+          <span
+            className="text-xs uppercase tracking-widest font-medium"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            Orchestration
+          </span>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded"
+            style={{
+              color: 'var(--color-accent)',
+              background: 'var(--color-accent-subtle)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            Harness / 编排层
+          </span>
+        </div>
+      </header>
+
       {/* ═══════════════════════════════════════════════
           Section 8.1: 为什么需要 Subagent（上下文隔离模型）
           ═══════════════════════════════════════════════ */}
@@ -203,6 +235,52 @@ export default function Ch08() {
           有自己的上下文、自己的工具权限、自己的执行空间。
           主 Agent 只需要发指令、收结果 —— 就像一个技术 Lead 指挥一个小团队。
         </p>
+
+        {/* ── 可复现实验：上下文稀释 ── */}
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            border: '1px solid var(--color-border-accent)',
+            background: 'var(--color-bg-secondary)',
+          }}
+        >
+          <div
+            className="px-5 py-3 text-sm font-semibold"
+            style={{
+              background: 'var(--color-accent-subtle)',
+              borderBottom: '1px solid var(--color-border-accent)',
+              color: 'var(--color-accent)',
+            }}
+          >
+            可复现实验：上下文稀释效应
+          </div>
+          <div className="px-5 py-4 space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            <p>
+              打开一个 Claude Code 会话，做一些代码搜索和修改操作。当上下文使用率超过 70%
+              （参考 Ch01 的注意力衰减阈值）时，重复你在第 5 轮给过的同一条精确指令，对比两次输出的质量。
+            </p>
+            <div
+              className="rounded-lg p-4 mt-2"
+              style={{
+                background: 'var(--color-bg-tertiary)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <p style={{ color: 'var(--color-text-primary)' }}>
+                <strong>具体例子：</strong>在第 5 轮你让 Claude 给函数加 JSDoc 注释，它写得详尽 ——
+                参数描述、返回值说明、使用示例一应俱全。在第 35 轮你给出相同的指令，
+                它可能只写一行描述。这不是 Claude 变懒了，是上下文窗口的注意力被前面 30 轮的工具调用记录稀释了。
+              </p>
+            </div>
+            <p>
+              <strong style={{ color: 'var(--color-accent)' }}>Subagent 的解法：</strong>
+              每个 Subagent 获得全新的上下文，相当于
+              <strong style={{ color: 'var(--color-text-primary)' }}>"上下文防火墙"</strong>。
+              不管主会话已经跑了多少轮，Subagent 的注意力永远是 100% 集中在你交给它的那个任务上。
+              质量不会随着会话长度而衰减。
+            </p>
+          </div>
+        </div>
 
         <AnimationWrapper
           component={LazySubagentFanout}
@@ -365,6 +443,142 @@ export default function Ch08() {
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
           Explore 使用 Haiku（最便宜的模型）是刻意的设计：搜索代码不需要强推理能力，
           用低成本模型做高频操作是最优 ROI 策略。
+        </p>
+
+        {/* ── 三种核心类型的调用示例 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          调用示例与返回格式
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+          下面是三种最常用的内置类型的 Agent tool 调用方式、返回结果格式和成本参考。
+        </p>
+
+        <CodeBlock
+          language="typescript"
+          title="explore-subagent-example.ts"
+          code={`// ═══ Explore Subagent ═══
+// 模型：Haiku | 权限：只读 | 成本：~$0.01-0.05/次
+
+// Agent tool 调用：
+{
+  tool: "Agent",
+  prompt: "搜索项目中所有使用 localStorage 的文件，" +
+          "列出每处的文件路径、行号和用途。",
+  type: "explore"
+}
+
+// 返回结果（摘要格式）：
+// "Found 7 files using localStorage:
+//  1. src/auth/session.ts:23 - storing JWT token
+//  2. src/hooks/useTheme.ts:8 - persisting theme preference
+//  3. src/utils/cache.ts:15,28,41 - client-side cache layer
+//  4. src/components/Onboarding.tsx:12 - tracking onboarding state
+//  5. src/pages/Settings.tsx:34 - saving user preferences
+//  6. tests/helpers/mockStorage.ts:5 - test mock
+//  7. src/legacy/oldAuth.ts:19 - deprecated, should be removed"
+//
+// 摘要约 150-200 tokens，不含搜索过程的工具调用细节`}
+        />
+
+        <CodeBlock
+          language="typescript"
+          title="plan-subagent-example.ts"
+          code={`// ═══ Plan Subagent ═══
+// 模型：继承主模型（通常 Sonnet）| 权限：只读 | 成本：~$0.05-0.20/次
+
+// Agent tool 调用：
+{
+  tool: "Agent",
+  prompt: "分析 src/auth/ 目录的认证架构。" +
+          "识别安全风险，并给出重构建议。" +
+          "输出需包含：当前架构总结、风险列表、推荐方案。",
+  type: "plan"
+}
+
+// 返回结果（摘要格式）：
+// "Architecture Analysis:
+//  Current: JWT-based auth with refresh tokens stored in httpOnly cookies.
+//  Session management via src/auth/session.ts (singleton pattern).
+//
+//  Risks identified:
+//  1. [HIGH] Refresh token rotation not implemented - token reuse attack possible
+//  2. [MED] No rate limiting on /auth/refresh endpoint
+//  3. [LOW] Session cleanup relies on client-side expiry only
+//
+//  Recommended plan:
+//  Phase 1: Add refresh token rotation (est. 2 files, ~50 LOC)
+//  Phase 2: Add rate limiter middleware to auth routes
+//  Phase 3: Implement server-side session invalidation"
+//
+// Plan subagent 的摘要通常更结构化，包含分析结论和行动建议`}
+        />
+
+        <CodeBlock
+          language="typescript"
+          title="general-subagent-example.ts"
+          code={`// ═══ General-purpose Subagent ═══
+// 模型：继承主模型 | 权限：所有工具 | 成本：随任务复杂度变化
+
+// Agent tool 调用：
+{
+  tool: "Agent",
+  prompt: "在 src/modules/user/service.ts 中：\\n" +
+          "1. 给所有公共方法添加 JSDoc 注释\\n" +
+          "2. 添加缺失的错误处理（参考 src/modules/post/service.ts）\\n" +
+          "3. 运行 npm test -- --testPathPattern=user 确认测试通过\\n" +
+          "技术栈：TypeScript + Prisma + Jest",
+  type: "general"
+}
+
+// 返回结果（摘要格式）：
+// "Completed all 3 tasks:
+//  1. Added JSDoc to 6 public methods in user/service.ts
+//  2. Added try/catch + NotFoundException for getUserById, updateUser
+//  3. All 12 tests passing (npm test exit code 0)
+//  Files modified: src/modules/user/service.ts (42 lines changed)"
+//
+// General-purpose 的成本取决于任务轮次：
+// - 简单任务（5 轮以内）：~$0.05-0.15
+// - 中等任务（10-15 轮）：~$0.20-0.50
+// - 复杂任务（20+ 轮）：~$0.50-2.00`}
+        />
+
+        {/* ── 自定义 Agent 速查 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          自定义 Agent 快速起步
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+          当内置类型不满足需求时，在 <code style={{ color: 'var(--color-accent)' }}>.claude/agents/</code> 下创建
+          Markdown 文件即可。下面是最小可用的自定义 Agent 定义：
+        </p>
+
+        <CodeBlock
+          language="yaml"
+          title=".claude/agents/my-reviewer.md — frontmatter 部分"
+          code={`# .claude/agents/my-reviewer.md
+---
+model: haiku
+effort: low
+maxTurns: 10
+disallowedTools: [Edit, Write]
+---
+Review the code for security issues.
+Focus on: injection vulnerabilities, hardcoded secrets,
+unsafe deserialization, and missing input validation.
+Output format: severity | file:line | description | fix suggestion`}
+        />
+
+        <p className="text-sm leading-relaxed mt-3" style={{ color: 'var(--color-text-muted)' }}>
+          只需 3 个 frontmatter 字段就能定义一个功能完整的自定义 Agent。
+          其余字段使用默认值。详细的 15 字段配置见下文 8.3 节。
         </p>
 
         <DecisionTree
@@ -546,19 +760,88 @@ isolation: "worktree"
           掌握了 Subagent 的基本概念后，下面是四种高级模式，每一种都解决一个真实的工程痛点。
         </p>
 
-        {/* ── Pattern 1: Worktree 隔离 ── */}
+        {/* ── Pattern 1: Worktree 隔离实操 ── */}
         <h3
           className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          模式 1：Worktree 隔离 —— "安全网"
+          模式 1：Worktree 隔离实操 —— "安全网"
         </h3>
 
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          设置 <code style={{ color: 'var(--color-accent)' }}>isolation: worktree</code> 后，
-          Subagent 会在一个独立的 git worktree 中工作。它看到的是项目的完整副本，
-          但所有修改都局限在这个副本里。
+          设置 <code style={{ color: 'var(--color-accent)' }}>isolation: "worktree"</code> 后，
+          Claude Code 会在磁盘上创建一个真实的 git worktree（不是内存模拟）。
+          Subagent 在这个独立的文件系统副本中工作，主项目目录完全不受影响。
         </p>
+
+        <div
+          className="rounded-xl p-5 mt-4"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <h4
+            className="text-sm font-semibold mb-3"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            Worktree 隔离的关键事实
+          </h4>
+          <ul className="space-y-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            <li className="flex items-start gap-3">
+              <span className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>1</span>
+              <span><strong style={{ color: 'var(--color-text-primary)' }}>磁盘级隔离</strong> —— 创建的是真实的 <code style={{ color: 'var(--color-accent)' }}>git worktree</code>，不是虚拟的内存副本。Subagent 的所有文件操作都发生在这个物理目录中。</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>2</span>
+              <span><strong style={{ color: 'var(--color-text-primary)' }}>完整可见性</strong> —— worktree 包含项目在分支点的完整快照，Subagent 可以读取所有文件、运行构建和测试。</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>3</span>
+              <span><strong style={{ color: 'var(--color-text-primary)' }}>合并由你决定</strong> —— Subagent 完成后，返回 worktree 路径和分支名。主 Agent（或你）决定是否合并、cherry-pick、还是丢弃。</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="shrink-0 mt-0.5 font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>4</span>
+              <span><strong style={{ color: 'var(--color-text-primary)' }}>适用场景</strong> —— 写操作密集的任务（重构、批量修改、实验性变更），尤其是多个 Agent 可能同时修改文件的情况。</span>
+            </li>
+          </ul>
+        </div>
+
+        <CodeBlock
+          language="typescript"
+          title="worktree-agent-tool-call.ts"
+          code={`// Agent tool 调用（带 worktree 隔离）：
+{
+  tool: "Agent",
+  prompt: "重构 src/auth/ 模块：\\n" +
+          "1. 将 session.ts 中的单例模式改为依赖注入\\n" +
+          "2. 添加 refresh token rotation\\n" +
+          "3. 运行 npm test 确认所有测试通过\\n" +
+          "项目使用 TypeScript + Express + Prisma",
+  type: "general",
+  isolation: "worktree"
+}
+
+// Subagent 执行过程（对你不可见，但后台发生的事）：
+// 1. git worktree add /tmp/.claude-worktree-a1b2c3 HEAD
+// 2. Subagent 的 CWD 被设置为 /tmp/.claude-worktree-a1b2c3
+// 3. 所有 Edit/Write/Bash 操作都在 worktree 中执行
+// 4. 执行完毕后返回：
+
+// 返回结果：
+// "Refactoring complete. Modified 4 files:
+//  - src/auth/session.ts (singleton → DI, 85 lines changed)
+//  - src/auth/refresh.ts (added token rotation, 42 lines added)
+//  - src/auth/types.ts (new SessionProvider interface)
+//  - tests/auth/session.test.ts (updated for DI, 12 tests passing)
+//  Worktree: /tmp/.claude-worktree-a1b2c3
+//  Branch: claude/worktree-a1b2c3"
+
+// 你的选择：
+// 合并：git merge claude/worktree-a1b2c3
+// 审查：cd /tmp/.claude-worktree-a1b2c3 && git diff HEAD~1
+// 丢弃：git worktree remove /tmp/.claude-worktree-a1b2c3`}
+        />
 
         <CodeBlock
           language="bash"
@@ -1225,6 +1508,145 @@ claude
 
 # 注意：这是实验性功能，行为可能在未来版本中变化`}
         />
+
+        {/* ── Teams 协调机制详解 ── */}
+        <h3
+          className="text-lg font-semibold mt-10"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Teams 协调机制
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Agent Teams 通过三个核心工具实现协调：
+          <code style={{ color: 'var(--color-accent)' }}>TaskCreate/TaskUpdate</code> 管理共享任务列表，
+          <code style={{ color: 'var(--color-accent)' }}>SendMessage</code> 向指定 Agent 发送指令。
+        </p>
+
+        <CodeBlock
+          language="typescript"
+          title="teams-coordination-tools.ts"
+          code={`// ═══ 1. TaskCreate/TaskUpdate — 共享任务列表 ═══
+// Team Lead 创建任务并分配给 teammate：
+
+// TaskCreate:
+{
+  tool: "TaskCreate",
+  title: "实现 GET /api/notifications 端点",
+  assignee: "backend",
+  blockedBy: ["task-001"],  // 依赖数据模型任务
+  description: "分页查询，每页 20 条，按 created_at 降序"
+}
+
+// Teammate 完成后更新状态：
+// TaskUpdate:
+{
+  tool: "TaskUpdate",
+  taskId: "task-002",
+  status: "done",
+  summary: "实现完成，支持 cursor-based 分页，已通过单元测试"
+}
+
+// 所有 teammate 都能看到任务列表的实时状态
+// 被 blockedBy 阻塞的任务会在依赖完成后自动解除
+
+// ═══ 2. SendMessage — 跨 Agent 通信 ═══
+// 向特定 teammate 发送指令或信息：
+
+{
+  tool: "SendMessage",
+  recipient: "frontend",
+  message: "backend 已完成 notifications API，" +
+           "响应格式：{ items: Notification[], cursor: string | null }，" +
+           "请据此实现 useNotifications hook"
+}
+
+// ═══ 3. Agent tool + name — 可寻址的 Agent ═══
+// 创建带名称的 Agent，使其可被 SendMessage 寻址：
+
+{
+  tool: "Agent",
+  name: "backend",
+  prompt: "你负责实现通知系统的后端 API...",
+  type: "general"
+}`}
+        />
+
+        {/* ── 拓扑选择指南 ── */}
+        <h3
+          className="text-lg font-semibold mt-10"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          拓扑选择：Fan-out / Chain / Collaborative
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div
+            className="rounded-xl p-5"
+            style={{
+              background: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <h4
+              className="text-sm font-semibold mb-2"
+              style={{ color: 'var(--color-accent)' }}
+            >
+              Fan-out（扇出）
+            </h4>
+            <p className="text-xs mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+              独立并行任务，无需互相感知。结果汇总到发起者。
+            </p>
+            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              适合：代码搜索、多文件 lint、独立模块测试
+            </p>
+          </div>
+          <div
+            className="rounded-xl p-5"
+            style={{
+              background: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <h4
+              className="text-sm font-semibold mb-2"
+              style={{ color: 'var(--color-accent)' }}
+            >
+              Chain（流水线）
+            </h4>
+            <p className="text-xs mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+              顺序执行，前一阶段的输出是后一阶段的输入。
+            </p>
+            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              适合：Spec → Design → Implement、ETL 管道
+            </p>
+          </div>
+          <div
+            className="rounded-xl p-5"
+            style={{
+              background: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <h4
+              className="text-sm font-semibold mb-2"
+              style={{ color: 'var(--color-accent)' }}
+            >
+              Collaborative（协作）
+            </h4>
+            <p className="text-xs mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+              共享状态 + 消息传递。Teammate 互相感知进度和变更。
+            </p>
+            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              适合：跨层功能开发（前端+后端+测试同步推进）
+            </p>
+          </div>
+        </div>
+
+        <p className="text-sm leading-relaxed mt-4" style={{ color: 'var(--color-text-muted)' }}>
+          经验法则：能用 Fan-out 解决的不要用 Chain，能用 Chain 解决的不要用 Collaborative。
+          复杂度越低的拓扑越可预测、越便宜。
+        </p>
       </section>
 
       {/* ═══════════════════════════════════════════════
@@ -1575,6 +1997,299 @@ claude
             <li><strong>AI Review AI</strong>：多 Agent 并行审查 —— 以每分钟数百行的速度捕获 80% 的实质性问题</li>
             <li><strong>人类战略审查</strong>：使用风险加权采样 —— 只深度审查高风险模块（安全、支付、核心业务逻辑），其余信任 AI 审查结果</li>
           </ol>
+        </QualityCallout>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 8.8: 长运行 Agent 模式
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          8.8 长运行 Agent 模式
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          当任务复杂到需要数十轮甚至上百轮工具调用时，单个 Agent 的上下文会逐渐饱和。
+          Anthropic 推荐的解法是将长运行任务拆分为"初始化 + 执行"两阶段，
+          并用文件保存增量状态。
+        </p>
+
+        {/* ── Initializer + Coding Agent ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Initializer + Coding Agent 模式
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          核心思想：用一个 Initializer Agent 搞清楚上下文（代码结构、依赖关系、技术约束），
+          将结果写入 <code style={{ color: 'var(--color-accent)' }}>claude-progress.txt</code>，
+          然后让 Coding Agent 基于这个文件开始工作。Coding Agent 每完成一个里程碑，就更新 progress 文件。
+        </p>
+
+        <CodeBlock
+          language="typescript"
+          title="initializer-coding-pattern.ts"
+          code={`// ═══ Phase 1: Initializer Agent ═══
+// 职责：理解任务、分析代码库、制定计划
+{
+  tool: "Agent",
+  type: "plan",
+  prompt: "分析以下需求并输出实施计划到 claude-progress.txt：\\n" +
+          "需求：为 API 添加 RBAC 权限系统\\n" +
+          "要求：\\n" +
+          "1. 识别所有需要修改的文件\\n" +
+          "2. 确定依赖顺序\\n" +
+          "3. 将实施拆分为 5-8 个可独立验证的步骤\\n" +
+          "4. 每步写清楚：改什么文件、改什么内容、如何验证"
+}
+
+// claude-progress.txt 内容示例：
+// ## RBAC Implementation Plan
+// Status: IN_PROGRESS (step 2/6)
+//
+// ### Step 1: Data Model [DONE]
+// - Created: src/models/role.ts, src/models/permission.ts
+// - Migration: 20240315_add_rbac_tables.sql
+// - Verified: prisma migrate + seed
+//
+// ### Step 2: Middleware [IN_PROGRESS]
+// - Target: src/middleware/authorize.ts
+// - Pattern: Express middleware, check req.user.roles
+// ...
+
+// ═══ Phase 2: Coding Agent ═══
+// 职责：按计划逐步实现，每步更新 progress 文件
+{
+  tool: "Agent",
+  type: "general",
+  isolation: "worktree",
+  prompt: "读取 claude-progress.txt，从最后一个 IN_PROGRESS 步骤继续。\\n" +
+          "每完成一步：\\n" +
+          "1. 运行该步的验证命令\\n" +
+          "2. 更新 claude-progress.txt 中的状态\\n" +
+          "3. 继续下一步\\n" +
+          "如果某步失败，在 progress 文件中记录错误信息后停止。"
+}
+
+// 优势：
+// - 即使 Coding Agent 被中断，progress 文件保留了完整状态
+// - 新的 Agent 可以从断点继续，不需要重新分析
+// - progress 文件本身就是人类可读的执行日志`}
+        />
+
+        {/* ── GAN 三 Agent 架构 ── */}
+        <h3
+          className="text-lg font-semibold mt-10"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Planner / Generator / Evaluator 架构
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Anthropic 博客介绍了一种类 GAN 的三 Agent 架构：Planner 制定方案，Generator 生成代码，
+          Evaluator 评审质量并决定是否需要重新生成。这种"生成-评审"循环能显著提高复杂任务的输出质量。
+        </p>
+
+        <div
+          className="rounded-xl p-5"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <div className="space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 font-mono text-xs px-2 py-1 rounded font-semibold" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>Planner</span>
+              <span>分析需求，制定实施计划和验收标准</span>
+            </div>
+            <div className="flex items-center gap-1 pl-6" style={{ color: 'var(--color-text-muted)' }}>
+              ↓
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 font-mono text-xs px-2 py-1 rounded font-semibold" style={{ background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80' }}>Generator</span>
+              <span>按计划生成代码，运行测试</span>
+            </div>
+            <div className="flex items-center gap-1 pl-6" style={{ color: 'var(--color-text-muted)' }}>
+              ↓
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 font-mono text-xs px-2 py-1 rounded font-semibold" style={{ background: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }}>Evaluator</span>
+              <span>审查代码质量、安全性、测试覆盖，决定 Accept / Reject + Feedback</span>
+            </div>
+            <div className="flex items-center gap-1 pl-6" style={{ color: 'var(--color-text-muted)' }}>
+              ↺ Reject 时带反馈返回 Generator 重新生成
+            </div>
+          </div>
+          <p className="text-xs mt-4" style={{ color: 'var(--color-text-muted)' }}>
+            详细实现参考 Anthropic Engineering Blog: "Building effective agents" 中的 Evaluator-Optimizer 模式。
+            这里不深入展开，重点理解"生成+评审循环"的核心思想即可。
+          </p>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section 8.9: ROI 验证
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          8.9 ROI 验证：什么时候值得用 Subagent
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Subagent 不是免费的 —— 每个 Subagent 都有启动开销（系统提示 + 初始上下文加载）。
+          用 3 个 Subagent 完成一个本来 2 分钟就能搞定的任务，反而浪费时间和 token。
+        </p>
+
+        {/* ── 决策树 ── */}
+        <div
+          className="rounded-xl p-5"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <h4
+            className="text-sm font-semibold mb-4"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            快速决策：直接做 vs 用 Subagent
+          </h4>
+          <div className="space-y-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            <div className="flex items-start gap-3">
+              <span className="shrink-0 font-mono text-xs px-2 py-1 rounded" style={{ background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', border: '1px solid rgba(74, 222, 128, 0.2)' }}>直接做</span>
+              <span>任务 &lt; 2 分钟，单文件修改，不需要搜索 —— 直接在主会话完成，Subagent 的启动开销不值得。</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="shrink-0 font-mono text-xs px-2 py-1 rounded" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)', border: '1px solid var(--color-border-accent)' }}>可选</span>
+              <span>任务 2-5 分钟，需要搜索或小范围修改 —— 如果当前上下文已经很满，用 Subagent；否则直接做。</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="shrink-0 font-mono text-xs px-2 py-1 rounded" style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.2)' }}>Subagent</span>
+              <span>任务 &gt; 5 分钟，可拆分为独立子任务 —— 用 Subagent 并行化，收益随可并行度线性增长。</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Worked ROI 示例 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          实测 ROI 示例：RBAC 重构
+        </h3>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>指标</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>单会话</th>
+                <th className="text-left py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>3 Subagents</th>
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">总 token 消耗</td>
+                <td className="py-3 px-4">~45K tokens</td>
+                <td className="py-3 px-4">~52K tokens (1.15x)</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">总耗时</td>
+                <td className="py-3 px-4">~8 分钟（串行）</td>
+                <td className="py-3 px-4">~4 分钟（并行）</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">后期质量</td>
+                <td className="py-3 px-4">第 30+ 轮质量下降明显</td>
+                <td className="py-3 px-4">每个 Agent 全程高质量</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <td className="py-3 px-4">安全性</td>
+                <td className="py-3 px-4">直接修改主代码</td>
+                <td className="py-3 px-4">Worktree 隔离，可丢弃</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-semibold" style={{ color: 'var(--color-text-primary)' }}>结论</td>
+                <td className="py-3 px-4" colSpan={2}>token 多花 15%，但时间减半、质量更高、风险可控。对于 5 分钟以上的任务，Subagent 几乎总是更优。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── Troubleshooting ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Subagent 质量排查清单
+        </h3>
+
+        <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+          当 Subagent 的输出质量不符合预期时，按以下顺序排查：
+        </p>
+
+        <div className="space-y-3">
+          <div
+            className="rounded-lg p-4 flex items-start gap-3"
+            style={{
+              background: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <span className="shrink-0 font-mono text-xs px-2 py-1 rounded font-semibold" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>1</span>
+            <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>Prompt 上下文是否充分？</strong>
+              <span className="ml-1">Subagent 看不到主会话历史。确认 prompt 是自包含的 —— 包含技术栈、文件路径、预期行为、约束条件。</span>
+            </div>
+          </div>
+          <div
+            className="rounded-lg p-4 flex items-start gap-3"
+            style={{
+              background: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <span className="shrink-0 font-mono text-xs px-2 py-1 rounded font-semibold" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>2</span>
+            <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>maxTurns 是否足够？</strong>
+              <span className="ml-1">如果 Agent 在最后一轮仍在工作（而非总结），说明轮次不够。适当增加 maxTurns 或拆分任务。</span>
+            </div>
+          </div>
+          <div
+            className="rounded-lg p-4 flex items-start gap-3"
+            style={{
+              background: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <span className="shrink-0 font-mono text-xs px-2 py-1 rounded font-semibold" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>3</span>
+            <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>模型选择是否匹配？</strong>
+              <span className="ml-1">Haiku 擅长搜索和简单任务；需要深度推理的分析/架构任务应该用 Sonnet 或 Opus。模型不足比 maxTurns 不足更难诊断。</span>
+            </div>
+          </div>
+        </div>
+
+        <QualityCallout title="Subagent 的 80/20 法则">
+          <p>
+            80% 的 Subagent 使用场景只需要两种类型：Explore（搜索）和 General-purpose（执行）。
+            先掌握这两种，遇到瓶颈再引入 Plan、自定义 Agent 和 Teams。
+            过早引入复杂拓扑是最常见的"过度工程"陷阱 —— 三个简单 Subagent 通常比一个精心设计的 Teams 拓扑更有效。
+          </p>
         </QualityCallout>
       </section>
 

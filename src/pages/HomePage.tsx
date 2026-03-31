@@ -63,8 +63,8 @@ function HeroSection() {
           className="text-lg max-w-2xl leading-relaxed"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          由浅入深的 AI 辅助开发能力养成系统。从 Prompt Engineering 到 Harness Engineering——
-          不只是学会和 AI 对话，更要学会构建 AI 周围的基础设施。
+          由浅入深的 AI 辅助开发能力养成系统。每章从「失败」开始，经「响应」到达「掌控」——
+          围绕 Harness Engineering 方法论，学会设计、评估、诊断、演进 AI 周围的基础设施。
         </p>
 
         {/* Remotion animation placeholder */}
@@ -170,19 +170,19 @@ function TierOverview() {
     {
       tier: 'l1',
       title: 'L1 基础',
-      desc: '和 AI 对话。掌握 Prompt 工程和 Vibe Coding 的边界，能高效完成编码任务。',
+      desc: '和 AI 对话。掌握 Prompt 工程和 Vibe Coding 的边界，建立设计(Design)与评估(Evaluate)的基础直觉。',
       chapters: 'Ch01 - Ch03',
     },
     {
       tier: 'l2',
       title: 'L2 进阶',
-      desc: '构建驾驭系统。掌握 CLAUDE.md、Plan Mode、Skills、Hooks，构建自动化 Harness。',
+      desc: '构建驾驭系统。掌握 CLAUDE.md、Plan Mode、Skills、Hooks，从设计到诊断(Diagnose)构建自动化 Harness。',
       chapters: 'Ch04 - Ch07',
     },
     {
       tier: 'l3',
       title: 'L3 高阶',
-      desc: '规模化与治理。掌握多代理协作、SDK 集成、工作流设计、组织级治理。',
+      desc: '规模化与治理。掌握多代理协作、SDK 集成、工作流设计、组织级治理，完成演进(Evolve)闭环。',
       chapters: 'Ch08 - Ch11',
     },
   ]

@@ -3,6 +3,8 @@ import { QualityCallout } from '../../components/content/QualityCallout'
 import { ExerciseCard } from '../../components/content/ExerciseCard'
 import { ConfigExample } from '../../components/content/ConfigExample'
 import { ReferenceSection } from '../../components/content/ReferenceSection'
+import { DecisionTree } from '../../components/content/DecisionTree'
+import { skillHookClaudemdTree } from '../../data/harness-decision-trees'
 
 /* ═══════════════════════════════════════════════
    Chapter 6: Skills 体系
@@ -30,6 +32,16 @@ export default function Ch06() {
           >
             Capability Layer
           </span>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded"
+            style={{
+              color: 'var(--color-accent)',
+              background: 'var(--color-accent-subtle)',
+              border: '1px solid var(--color-border-accent)',
+            }}
+          >
+            Harness / 能力层
+          </span>
         </div>
         <h1
           className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
@@ -41,10 +53,25 @@ export default function Ch06() {
           className="text-lg leading-relaxed max-w-3xl"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          CLAUDE.md 告诉 Claude "你在哪个项目、遵循什么规范"，Hooks 自动化"什么时候做检查" --
-          但还缺一块：如何把复杂的工作流封装成一键触发的能力？
-          Skills 系统是 Harness 的能力层 -- 它定义了 Claude <strong>能做什么</strong>。
-          一个 SKILL.md 文件就是一项能力。写完这一章，你可以在 5 分钟内为你的项目创建自定义 Skill。
+          你每次让 Claude 做发布都要写一大段 prompt 描述步骤（跑测试 → 构建 → 推到预发布环境验证 → 正式发布），
+          而且每次细节略有不同，偶尔漏掉关键步骤。上个月就因为漏了"先在预发布环境验证"这步直接推到了生产。
+        </p>
+        <p
+          className="text-base leading-relaxed max-w-3xl mt-3"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          问题的根源：目前没有办法把可复用的多步骤工作流编码下来。
+          CLAUDE.md 处理约定（"用什么风格写代码"），Hooks 处理检查（"提交前跑 lint"），
+          但两者都无法表达"每次发布都执行这 5 个步骤，顺序不能错，步骤不能漏"。
+          这正是 <strong>Skills</strong> 要解决的问题 -- Harness 的能力层，定义 Claude <strong>能做什么</strong>。
+        </p>
+        <p
+          className="text-base leading-relaxed max-w-3xl mt-3"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          还记得 Ch03 的 DemoAPI 吗？每次你让 Claude 跑测试、构建、部署，都要重新写一遍步骤。
+          我们现在就为它写一个 <code>/api-test</code> Skill 和 <code>/deploy</code> Skill，
+          把这些可复用流程固化下来。
         </p>
       </header>
 
@@ -101,6 +128,37 @@ SKILL.md 文件                            MCP Server 进程
         <QualityCallout title="Skills 在 Harness 中的位置">
           回顾 Harness Engineering 框架：CLAUDE.md 是"记忆层"（Claude 知道什么），Hooks 是"自动化层"（什么时候触发检查），
           Skills 是"能力层"（Claude 能做什么）。三者组合，构成完整的 AI 工程化 Harness。
+        </QualityCallout>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          Section: 何时用 Skill？（Decision Tree）
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          何时用 Skill？
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Harness 有三个层：CLAUDE.md（记忆层）、Hooks（自动化层）、Skills（能力层）。
+          新手最常犯的错误是把所有东西都塞进 CLAUDE.md，或者分不清什么时候该用 Hook、什么时候该用 Skill。
+          用下面的决策树快速判断：你的需求应该放在哪一层。
+        </p>
+
+        <DecisionTree
+          root={skillHookClaudemdTree}
+          title="Skill vs Hook vs CLAUDE.md：选择指南"
+        />
+
+        <QualityCallout title="一句话总结">
+          CLAUDE.md = 软性约定（"尽量遵守"）；Hook = 硬性检查（"必须通过"）；Skill = 可复用工作流（"按步骤执行"）。
+          如果你的需求是"每次做 X 都要执行这些步骤"，那就是 Skill。
         </QualityCallout>
       </section>
 
@@ -1011,6 +1069,171 @@ ls .claude/skills/            # 项目 Skills
           </div>
         </div>
       </ReferenceSection>
+
+      {/* ═══════════════════════════════════════════════
+          Section: Skill 触发准确性与排查
+          ═══════════════════════════════════════════════ */}
+      <section className="space-y-6">
+        <h2
+          className="text-2xl font-bold pb-2"
+          style={{
+            color: 'var(--color-text-primary)',
+            borderBottom: '1px solid var(--color-border)',
+          }}
+        >
+          Skill 触发准确性与排查
+        </h2>
+
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Skill 写好了只是第一步。投入使用后，你需要关注两个指标来衡量 Skill 的质量：
+        </p>
+
+        {/* ── Accuracy Metrics ── */}
+        <div
+          className="rounded-lg overflow-hidden my-4"
+          style={{
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+          }}
+        >
+          <div
+            className="px-4 py-3 text-sm font-medium"
+            style={{
+              borderBottom: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)',
+              background: 'var(--color-bg-tertiary)',
+            }}
+          >
+            Skill 触发准确性指标
+          </div>
+          <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+            {[
+              {
+                metric: '误触发 (False Positive)',
+                desc: 'Skill 在不该触发的场景下被加载了。通常因为 description 写得太宽泛。',
+                fix: '缩窄 description 的语义范围，加入排除条件。例如把 "Review code" 改为 "Review staged git changes for security vulnerabilities"。',
+                color: 'var(--color-tier-l2)',
+              },
+              {
+                metric: '漏触发 (False Negative)',
+                desc: 'Skill 在该触发的场景下没有被加载。通常因为 description 没有覆盖到用户的表述方式。',
+                fix: '扩展 description 中的关键词覆盖，或在 description 中列出常见的触发场景。',
+                color: 'var(--color-tier-l3)',
+              },
+            ].map((item) => (
+              <div key={item.metric} className="px-4 py-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: item.color }}
+                  >
+                    {item.metric}
+                  </span>
+                </div>
+                <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  {item.desc}
+                </p>
+                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                  <strong style={{ color: 'var(--color-text-secondary)' }}>修复：</strong>{item.fix}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Troubleshooting Table ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Skill 不触发：排查清单
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          当 Skill 没有按预期触发时，按以下顺序逐项排查：
+        </p>
+
+        <div
+          className="rounded-lg overflow-hidden my-4"
+          style={{
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+          }}
+        >
+          <table className="w-full text-sm">
+            <thead>
+              <tr
+                style={{
+                  background: 'var(--color-bg-tertiary)',
+                  borderBottom: '1px solid var(--color-border)',
+                }}
+              >
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>症状</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>可能原因</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>修复方法</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                {
+                  symptom: '斜杠命令无响应',
+                  cause: 'description 措辞与用户意图不匹配',
+                  fix: '重写 description，使用用户会自然说出的关键词。用 /skills 确认 Skill 已注册。',
+                },
+                {
+                  symptom: '自动触发 Skill 未加载',
+                  cause: '作用域 (scope) 不正确',
+                  fix: '确认 SKILL.md 在正确的目录（.claude/skills/ 或 ~/.claude/skills/）。用 /skills 查看搜索路径。',
+                },
+                {
+                  symptom: '`!command` 输出为空',
+                  cause: 'Shell 命令在当前目录下执行失败',
+                  fix: '手动在终端执行该命令确认可用。检查路径是否是相对路径导致找不到文件。',
+                },
+                {
+                  symptom: '$ARGUMENTS 没被替换',
+                  cause: '变量替换顺序问题：$ARGUMENTS 在 !command 之前替换',
+                  fix: '如果 !command 中引用了 $0 但用户没传参，命令会异常。加默认值或条件判断。',
+                },
+                {
+                  symptom: '触发了错误的 Skill',
+                  cause: '多个 Skill 的 description 语义重叠',
+                  fix: '缩窄 description 范围，或给 Skill 名加项目前缀避免冲突。',
+                },
+              ].map((row) => (
+                <tr
+                  key={row.symptom}
+                  style={{ borderBottom: '1px solid var(--color-border)' }}
+                >
+                  <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    {row.symptom}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {row.cause}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-muted)' }}>
+                    {row.fix}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <ExerciseCard
+          tier="l2"
+          title="Skill 触发准确性测试"
+          description="为你的项目编写一个 Skill（如 /release 发布流程或 /changelog 生成变更日志），然后测试触发准确性：手动触发 5 次，记录每次是否正确执行；如果是自动触发 Skill，在 5 个不同的对话场景中测试，记录误触发和漏触发次数。"
+          checkpoints={[
+            'Skill 文件结构正确，/skills 能看到它',
+            '手动触发 5 次均能正确执行完整流程',
+            '如果是自动触发，5 个场景中误触发 <= 1 次',
+            '如果是自动触发，5 个场景中漏触发 <= 1 次',
+            '根据测试结果优化了 description 措辞',
+            '优化后再测 5 次，准确率有提升',
+          ]}
+        />
+      </section>
     </div>
   )
 }
