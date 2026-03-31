@@ -1,0 +1,2 @@
+[     105ms] [WARNING] No routes matched location "/nonexistent/path"  @ http://localhost:5174/@vite/client:509
+[     106ms] [WARNING] No routes matched location "/nonexistent/path"  @ http://localhost:5174/@vite/client:509

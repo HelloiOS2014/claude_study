@@ -1,0 +1,2 @@
+[     750ms] [WARNING] Note: Some companies are required to obtain a license to use Remotion. See: https://remotion.dev/license
+Pass the `acknowledgeRemotionLicense` prop to `<Player />` function to make this message disappear. @ http://localhost:5174/@vite/client:509

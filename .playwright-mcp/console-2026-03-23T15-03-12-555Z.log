@@ -1,0 +1,48 @@
+[39125889ms] TypeError: isStarted is not a function
+    at http://localhost:5174/src/components/layout/Sidebar.tsx?t=1774317318405:198:14
+    at Array.map (<anonymous>)
+    at PartGroup (http://localhost:5174/src/components/layout/Sidebar.tsx?t=1774317318405:194:28)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:12868:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:8325:37)
+[39125889ms] [WARNING] %s
+
+%s
+ An error occurred in the <PartGroup> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/@vite/client:509
+[39128275ms] TypeError: isStarted is not a function
+    at http://localhost:5174/src/components/layout/Sidebar.tsx?t=1774317320781:198:14
+    at Array.map (<anonymous>)
+    at PartGroup (http://localhost:5174/src/components/layout/Sidebar.tsx?t=1774317320781:194:28)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:12868:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:8325:37)
+[39128275ms] [WARNING] %s
+
+%s
+ An error occurred in the <PartGroup> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/@vite/client:509
+[39131128ms] ReferenceError: isStarted is not defined
+    at http://localhost:5174/src/components/layout/Sidebar.tsx?t=1774317323634:198:14
+    at Array.map (<anonymous>)
+    at PartGroup (http://localhost:5174/src/components/layout/Sidebar.tsx?t=1774317323634:194:28)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:12868:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=dda2f542:8325:37)
+[39131127ms] [WARNING] %s
+
+%s
+ An error occurred in the <PartGroup> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/@vite/client:509

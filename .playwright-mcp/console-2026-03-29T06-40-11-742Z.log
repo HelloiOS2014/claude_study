@@ -1,0 +1,3 @@
+[     601ms] [WARNING] Note: Some companies are required to obtain a license to use Remotion. See: https://remotion.dev/license
+Pass the `acknowledgeRemotionLicense` prop to `<Player />` function to make this message disappear. @ http://localhost:5173/claude_study/@vite/client:509
+[    1467ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:5173/claude_study/node_modules/.vite/deps/@remotion_player.js?v=18230943:961

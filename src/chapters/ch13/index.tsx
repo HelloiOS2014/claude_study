@@ -797,7 +797,7 @@ echo "AI Review 完成: 安全($sec_count) 质量($qual_count) 风格($style_cou
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 13.2: 组合技二 — 大型重构的多代理编排
+          Section 13.2: 组合技二 — 大型重构的多代理协作
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -807,7 +807,7 @@ echo "AI Review 完成: 安全($sec_count) 质量($qual_count) 风格($style_cou
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          13.2 组合技二：大型重构的多代理编排
+          13.2 组合技二：大型重构的多代理协作
         </h2>
 
         {/* ── 失败 ── */}
@@ -1337,7 +1337,7 @@ $ git add . && git commit -m "refactor: migrate to Result<T> pattern across all 
         <ExerciseCard
           tier="l3"
           title="在你的项目上验证"
-          description="选一个你项目中需要跨 3+ 模块修改的重构任务（哪怕是小规模的），用这个多代理编排方案执行。重点关注 agent 之间的接口一致性。"
+          description="选一个你项目中需要跨 3+ 模块修改的重构任务（哪怕是小规模的），用这个多代理协作方案执行。重点关注 agent 之间的接口一致性。"
           checkpoints={[
             '接口契约是否在重构开始前就写好并通过了 tsc --noEmit？',
             '每个 agent 是否只修改了自己负责的目录？',
@@ -1934,7 +1934,7 @@ fi`}
 | Plan Mode | 结构化任务分解 | Ch05 |
 | CLAUDE.md | 持久化项目知识 | Ch06 |
 | worktree | 文件级别的隔离 | Ch08 |
-| GitHub Actions | CI/CD 触发和编排 | Ch09 |
+| GitHub Actions | CI/CD 触发和调度 | Ch09 |
 | gh CLI | GitHub API 交互 | Ch09 |
 
 ## Step 3: 设计连接

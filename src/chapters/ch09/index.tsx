@@ -846,7 +846,7 @@ jobs:
           <p>
             第 10 章（工作流设计原则）中有一个基于 Spec 驱动 + 上下文隔离 + 验证循环三原则的
             PR Review Pipeline 设计和对应的 GitHub Actions 工作流（使用 claude-code-action@v1）。
-            如果你想看更高级的多 subagent 审查架构，参考 Ch10 的实战编排示例。
+            如果你想看更高级的多 subagent 审查架构，参考 Ch10 的实战协作示例。
           </p>
         </QualityCallout>
 

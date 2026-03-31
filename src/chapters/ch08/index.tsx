@@ -206,7 +206,7 @@ export default function Ch08() {
               border: '1px solid var(--color-border-accent)',
             }}
           >
-            Harness / 编排层
+            Harness / 协作层
           </span>
         </div>
       </header>
@@ -1054,7 +1054,7 @@ const architectOutput = {
 // model: sonnet | tools: ALL | maxTurns: 30 | isolation: worktree
 // 任务：按设计方案实现，并编写测试
 
-// 整个流水线由主 Agent 编排：
+// 整个流水线由主 Agent 调度：
 // 1. 调用 pm-spec → 获得规格
 // 2. 将规格传给 architect-review → 获得设计
 // 3. 将设计传给 implementer → 获得实现
@@ -2292,9 +2292,9 @@ claude
           </p>
         </QualityCallout>
 
-        <QualityCallout title="进阶：更多组合编排方案">
+        <QualityCallout title="进阶：更多组合协作方案">
           <p>
-            子代理是强大的构建块。想看完整的多代理重构编排、自动 PR Review 流水线等实战方案？
+            子代理是强大的构建块。想看完整的多代理重构协作、自动 PR Review 流水线等实战方案？
             见 <strong style={{ color: 'var(--color-accent)' }}>Ch13 高阶组合技</strong>。
           </p>
         </QualityCallout>

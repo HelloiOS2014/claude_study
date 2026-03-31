@@ -279,7 +279,7 @@ export default function Ch10() {
             <strong style={{ color: 'var(--color-text-primary)' }}>原则：</strong>
             隔离是对抗上下文衰减最可靠的手段。实现方式从简单到复杂：
             开新 session（零成本）→ /compact 压缩（Ch04 PreCompact Hook）→ Subagent 分发（Ch08）→
-            Worktree 并行（Ch08）→ SDK 编排（Ch09）。选择复杂度取决于任务规模。
+            Worktree 并行（Ch08）→ SDK 调度（Ch09）。选择复杂度取决于任务规模。
           </p>
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
             上下文越长，注意力越分散。对 LLM 来说，"遗忘"不是丢失信息，而是被更多信息淹没。
@@ -704,7 +704,7 @@ export default function Ch10() {
           className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          实战：用三原则编排 PR Review Pipeline
+          实战：用三原则组织 PR Review Pipeline
         </h3>
 
         <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-secondary)' }}>
@@ -734,7 +734,7 @@ export default function Ch10() {
 PostToolUse Hook: 审查完成后自动交叉验证
   - 如果安全审查发现高危问题 → 自动阻断 merge
   - 如果三个 subagent 意见冲突 → 触发仲裁 agent
-SDK 编排: 用 claude-agent-sdk 串联整个流程`}
+SDK 调度: 用 claude-agent-sdk 串联整个流程`}
         />
 
         <ConfigExample
@@ -1058,8 +1058,8 @@ SDK/CI: PR 创建时自动触发 Claude 审查 (headless)`}
 
         <QualityCallout title="进阶：把原则变成可执行流水线">
           <p>
-            本章教了设计原则和诊断框架。想把这些原则落地为自动化的编排流水线？
-            见 <strong style={{ color: 'var(--color-accent)' }}>Ch12 让 Claude 编排 Claude</strong>。
+            本章教了设计原则和诊断框架。想把这些原则落地为自动化的自动化流水线？
+            见 <strong style={{ color: 'var(--color-accent)' }}>Ch12 让 Claude 指挥 Claude</strong>。
           </p>
         </QualityCallout>
 

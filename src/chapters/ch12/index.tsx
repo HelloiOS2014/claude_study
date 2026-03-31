@@ -8,13 +8,13 @@ import { ReferenceSection } from '../../components/content/ReferenceSection'
 import { PromptCompare } from '../../components/content/PromptCompare'
 
 /* ═══════════════════════════════════════════════
-   Decision Tree: 编排深度
+   Decision Tree: 自动化深度
    ═══════════════════════════════════════════════ */
 
 const orchestrationDepthTree: TreeNode = {
   id: 'root',
   question: '这个任务预估需要多久？',
-  description: '编排本身有成本。选对深度，才能真正提效。',
+  description: '自动化本身有成本。选对深度，才能真正提效。',
   children: [
     {
       label: '< 30 分钟',
@@ -37,7 +37,7 @@ const orchestrationDepthTree: TreeNode = {
             label: '需求明确',
             node: {
               id: 'medium-clear',
-              question: '部分编排：Plan + Execute + Review',
+              question: '部分自动化：Plan + Execute + Review',
               result: {
                 text: '跳过 brainstorm，直接 /write-plan 生成计划，subagent 并行执行，最后 /review 全局检查。省掉 Spec 阶段的 5-10 分钟。',
                 tier: 'l2',
@@ -62,9 +62,9 @@ const orchestrationDepthTree: TreeNode = {
       label: '> 2 小时',
       node: {
         id: 'complex',
-        question: '全流程编排',
+        question: '全流程自动化',
         result: {
-          text: '完整五阶段流水线：Brainstorm + Plan + Execute + Review + Merge。超过 2 小时的任务，手动编排的上下文管理成本会指数级增长——你不是在写代码，你是在当交通指挥。',
+          text: '完整五阶段流水线：Brainstorm + Plan + Execute + Review + Merge。超过 2 小时的任务，手动协调的上下文管理成本会指数级增长——你不是在写代码，你是在当交通指挥。',
           tier: 'l3',
         },
       },
@@ -113,7 +113,7 @@ export default function Ch12() {
           className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          让 Claude 编排 Claude
+          让 Claude 指挥 Claude
         </h1>
         <p
           className="text-lg leading-relaxed max-w-3xl"
@@ -121,7 +121,7 @@ export default function Ch12() {
         >
           你已经会用 Claude Code 做单个任务了。但当一个功能需要 4 个模块并行开发时，
           你发现自己花了 3 小时手动协调——复制粘贴上下文、确保命名一致、追踪谁依赖谁。
-          这一章用一个真实的 webhook 通知系统项目，展示手动编排的痛，然后让 Claude 来编排整个流程。
+          这一章用一个真实的 webhook 通知系统项目，展示手动协调的痛，然后让 Claude 来指挥整个流程。
         </p>
       </header>
 
@@ -136,7 +136,7 @@ export default function Ch12() {
         >
           <div className="text-sm leading-relaxed space-y-3" style={{ color: 'var(--color-text-secondary)' }}>
             <p>
-              你手动编排了 3 小时。4 个终端标签页开着 4 个 Claude session。
+              你手动协调了 3 小时。4 个终端标签页开着 4 个 Claude session。
               一个子代理用了错误的表名，因为你忘了告诉它数据库 schema。
               另一个在问你已经告诉过别的 session 的上下文。
               第三个的输出跟第一个冲突——一个用了枚举，一个用了字符串。
@@ -151,7 +151,7 @@ export default function Ch12() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 12.1: 手动编排的痛
+          Section 12.1: 手动协调的痛
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -161,7 +161,7 @@ export default function Ch12() {
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          12.1 手动编排的痛
+          12.1 手动协调的痛
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
@@ -260,7 +260,7 @@ claude: 好的，我来实现 HTTP 投递模块...
 
         <CodeBlock
           language="bash"
-          title="手动编排的时间去哪了"
+          title="手动协调的时间去哪了"
           code={`# 时间分配（估算）
 实际编码和设计          ~1h 45m   ████████████░░░░░░░░ 58%
 复制粘贴上下文给不同 session   ~25m     █████░░░░░░░░░░░░░░░ 14%
@@ -273,12 +273,12 @@ claude: 好的，我来实现 HTTP 投递模块...
         />
 
         <p className="text-base leading-relaxed mt-4" style={{ color: 'var(--color-text-secondary)' }}>
-          如果 Claude 能自己编排这些步骤呢？
+          如果 Claude 能自己指挥这些步骤呢？
         </p>
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 12.2: Superpowers 编排实战
+          Section 12.2: Superpowers 指挥实战
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -288,11 +288,11 @@ claude: 好的，我来实现 HTTP 投递模块...
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          12.2 Superpowers 编排实战
+          12.2 Superpowers 指挥实战
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          同一个 webhook 项目，这次用 superpowers 插件让 Claude 编排整个流程。
+          同一个 webhook 项目，这次用 superpowers 插件让 Claude 指挥整个流程。
           先装好：
         </p>
 
@@ -320,7 +320,7 @@ claude: 好的，我来实现 HTTP 投递模块...
         </h3>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          手动编排时，你直接开干——然后在 Session 3 被重试参数卡住。
+          手动协调时，你直接开干——然后在 Session 3 被重试参数卡住。
           这次先让 brainstorm 把需求问清楚。
         </p>
 
@@ -374,7 +374,7 @@ HMAC 签名方案、死信队列处理、API 端点设计。`}
         />
 
         <QualityCallout title="/brainstorm 的价值不在于生成答案，而在于问出你没想到的问题">
-          回看手动编排的场景：你直接开干，然后在 Session 3 被"重试参数是什么"卡住。
+          回看手动协调的场景：你直接开干，然后在 Session 3 被"重试参数是什么"卡住。
           brainstorm 在第 1 轮就问了"要不要持久化"——这个问题改变了整个架构方向。
           如果你在写代码之后才发现需要持久化，返工成本是现在的 10 倍。
         </QualityCallout>
@@ -593,7 +593,7 @@ Plan 自动修正：
         />
 
         <QualityCallout title="NEEDS_CONTEXT 不是失败 — 是系统在正确工作">
-          手动编排时，Session 3 会怎么做？猜一个方案然后继续写。
+          手动协调时，Session 3 会怎么做？猜一个方案然后继续写。
           也许它在代码里加一个 <code style={{ background: 'var(--color-bg-tertiary)', padding: '2px 6px', borderRadius: '3px', fontSize: '12px' }}>// TODO: add error tracking</code>，
           也许它自己在代码层面做了一个 in-memory error log。
           无论哪种，都是在没有正确信息的情况下做了一个决定——这个决定迟早要返工。
@@ -810,8 +810,8 @@ Plan 自动修正：
         />
 
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          这正是手动编排中 Session 4 犯的同一个错误——字符串字面量 vs 枚举。
-          但手动编排时你在 3 小时后才发现。superpowers 的全局 review 在执行完成后立刻捕获了它。
+          这正是手动协调中 Session 4 犯的同一个错误——字符串字面量 vs 枚举。
+          但手动协调时你在 3 小时后才发现。superpowers 的全局 review 在执行完成后立刻捕获了它。
         </p>
 
         <CodeBlock
@@ -900,12 +900,12 @@ Plan 自动修正：
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           从 <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>/brainstorm</code> 到 PR 创建，
           总时间 ~35 分钟。其中你的手动操作时间 ~8 分钟（回答 brainstorm 问题 + 确认 plan + 响应 NEEDS_CONTEXT + 选择"创建 PR"）。
-          手动编排是 3 小时。
+          手动协调是 3 小时。
         </p>
       </section>
 
       {/* ═══════════════════════════════════════════════
-          Section 12.3: 什么时候不该编排
+          Section 12.3: 什么时候不该自动化
           ═══════════════════════════════════════════════ */}
       <section className="space-y-6">
         <h2
@@ -915,32 +915,32 @@ Plan 自动修正：
             borderBottom: '1px solid var(--color-border)',
           }}
         >
-          12.3 什么时候不该编排
+          12.3 什么时候不该自动化
         </h2>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          编排不是越多越好。上面的 webhook 项目适合全流程编排——5 个并行任务、跨模块依赖、
+          自动化不是越多越好。上面的 webhook 项目适合全流程自动化——5 个并行任务、跨模块依赖、
           需要设计决策。但很多日常任务根本不需要这套流程。
         </p>
 
         <DecisionTree
           root={orchestrationDepthTree}
-          title="编排深度决策"
+          title="自动化深度决策"
         />
 
         <h3
           className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          反面教材：对小任务过度编排
+          反面教材：对小任务过度自动化
         </h3>
 
         <CodeBlock
           language="bash"
-          title="过度编排的真实案例"
+          title="过度自动化的真实案例"
           code={`# 任务：修复一个 2 文件的 bug — 日期格式化在时区转换后丢失了毫秒
 
-# 用了全流程编排：
+# 用了全流程自动化：
 > /brainstorm 修复日期格式化 bug，时区转换后毫秒丢失
 
 brainstorm (5 min):
@@ -962,7 +962,7 @@ write-plan (3 min):
 # 全流程总计: ~15 分钟
 # 手动直接修: ~3 分钟
 #
-# 过度编排浪费了 12 分钟和 ~13K tokens。`}
+# 过度自动化浪费了 12 分钟和 ~13K tokens。`}
           showLineNumbers={false}
         />
 
@@ -1024,10 +1024,10 @@ write-plan (3 min):
         </div>
 
         <p className="text-sm leading-relaxed mt-3" style={{ color: 'var(--color-text-secondary)' }}>
-          对比：手动编排 webhook 项目花了 ~3 小时（其中 45 分钟是纯协调开销）。
-          自动编排花了 ~35 分钟 + ~100K tokens（约 $0.40）。
+          对比：手动协调 webhook 项目花了 ~3 小时（其中 45 分钟是纯协调开销）。
+          自动化流程花了 ~35 分钟 + ~100K tokens（约 $0.40）。
           即使按 $50/小时的工程师成本算，45 分钟的协调开销 = $37.50。
-          <strong style={{ color: 'var(--color-text-primary)' }}>ROI 接近 100 倍</strong>——但前提是任务确实需要编排。
+          <strong style={{ color: 'var(--color-text-primary)' }}>ROI 接近 100 倍</strong>——但前提是任务确实需要自动化。
         </p>
       </section>
 
@@ -1183,8 +1183,8 @@ write-plan (3 min):
               — delivery.ts 的字符串 vs types.ts 的枚举，每个文件单独看都正确。只有 global review 能抓住跨边界问题。
             </li>
             <li>
-              <strong style={{ color: 'var(--color-text-primary)' }}>5. 编排的ROI有边界</strong>{' '}
-              — 2 文件 bug fix 用全流程编排是浪费。30 分钟以下的任务直接手动做。
+              <strong style={{ color: 'var(--color-text-primary)' }}>5. 自动化的 ROI有边界</strong>{' '}
+              — 2 文件 bug fix 用全流程自动化是浪费。30 分钟以下的任务直接手动做。
             </li>
           </ul>
         </QualityCallout>
