@@ -34,7 +34,7 @@ export default function Ch01() {
               border: '1px solid var(--color-border-accent)',
             }}
           >
-            Harness / Foundation
+            Harness / 基础层
           </span>
         </div>
         <p

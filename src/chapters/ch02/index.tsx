@@ -36,7 +36,7 @@ export default function Ch02() {
               border: '1px solid var(--color-border-accent)',
             }}
           >
-            Harness / Foundation
+            Harness / 基础层
           </span>
         </div>
         <p className="text-lg leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>

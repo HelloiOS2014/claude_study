@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useTheme } from '../../hooks/useTheme'
 
 interface HeaderProps {
@@ -39,7 +40,7 @@ export function Header({ onMenuToggle, isMobileMenuOpen }: HeaderProps) {
       </button>
 
       {/* Logo / Title */}
-      <a href="/" className="flex items-center gap-2.5 no-underline group">
+      <Link to="/" className="flex items-center gap-2.5 no-underline group">
         {/* Terminal prompt icon */}
         <div
           className="w-7 h-7 rounded-md flex items-center justify-center font-mono text-xs font-bold"
@@ -63,7 +64,7 @@ export function Header({ onMenuToggle, isMobileMenuOpen }: HeaderProps) {
             教程
           </span>
         </span>
-      </a>
+      </Link>
 
       {/* Spacer */}
       <div className="flex-1" />

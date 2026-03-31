@@ -1225,6 +1225,46 @@ claude schedule delete nightly-security-scan`}
             再升级到 Cloud Scheduled Tasks。不要一开始就上最复杂的方案。
           </p>
         </QualityCallout>
+
+        {/* ── Channels ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Channels：从终端到多端
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Channels 将 Claude Code 会话桥接到 Telegram、Discord、iMessage 等消息平台。
+          当你有长时间运行的任务（安全扫描、大规模重构、部署监控），不必一直盯着终端 --
+          进度更新和需要确认的决策会推送到你的手机。
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="channels-usage.sh"
+          code={`# 典型用途
+
+# 1. 长任务完成通知
+claude --channel telegram "重构 auth 模块，完成后通知我"
+
+# 2. 部署监控 + 移动端告警
+claude --channel discord "监控 production 部署，有异常立即通知"
+
+# 3. 结合定时任务，每日摘要推送到手机
+CronCreate(
+  schedule: "0 9 * * *",
+  command: "生成昨日代码变更摘要",
+  channel: "telegram"
+)`}
+        />
+
+        <QualityCallout title="Research Preview">
+          <p>
+            Channels 目前处于 Research Preview 阶段，支持的平台和 API 可能随版本变化。
+            建议先在非关键场景中试用，不要将其作为唯一的告警通道。
+          </p>
+        </QualityCallout>
       </section>
 
       {/* ═══════════════════════════════════════════════
