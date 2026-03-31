@@ -31,6 +31,21 @@ export default function Ch01() {
         </p>
       </div>
 
+      {/* ── 读者定位 ── */}
+      <div
+        className="p-4 rounded-lg text-sm leading-relaxed"
+        style={{
+          background: 'var(--color-bg-secondary)',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text-secondary)',
+        }}
+      >
+        如果你用过 Cursor 或 Copilot，Claude Code 最大的不同是它是一个{' '}
+        <strong style={{ color: 'var(--color-text-primary)' }}>Agent</strong>（自主决定行动），
+        而不是 Copilot（等你指令）。这意味着你需要学会
+        <strong style={{ color: 'var(--color-text-primary)' }}>设计它的运行环境</strong>，而不只是写好 Prompt。
+      </div>
+
       {/* ═══════════════════════════════════════════════════════
           Section 1.1: 你的第一次对话
           ═══════════════════════════════════════════════════════ */}
@@ -151,6 +166,11 @@ export default function Ch01() {
                 <td className="px-4 py-3 font-mono" style={{ color: 'var(--color-accent)' }}>Auto</td>
                 <td className="px-4 py-3">所有操作自动执行，不问</td>
                 <td className="px-4 py-3">非敏感任务 + 有足够权限规则保护</td>
+              </tr>
+              <tr style={{ borderTop: '1px solid var(--color-border)' }}>
+                <td className="px-4 py-3 font-mono" style={{ color: 'var(--color-accent)' }}>Auto Mode</td>
+                <td className="px-4 py-3">独立的安全分类器自动审批常规操作，仅拦截超出任务范围的行为</td>
+                <td className="px-4 py-3">有成熟 Hook 和 deny 规则保护的项目（Team 计划可用）</td>
               </tr>
             </tbody>
           </table>
@@ -519,6 +539,35 @@ Part 3: 带领团队
             而是成为<strong style={{ color: 'var(--color-text-primary)' }}>能设计可靠 AI 工作系统的工程师</strong>。
           </p>
         </QualityCallout>
+
+        {/* ── Harness Engineering 循环 ── */}
+        <div
+          className="p-6 rounded-lg text-center"
+          style={{
+            background: 'rgba(217, 119, 87, 0.06)',
+            border: '1px solid rgba(217, 119, 87, 0.25)',
+          }}
+        >
+          <p
+            className="text-base font-semibold mb-3"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            你在这个教程中会反复经历同一个循环
+          </p>
+          <p
+            className="text-xl font-bold mb-4"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            观察失败 &rarr; 诊断根因 &rarr; 构建 Harness 响应 &rarr; 验证有效
+          </p>
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            每一章就是一次这个循环。学完 11 章，你不只是会用 Claude Code 的功能，
+            而是掌握了 Harness Engineering 的思维方式 — 面对任何 AI 工具都适用的工程方法论。
+          </p>
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════
@@ -657,6 +706,17 @@ Glob           文件路径列表 token             极轻量
           而是因为关键信息被淹没在中间，模型的注意力已经稀释了。
           这就是为什么<strong style={{ color: 'var(--color-text-primary)' }}> CLAUDE.md 的位置如此重要</strong>——
           它被注入在上下文的开头，享有最高的注意力权重。
+        </p>
+
+        <p
+          className="text-sm leading-relaxed"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          经验阈值：上下文填充到 <strong style={{ color: 'var(--color-text-secondary)' }}>~70%</strong> 时精确度开始下降，
+          <strong style={{ color: 'var(--color-text-secondary)' }}> ~85%</strong> 时幻觉明显增加，
+          <strong style={{ color: 'var(--color-text-secondary)' }}> 90%+</strong> 时行为变得不稳定。
+          如果你在 <code style={{ color: 'var(--color-accent)' }}>/context</code> 中看到使用率接近这些阈值，
+          考虑用 <code style={{ color: 'var(--color-accent)' }}>/clear</code> 开始新会话。
         </p>
 
         {/* ── Claude 会犯错 ── */}
@@ -854,6 +914,16 @@ claude --model sonnet`}
           或在 prompt 中直接指定（如"快速帮我..."暗示低 effort，
           "仔细分析..."暗示高 effort）。
           Ch02 会详细讲解 effort 的策略性运用。
+        </p>
+
+        <p
+          className="text-sm leading-relaxed"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          Effort 级别对 token 消耗有直接影响：<strong style={{ color: 'var(--color-text-secondary)' }}>low</strong> 约为基线的 0.5x，
+          <strong style={{ color: 'var(--color-text-secondary)' }}> medium</strong> 约 1x（基线），
+          <strong style={{ color: 'var(--color-text-secondary)' }}> high</strong> 约 2x。
+          选择合适的 effort 不仅影响质量，也直接影响成本和速度。
         </p>
 
         {/* ── 在哪里使用 ── */}
