@@ -632,6 +632,168 @@ echo "AI Review 完成: 安全($sec_count) 质量($qual_count) 风格($style_cou
             '总审查时间是否比人工审查快 5 倍以上？',
           ]}
         />
+
+        {/* ── 翻车了怎么办 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          翻车了怎么办
+        </h3>
+
+        <div className="space-y-4">
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 1：Claude 幻觉了行号
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              Review 评论引用了 diff 中不存在的行号，开发者无法定位问题。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>限制上下文只给 diff（不给完整文件）。
+              在 prompt 中明确添加：{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                "Only reference lines shown in the diff above. Do not guess line numbers."
+              </code>
+              。如果使用 GitHub CLI 获取 diff，加{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                --diff-only
+              </code>{' '}
+              标志，避免把完整文件内容也塞进上下文。
+            </p>
+          </div>
+
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 2：安全审查对每个 innerHTML 都报警，即使已经做了 sanitize
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              团队用了 DOMPurify，但 Claude 仍然把每个 innerHTML 标记为 critical。误报太多导致团队开始忽略安全报告。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>在 security-review.md 中加排除规则：{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                "Ignore innerHTML usage in files that import DOMPurify or sanitize-html. These are already sanitized."
+              </code>
+              。通用原则：项目级排除规则写在 prompt 里，不要期望 Claude 自己推断。
+            </p>
+          </div>
+
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 3：Review 评论太啰嗦，团队开始忽略
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              每个 PR 评论长达 50 行，开发者滚动到一半就关了。真正重要的问题被淹没。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>在 prompt 尾部加约束：{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                "Only report HIGH and CRITICAL severity issues. Format: one line per issue, max 5 issues per dimension."
+              </code>
+              。低严重度的问题放进{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                {'<details>'}
+              </code>{' '}
+              折叠块里，不在主视图展示。
+            </p>
+          </div>
+
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 4：WIP 分支也触发 review，浪费钱
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              开发者习惯开 draft PR 做备份，每次推送都触发三路审查，月底账单翻倍。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>在 workflow yaml 的 job 级别加条件过滤：
+            </p>
+            <CodeBlock
+              language="yaml"
+              title="跳过 Draft PR"
+              code={`jobs:
+  security-review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    # ...`}
+              showLineNumbers={false}
+            />
+          </div>
+        </div>
+
+        {/* ── 4 周调优清单 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          4 周调优清单
+        </h3>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                {['周次', '任务', '目标'].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-3 py-2.5 font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              {[
+                ['Week 1', '在 5 个历史 PR 上跑，记录误报率', '建立 baseline：误报率、漏报率、每次审查耗时'],
+                ['Week 2', '根据误报调 prompt，加项目特定的排除规则', '误报率从 baseline 降低 50%+'],
+                ['Week 3', '调 effort 级别和严重度阈值', '成本和信噪比达到团队可接受水平'],
+                ['Week 4', '复盘成本数据，决定是否精简维度（比如去掉 style review）', '确定长期运行配置'],
+              ].map((row, i) => (
+                <tr
+                  key={i}
+                  style={{ borderBottom: '1px solid var(--color-border)' }}
+                >
+                  {row.map((cell, j) => (
+                    <td key={j} className="px-3 py-2.5">
+                      {j === 0 ? (
+                        <strong style={{ color: 'var(--color-text-primary)' }}>{cell}</strong>
+                      ) : (
+                        cell
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════
@@ -665,13 +827,20 @@ echo "AI Review 完成: 安全($sec_count) 质量($qual_count) 风格($style_cou
         >
           <div className="text-sm leading-relaxed space-y-3" style={{ color: 'var(--color-text-secondary)' }}>
             <p>
-              团队决定将一个单体 Express 应用重构为模块化架构。涉及 50+ 文件，
-              需要修改路由层、服务层、数据访问层的接口。
+              团队决定将一个 Express API 从回调式错误处理迁移到统一的{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>{'Result<T, E>'}</code>{' '}
+              模式。涉及 50+ 文件，跨三层：routes / services / data。
             </p>
             <p>
               你在一个 Claude Code 会话中开始重构。前 20 个文件改得很顺利，
-              但到了第 30 个文件时，Claude 开始忘记之前定义的新接口格式。
-              第 40 个文件时，它生成的代码与第 10 个文件的改动产生了接口不兼容。
+              但到了第 30 个文件时，上下文窗口已经被前面的对话和文件内容塞满了。
+              Claude 开始把{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>{'Result<T>'}</code>{' '}
+              的{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>ok</code>{' '}
+              字段跟前面定义的{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>success</code>{' '}
+              字段搞混，后面生成的代码跟前面的接口对不上。
               整个重构花了 4 小时，最后还有 15 个接口不一致需要手动修复。
             </p>
           </div>
@@ -686,348 +855,495 @@ echo "AI Review 完成: 安全($sec_count) 质量($qual_count) 风格($style_cou
         </h3>
 
         <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          这是经典的<strong style={{ color: 'var(--color-text-primary)' }}>上下文容量 vs 质量</strong>的 tradeoff。
-          单个会话处理 50+ 文件时，上下文窗口被历史对话和文件内容填满。
-          Claude 要么开始丢失早期上下文（接口定义），要么注意力被分散到太多文件上导致每个文件的质量下降。
+          上下文越长，注意力越分散。单个会话处理 50+ 文件时，
+          Claude 对早期定义的接口记忆逐渐模糊，后面的代码开始偏离规范。
+          解决方案不是"更大的窗口"——而是<strong style={{ color: 'var(--color-text-primary)' }}>隔离 + 共享契约</strong>：
+          每个代理只看自己模块的代码，但都遵守同一份类型定义文件。
         </p>
+
+        {/* ── Step 1: 接口契约 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Step 1: 先写接口契约
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          在任何代理开始工作之前，先手动（或用 Claude）写好共享类型文件。
+          这是所有代理的 source of truth——{' '}
+          <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>tsc --noEmit</code>{' '}
+          在契约文件上单独通过后，才进入下一步。
+        </p>
+
+        <CodeBlock
+          language="typescript"
+          title="shared/result.ts — 三层共用的契约"
+          code={`// shared/result.ts — 三层共用的契约
+export type Result<T, E = AppError> =
+  | { ok: true; data: T }
+  | { ok: false; error: E };
+
+export interface AppError {
+  code: string;
+  message: string;
+  statusCode: number;
+}
+
+// ── 路由层契约 ──
+// controller 返回 Result，路由层解包：
+//   const result = await userController.getById(id);
+//   if (result.ok) res.json(result.data);
+//   else res.status(result.error.statusCode).json({ error: result.error });
+
+// ── 服务层契约 ──
+// service 方法统一返回 Result<T>：
+//   async getUserById(id: string): Promise<Result<User>>
+//   async createUser(input: CreateUserInput): Promise<Result<User>>
+
+// ── 数据层契约 ──
+// repository 方法统一返回 Result<T>：
+//   async findById(id: string): Promise<Result<User>>
+//   async findMany(filter: UserFilter): Promise<Result<User[]>>`}
+          showLineNumbers={false}
+        />
 
         <p className="text-sm leading-relaxed mt-3" style={{ color: 'var(--color-text-secondary)' }}>
-          解决方案：<strong style={{ color: 'var(--color-text-primary)' }}>按模块拆分为独立代理</strong>，
-          每个代理只负责自己模块的重构，共享一份接口规范作为"合约"。
-          这就是 Ch08 多代理 + Ch07 Hooks + Ch05 Plan Mode 的组合。
+          验证：在契约文件上单独跑{' '}
+          <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>tsc --noEmit shared/result.ts</code>
+          ，确认类型定义本身没有错误。这一步看似简单但极其关键——
+          如果契约本身有歧义，三个代理会各自"合理解读"，最后在集成时爆炸。
         </p>
 
-        {/* ── 方案架构 ── */}
+        {/* ── Step 2: Agent 分派 ── */}
         <h3
           className="text-lg font-semibold mt-8"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          方案架构
+          Step 2: 派发 Agent
         </h3>
 
-        <CodeBlock
-          language="markdown"
-          title="大型重构多代理编排架构"
-          code={`Plan Mode → 架构 Spec (按模块拆分 + 接口合约)
-  │
-  ├─→ Module A Agent (worktree: refactor-routes)
-  │     └─ Hook: PostToolUse → 每次 Write/Edit 后自动跑测试
-  │
-  ├─→ Module B Agent (worktree: refactor-services)
-  │     └─ Hook: PostToolUse → 每次 Write/Edit 后自动跑测试
-  │
-  ├─→ Module C Agent (worktree: refactor-data)
-  │     └─ Hook: PostToolUse → 每次 Write/Edit 后自动跑测试
-  │
-  → 主 Agent: 集成验证
-    → 检查跨模块接口一致性
-    → 检查类型兼容性
-    → 运行全量测试
-    → Merge worktrees（按依赖顺序）`}
-          showLineNumbers={false}
-        />
-
-        {/* ── Step-by-step ── */}
-        <h3
-          className="text-lg font-semibold mt-8"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          分步详解
-        </h3>
-
-        {/* Step 1 */}
-        <h4
-          className="text-base font-semibold mt-6"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Step 1: Plan Mode — 编写重构规范和接口合约
-        </h4>
-
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          在重构前，先用 Plan Mode 定义清晰的模块边界和接口合约。
-          这份合约是所有代理的共享 "source of truth"——每个代理只需要遵守合约，
-          不需要了解其他模块的实现细节。
+          三个独立的{' '}
+          <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>claude -p</code>{' '}
+          进程，每个只操作自己的目录，共享同一份{' '}
+          <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>shared/result.ts</code>{' '}
+          契约。以下是实际的分派命令：
         </p>
-
-        <CodeBlock
-          language="markdown"
-          title="docs/refactor-spec.md — 重构规范（Plan Mode 产出）"
-          code={`# Express 单体 → 模块化重构规范
-
-## 模块划分
-- Module A: 路由层 (src/routes/) — 17 个文件
-- Module B: 服务层 (src/services/) — 22 个文件
-- Module C: 数据层 (src/data/) — 14 个文件
-
-## 接口合约
-
-### 路由层 → 服务层
-\`\`\`typescript
-// 所有 Service 必须实现的标准接口
-interface ServiceResult<T> {
-  success: boolean
-  data?: T
-  error?: { code: string; message: string }
-}
-
-// 服务方法签名规范
-type ServiceMethod<TInput, TOutput> = (
-  input: TInput,
-  context: RequestContext
-) => Promise<ServiceResult<TOutput>>
-\`\`\`
-
-### 服务层 → 数据层
-\`\`\`typescript
-// 数据访问统一接口
-interface Repository<T> {
-  findById(id: string): Promise<T | null>
-  findMany(filter: FilterInput): Promise<PaginatedResult<T>>
-  create(data: CreateInput<T>): Promise<T>
-  update(id: string, data: UpdateInput<T>): Promise<T>
-  delete(id: string): Promise<void>
-}
-\`\`\`
-
-## 每个模块的验收标准
-1. 所有文件符合新接口合约
-2. 模块内测试全部通过
-3. 不依赖其他模块的实现细节（只依赖接口）
-4. TypeScript 类型检查通过（零 any）`}
-          showLineNumbers={false}
-        />
-
-        {/* Step 2 */}
-        <h4
-          className="text-base font-semibold mt-6"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Step 2: Agent 分派 — 每个模块一个独立代理
-        </h4>
-
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          使用 <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>Task</code> 工具
-          分派子代理，每个代理在独立的 worktree 中工作，互不干扰。
-        </p>
-
-        <CodeBlock
-          language="markdown"
-          title="Agent 分派模板（主 Agent 执行）"
-          code={`# ── 分派 Module A Agent ──────────────────────
-Task: 重构路由层
-
-你负责重构 src/routes/ 目录下的 17 个路由文件。
-
-## 接口合约
-（粘贴 refactor-spec.md 中的路由层 → 服务层接口定义）
-
-## 具体要求
-1. 每个路由文件改为调用 Service 层的标准接口
-2. 移除路由中的直接数据库访问
-3. 错误处理统一使用 ServiceResult.error
-4. 每改完一个文件，运行 npm test -- --testPathPattern=routes
-
-## 禁止事项
-- 不要修改 src/services/ 或 src/data/ 中的任何文件
-- 不要改变 API 的外部行为（请求/响应格式不变）
-
-## 验收标准
-- npm test -- --testPathPattern=routes 全部通过
-- tsc --noEmit 无错误
-- 无 any 类型
-
----
-
-# ── 分派 Module B Agent ──────────────────────
-Task: 重构服务层
-
-你负责重构 src/services/ 目录下的 22 个服务文件。
-
-## 接口合约
-（粘贴完整接口定义：上游路由层接口 + 下游数据层接口）
-
-## 具体要求
-1. 每个 Service 实现 ServiceResult<T> 返回类型
-2. 每个 Service 方法符合 ServiceMethod<TInput, TOutput> 签名
-3. 调用数据层时使用 Repository<T> 接口
-4. 每改完一个文件，运行 npm test -- --testPathPattern=services
-
-## 禁止事项
-- 不要修改 src/routes/ 或 src/data/ 中的任何文件
-- 不要绕过 Repository 接口直接写 SQL
-
-## 验收标准
-- npm test -- --testPathPattern=services 全部通过
-- tsc --noEmit 无错误
-
----
-
-# ── 分派 Module C Agent ──────────────────────
-Task: 重构数据层
-
-你负责重构 src/data/ 目录下的 14 个数据访问文件。
-
-## 接口合约
-（粘贴 服务层 → 数据层接口定义）
-
-## 具体要求
-1. 每个数据访问类实现 Repository<T> 接口
-2. 统一使用 parameterized query（消除 SQL 拼接）
-3. 添加连接池管理
-4. 每改完一个文件，运行 npm test -- --testPathPattern=data
-
-## 禁止事项
-- 不要修改 src/routes/ 或 src/services/ 中的任何文件
-- 不要在数据层处理业务逻辑
-
-## 验收标准
-- npm test -- --testPathPattern=data 全部通过
-- tsc --noEmit 无错误`}
-          showLineNumbers={false}
-        />
-
-        {/* Step 3 */}
-        <h4
-          className="text-base font-semibold mt-6"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Step 3: Per-module Hook — 每次文件改动后自动测试
-        </h4>
-
-        <ConfigExample
-          language="json"
-          title="settings.json — 重构专用 Hook 配置"
-          code={`{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "command": "bash -c 'FILE=\"$CLAUDE_FILE_PATH\"; if [[ \"$FILE\" == src/routes/* ]]; then npm test -- --testPathPattern=routes --silent 2>&1 | tail -5; elif [[ \"$FILE\" == src/services/* ]]; then npm test -- --testPathPattern=services --silent 2>&1 | tail -5; elif [[ \"$FILE\" == src/data/* ]]; then npm test -- --testPathPattern=data --silent 2>&1 | tail -5; fi'",
-        "description": "每次文件改动后自动运行对应模块的测试"
-      },
-      {
-        "matcher": "Write|Edit",
-        "command": "bash -c 'npx tsc --noEmit --pretty 2>&1 | head -20'",
-        "description": "每次改动后检查 TypeScript 类型"
-      }
-    ]
-  }
-}`}
-          annotations={[
-            { line: 5, text: '根据文件路径自动判断属于哪个模块，运行对应的测试子集' },
-            { line: 8, text: '类型检查确保接口合约被正确遵守，防止跨模块类型不一致' },
-          ]}
-        />
-
-        <QualityCallout title="为什么用 PostToolUse 而不是最后统一跑测试？">
-          <p>
-            如果等 22 个文件全部改完再跑测试，一旦第 5 个文件引入了接口不兼容，
-            后面 17 个文件的改动全部要返工。PostToolUse Hook 确保每个文件改动后立即验证，
-            错误在第一时间被捕获。这就是 Ch07 讲的"<strong style={{ color: 'var(--color-text-primary)' }}>即时反馈循环</strong>"。
-          </p>
-        </QualityCallout>
-
-        {/* Step 4 */}
-        <h4
-          className="text-base font-semibold mt-6"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Step 4: 集成验证 — 主 Agent 检查跨模块一致性
-        </h4>
-
-        <CodeBlock
-          language="markdown"
-          title="集成验证提示词（主 Agent 执行）"
-          code={`所有三个模块的重构已完成。请执行集成验证：
-
-## 验证步骤
-
-1. **接口一致性检查**
-   - 路由层调用的 Service 方法签名是否与 Service 层实现匹配？
-   - Service 层调用的 Repository 方法是否与数据层实现匹配？
-   - 检查所有 import 路径是否正确
-
-2. **类型兼容性检查**
-   运行: npx tsc --noEmit
-   目标: 零错误
-
-3. **全量测试**
-   运行: npm test
-   目标: 所有测试通过，无跳过的测试
-
-4. **接口合约审查**
-   对照 docs/refactor-spec.md 中的接口定义，
-   逐一验证每个模块是否完全遵守合约。
-
-## 输出格式
-- PASS: 所有检查通过，可以进入 merge 阶段
-- FAIL + 详细问题列表: 需要修复后重新验证`}
-          showLineNumbers={false}
-        />
-
-        {/* Step 5 */}
-        <h4
-          className="text-base font-semibold mt-6"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Step 5: Merge — 按依赖顺序合并 worktrees
-        </h4>
 
         <CodeBlock
           language="bash"
-          title="Worktree 合并脚本"
-          code={`#!/bin/bash
-# 按依赖顺序合并三个模块的 worktree
-# 依赖链: data → services → routes (底层先合并)
+          title="Agent A: 路由层重构"
+          code={`# Agent A: 路由层重构
+claude -p "Refactor all route handlers in src/routes/ to use the Result<T> \\
+pattern from shared/result.ts.
+Current pattern: try/catch with res.status().json().
+New pattern: call service, check result.ok, return data or error.
 
-set -euo pipefail
+Example migration:
+  // BEFORE
+  try {
+    const user = await userService.getUserById(id);
+    if (!user) return res.status(404).json({ message: 'Not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 
-MAIN_BRANCH="refactor-main"
+  // AFTER
+  const result = await userService.getUserById(id);
+  if (result.ok) {
+    res.json(result.data);
+  } else {
+    res.status(result.error.statusCode).json({ error: result.error });
+  }
 
-echo "=== Step 1: 合并数据层 ==="
-git merge refactor-data --no-ff -m "refactor: 数据层 Repository 接口重构"
-npm test -- --testPathPattern=data
-echo "数据层合并完成，测试通过"
+CONSTRAINT: Do NOT modify files outside src/routes/.
+After each file, run: npm test -- --testPathPattern=routes" \\
+  --allowedTools "Read,Edit,Write,Bash,Grep,Glob" \\
+  --max-turns 30`}
+          showLineNumbers={false}
+        />
 
-echo "=== Step 2: 合并服务层 ==="
-git merge refactor-services --no-ff -m "refactor: 服务层 ServiceResult 接口重构"
-npm test -- --testPathPattern='(data|services)'
-echo "服务层合并完成，跨层测试通过"
+        <CodeBlock
+          language="bash"
+          title="Agent B: 服务层重构"
+          code={`# Agent B: 服务层重构
+claude -p "Refactor all service files in src/services/ to return Result<T> \\
+from shared/result.ts instead of throwing errors or returning raw values.
+Current pattern: throw new Error() or return value | null.
+New pattern: return { ok: true, data: value } or { ok: false, error: {...} }.
 
-echo "=== Step 3: 合并路由层 ==="
-git merge refactor-routes --no-ff -m "refactor: 路由层标准化接口调用"
-npm test
-echo "路由层合并完成，全量测试通过"
+Example migration:
+  // BEFORE
+  async getUserById(id: string): Promise<User | null> {
+    const user = await this.repo.findById(id);
+    if (!user) throw new NotFoundError('User not found');
+    return user;
+  }
 
-echo "=== Step 4: 最终验证 ==="
-npx tsc --noEmit
-npm test -- --coverage
-echo "全量类型检查 + 测试通过，重构完成"
+  // AFTER
+  async getUserById(id: string): Promise<Result<User>> {
+    const user = await this.repo.findById(id);
+    if (!user.ok) return user;  // propagate data layer error
+    if (!user.data) return { ok: false, error: { code: 'NOT_FOUND', message: 'User not found', statusCode: 404 } };
+    return { ok: true, data: user.data };
+  }
 
-echo "=== 清理 worktrees ==="
-git worktree remove ../refactor-routes
-git worktree remove ../refactor-services
-git worktree remove ../refactor-data`}
+CONSTRAINT: Do NOT modify files outside src/services/.
+After each file, run: npm test -- --testPathPattern=services" \\
+  --allowedTools "Read,Edit,Write,Bash,Grep,Glob" \\
+  --max-turns 30`}
+          showLineNumbers={false}
+        />
+
+        <CodeBlock
+          language="bash"
+          title="Agent C: 数据层重构"
+          code={`# Agent C: 数据层重构
+claude -p "Refactor all repository files in src/data/ to return Result<T> \\
+from shared/result.ts instead of throwing or returning raw values.
+Current pattern: throw on DB error, return entity or null.
+New pattern: wrap in Result — { ok: true, data } or { ok: false, error }.
+
+Example migration:
+  // BEFORE
+  async findById(id: string): Promise<User | null> {
+    try {
+      return await db.query('SELECT * FROM users WHERE id = $1', [id]);
+    } catch (err) {
+      throw new DatabaseError(err.message);
+    }
+  }
+
+  // AFTER
+  async findById(id: string): Promise<Result<User | null>> {
+    try {
+      const user = await db.query('SELECT * FROM users WHERE id = $1', [id]);
+      return { ok: true, data: user };
+    } catch (err) {
+      return { ok: false, error: { code: 'DB_ERROR', message: err.message, statusCode: 500 } };
+    }
+  }
+
+CONSTRAINT: Do NOT modify files outside src/data/.
+After each file, run: npm test -- --testPathPattern=data" \\
+  --allowedTools "Read,Edit,Write,Bash,Grep,Glob" \\
+  --max-turns 30`}
+          showLineNumbers={false}
+        />
+
+        {/* ── Step 3: 执行中的摩擦 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Step 3: 执行中的摩擦
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          三个 agent 同时运行。理想状态下各自完成、无交互。
+          但实际执行中一定会有摩擦。以下是真实的终端输出：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="终端输出 — 三个 agent 的实际状态"
+          code={`# ── Agent A (routes): DONE ──
+# 17/17 文件重构完成
+# npm test -- --testPathPattern=routes: 34 passed, 0 failed
+#
+# 注意：Agent A 在重构过程中把 getUserById 重命名为 getUser，
+# 理由是 "more concise, consistent with other methods"
+
+# ── Agent B (services): NEEDS_CONTEXT ──
+# 停在第 8 个文件，打印了以下消息：
+# "现有代码中 UserService.getUserById 的返回类型是 Promise<User | null>，
+#  但契约要求返回 Result<User>。这两个类型不兼容。
+#  请确认：是直接迁移返回类型（会破坏调用方），
+#  还是加一个适配器层过渡？"
+#
+# → 开发者回应："直接迁移返回类型。调用方由 Agent A 负责同步。"
+# → Agent B 继续执行...
+# → 22/22 文件重构完成
+
+# ── Agent C (data): DONE ──
+# 14/14 文件重构完成
+# npm test -- --testPathPattern=data: 28 passed, 0 failed
+
+# ── 问题暴露 ──
+# Agent A 把 getUserById 重命名为 getUser
+# 但 Agent C 的测试仍然 import { getUserById } from ...
+# Agent B 的服务层也在调用 this.repo.getUserById(...)
+# → tsc --noEmit: 3 errors found`}
+          showLineNumbers={false}
+        />
+
+        <QualityCallout title="这就是多代理的现实">
+          <p>
+            Agent B 遇到类型不兼容时没有盲目继续，而是停下来问开发者。
+            这是正确的行为——比"猜一个答案继续跑"好得多。
+            但 Agent A 的自作主张重命名（<code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>getUserById → getUser</code>）
+            才是真正的坑：每个 agent 各自看着自己的模块觉得"没问题"，但集成时炸了。
+          </p>
+        </QualityCallout>
+
+        {/* ── Step 4: 集成验证 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Step 4: 集成验证
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          三个 agent 各自完成后，跑全局类型检查：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="tsc --noEmit 输出 — 3 个类型错误"
+          code={`$ tsc --noEmit
+
+src/services/userService.ts:14:28 - error TS2339:
+  Property 'getUserById' does not exist on type 'UserRepository'.
+  Did you mean 'getUser'?
+
+src/data/__tests__/userRepo.test.ts:7:10 - error TS2305:
+  Module '"../../data/userRepository"' has no exported member 'getUserById'.
+
+src/routes/__tests__/userRoutes.test.ts:22:34 - error TS2339:
+  Property 'getUserById' does not exist on type 'UserService'.
+
+Found 3 errors in 3 files.`}
           showLineNumbers={false}
         />
 
         <p className="text-sm leading-relaxed mt-3" style={{ color: 'var(--color-text-secondary)' }}>
-          关键：每次合并后都运行累积测试（不只是当前模块）。
-          合并服务层后要跑 data + services 的测试，确保跨层接口兼容。
-          只有在全量测试通过后才合并路由层。
+          全部是 Agent A 重命名导致的。修复方案：派发一个针对性的修复 agent：
         </p>
+
+        <CodeBlock
+          language="bash"
+          title="修复 agent — 只处理重命名导致的断裂"
+          code={`# 修复 agent: 把所有 getUserById 引用统一为 getUser
+claude -p "The function getUserById was renamed to getUser in src/routes/ \\
+and src/data/userRepository.ts. Fix all remaining references:
+
+1. In src/services/userService.ts: change this.repo.getUserById to this.repo.getUser
+2. In src/data/__tests__/userRepo.test.ts: update import and usage
+3. In src/routes/__tests__/userRoutes.test.ts: update mock and usage
+
+After fixing, run: tsc --noEmit && npm test" \\
+  --allowedTools "Read,Edit,Bash,Grep" \\
+  --max-turns 10
+
+# 结果:
+# tsc --noEmit: 0 errors
+# npm test: 74 passed, 0 failed`}
+          showLineNumbers={false}
+        />
+
+        {/* ── Step 5: 合并 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Step 5: 合并
+        </h3>
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          合并三个分支时，在{' '}
+          <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>shared/result.ts</code>{' '}
+          上出现了冲突——Agent A 和 Agent B 都在文件顶部添加了辅助类型：
+        </p>
+
+        <CodeBlock
+          language="typescript"
+          title="合并冲突 — shared/result.ts"
+          code={`// shared/result.ts
+export type Result<T, E = AppError> =
+  | { ok: true; data: T }
+  | { ok: false; error: E };
+
+<<<<<<< routes-branch
+// Agent A 添加的：路由层用的 HTTP 响应辅助
+export function resultToResponse<T>(res: Response, result: Result<T>) {
+  if (result.ok) res.json(result.data);
+  else res.status(result.error.statusCode).json({ error: result.error });
+}
+=======
+// Agent B 添加的：服务层用的 Result 构造辅助
+export const ok = <T>(data: T): Result<T> => ({ ok: true, data });
+export const fail = (code: string, message: string, statusCode = 500): Result<never> =>
+  ({ ok: false, error: { code, message, statusCode } });
+>>>>>>> services-branch`}
+          showLineNumbers={false}
+        />
+
+        <p className="text-sm leading-relaxed mt-3" style={{ color: 'var(--color-text-secondary)' }}>
+          解决方式很简单——两边的辅助函数都保留，它们不冲突：
+        </p>
+
+        <CodeBlock
+          language="bash"
+          title="解决冲突"
+          code={`# 保留两边的辅助函数，删掉冲突标记
+# 然后验证:
+$ tsc --noEmit   # 0 errors
+$ npm test       # 74 passed, 0 failed
+$ git add . && git commit -m "refactor: migrate to Result<T> pattern across all layers"`}
+          showLineNumbers={false}
+        />
+
+        {/* ── 翻车了怎么办 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          翻车了怎么办
+        </h3>
+
+        <div className="space-y-4">
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 1：两个 agent 改了同一个文件
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              Agent A 和 Agent B 都修改了{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>shared/utils.ts</code>
+              ，合并时产生大量冲突。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>在计划阶段用{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>grep -rl</code>{' '}
+              检查文件归属，确保无重叠。如果某个文件被多个模块依赖，把它提到"共享层"——
+              在所有模块 agent 开始之前，先完成共享文件的修改。
+            </p>
+          </div>
+
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 2：接口契约太松，agent 各自解读不同
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              契约写了{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>{'Result<T>'}</code>
+              ，但没规定错误码格式。Agent A 用{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>NOT_FOUND</code>
+              ，Agent B 用{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>UserNotFound</code>
+              ，Agent C 用{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>404</code>。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>用具体类型而不是泛型。
+              在契约中定义{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                {'type ErrorCode = "NOT_FOUND" | "UNAUTHORIZED" | "DB_ERROR" | ...'}
+              </code>
+              ，并附上每个错误码的使用示例。契约越具体，agent 的解读空间越小。
+            </p>
+          </div>
+
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 3：共享 import 文件合并冲突
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              多个 agent 都往{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>shared/result.ts</code>{' '}
+              加辅助函数，每次合并都冲突。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>专门安排一个 "shared types" 步骤先跑。
+              把所有共享类型和辅助函数在第一步全部写好，冻结后再启动模块 agent。
+              在 agent 的 CONSTRAINT 中明确：{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                "Do NOT modify any file in shared/."
+              </code>
+            </p>
+          </div>
+        </div>
+
+        {/* ── 4 周调优清单 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          4 周调优清单
+        </h3>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                {['周次', '任务', '目标'].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-3 py-2.5 font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              {[
+                ['Week 1', '小规模试跑：3 个模块、<20 个文件的重构', '验证 agent 分派 + 契约 + 集成流程是否跑通'],
+                ['Week 2', '优化契约粒度，补充集成测试', '消除"契约太松导致各自解读不同"的问题'],
+                ['Week 3', '在真实生产级重构上使用（50+ 文件）', '验证规模化后的效果和成本'],
+                ['Week 4', '提炼团队模板：标准化契约格式、agent 分派命令、集成验证脚本', '让任何团队成员都能复用'],
+              ].map((row, i) => (
+                <tr
+                  key={i}
+                  style={{ borderBottom: '1px solid var(--color-border)' }}
+                >
+                  {row.map((cell, j) => (
+                    <td key={j} className="px-3 py-2.5">
+                      {j === 0 ? (
+                        <strong style={{ color: 'var(--color-text-primary)' }}>{cell}</strong>
+                      ) : (
+                        cell
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* ── 验证 ── */}
         <ExerciseCard
           tier="l3"
           title="在你的项目上验证"
-          description="选一个你项目中需要跨 3+ 模块修改的重构任务（哪怕是小规模的），用这个多代理编排方案执行。完成后检查以下清单。"
+          description="选一个你项目中需要跨 3+ 模块修改的重构任务（哪怕是小规模的），用这个多代理编排方案执行。重点关注 agent 之间的接口一致性。"
           checkpoints={[
-            '接口合约文档是否在重构开始前就定义清楚了？',
-            '每个代理是否只修改了自己负责的模块？',
-            '所有测试是否通过（包括跨模块集成测试）？',
-            '代码风格是否在三个模块间保持一致？',
-            '与单会话重构对比，总时间和接口一致性是否有提升？',
+            '接口契约是否在重构开始前就写好并通过了 tsc --noEmit？',
+            '每个 agent 是否只修改了自己负责的目录？',
+            '集成验证是否发现了 agent 之间的不一致（并成功修复）？',
+            'tsc --noEmit && npm test 是否在最终合并后全部通过？',
+            '与单会话重构对比，接口一致性是否有明显提升？',
           ]}
         />
       </section>
@@ -1402,6 +1718,172 @@ jobs:
             '报告的 false positive（不需要关注的告警）比例是否 < 20%？',
           ]}
         />
+
+        {/* ── 翻车了怎么办 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          翻车了怎么办
+        </h3>
+
+        <div className="space-y-4">
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 1：AI 分析说绿灯但 TODO 数明明超标了
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              原始指标显示 TODO 数量 142（超过阈值 100），但 Claude 的分析仍然给出 GREEN 评价。
+              原因：指标以散文形式喂给 Claude，模型在长文本中忽略了数字。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>把指标以结构化数据（JSON）而非散文喂给 Claude。
+              在 prompt 中加：{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                "Cross-check your analysis against these numbers. If any metric exceeds its threshold, that dimension MUST be YELLOW or RED."
+              </code>
+            </p>
+          </div>
+
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 2：npm test --coverage 太慢
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              全量覆盖率测试跑了 12 分钟，GitHub Actions 超时。健康检查本身变成了 CI 瓶颈。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>用增量覆盖率：{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                npx jest --coverage --changedSince=HEAD~50
+              </code>
+              。只跑最近 50 个 commit 影响的文件的覆盖率。全量覆盖率可以降频到每月一次。
+            </p>
+          </div>
+
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 3：每周创建新 Issue 即使问题一样
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              连续 3 周 TODO 超标，脚本创建了 3 个内容几乎一样的 Issue，团队开始忽略。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>在创建 Issue 前先查重：
+            </p>
+            <CodeBlock
+              language="bash"
+              title="Issue 查重逻辑"
+              code={`# 先检查是否已有同类 open issue
+EXISTING=$(gh issue list --label "automated,tech-debt" --state open \\
+  --json number,title --jq '.[].title' | grep -c "代码健康告警" || true)
+if [ "$EXISTING" -gt 0 ]; then
+  echo "已有同类 open issue，追加评论而非新建"
+  gh issue comment "$(gh issue list --label automated --state open \\
+    --json number --jq '.[0].number')" \\
+    --body "周报更新 ($DATE): $ALERTS"
+else
+  gh issue create --title "代码健康告警 — $DATE" ...
+fi`}
+              showLineNumbers={false}
+            />
+          </div>
+
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              background: 'rgba(248, 113, 113, 0.06)',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+            }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              问题 4：jq 解析 Claude 输出失败
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              脚本用{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>jq</code>{' '}
+              解析 Claude 的输出，但 Claude 有时候输出的不是纯 JSON（带了 markdown 标记或前导文字），导致 jq 报错脚本崩溃。
+            </p>
+            <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <strong style={{ color: 'var(--color-text-primary)' }}>修复：</strong>Claude 的{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>--output-format text</code>{' '}
+              输出不保证是纯 JSON。在管道中加防御：{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>
+                {'claude -p "..." | jq -r \'.\' 2>/dev/null || echo "parse-error"'}
+              </code>
+              。更好的做法是用{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>--output-format json</code>{' '}
+              并在 prompt 中要求纯 JSON 输出。
+            </p>
+          </div>
+        </div>
+
+        {/* ── 4 周调优清单 ── */}
+        <h3
+          className="text-lg font-semibold mt-8"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          4 周调优清单
+        </h3>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                {['周次', '任务', '目标'].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-3 py-2.5 font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody style={{ color: 'var(--color-text-secondary)' }}>
+              {[
+                ['Week 1', '手动跑 3 次，验证指标采集是否准确', '确认 TODO 统计、覆盖率、依赖检查都能正常产出数据'],
+                ['Week 2', '开启 cron 自动触发，确认按时出报告', '验证 GitHub Actions schedule 稳定性，修复权限和超时问题'],
+                ['Week 3', '根据团队反馈调阈值', '过松则收紧（比如 TODO 从 100 降到 80），过严则放宽'],
+                ['Week 4', '加趋势对比（本周 vs 上周）', '在报告中加 delta 列，让团队看到变化方向而非只看绝对值'],
+              ].map((row, i) => (
+                <tr
+                  key={i}
+                  style={{ borderBottom: '1px solid var(--color-border)' }}
+                >
+                  {row.map((cell, j) => (
+                    <td key={j} className="px-3 py-2.5">
+                      {j === 0 ? (
+                        <strong style={{ color: 'var(--color-text-primary)' }}>{cell}</strong>
+                      ) : (
+                        cell
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════
@@ -1533,6 +2015,48 @@ jobs:
           再从上面的组件表中选择对应的组合。不要从工具出发（"我想用子代理"），
           而是从问题出发（"重构总是接口不一致 → 需要接口合约 + 隔离执行 + 集成验证"）。
         </p>
+
+        {/* ── 具体示例 ── */}
+        <div
+          className="p-5 rounded-lg mt-6"
+          style={{
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
+            具体示例：自动生成 changelog
+          </p>
+          <div className="text-sm leading-relaxed space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
+            <p>
+              <strong style={{ color: 'var(--color-text-primary)' }}>问题：</strong>
+              手动写 changelog 容易漏掉变更，尤其是多人协作时。
+            </p>
+            <p>
+              <strong style={{ color: 'var(--color-text-primary)' }}>组件：</strong>
+              Agent SDK +{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>git log</code>{' '}
+              +{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>gh pr create</code>
+              。
+            </p>
+            <p>
+              <strong style={{ color: 'var(--color-text-primary)' }}>串联：</strong>
+              cron 每周触发 →{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>claude -p</code>{' '}
+              读取{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>git log --oneline --since="1 week ago"</code>{' '}
+              → 按 feat/fix/refactor 分类生成 changelog 条目 →{' '}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg-tertiary)' }}>gh pr create</code>{' '}
+              提交 changelog 更新 PR。
+            </p>
+            <p>
+              <strong style={{ color: 'var(--color-text-primary)' }}>验证：</strong>
+              对比手动写的 changelog 覆盖率——自动版本是否覆盖了所有合并的 PR？
+              是否漏掉了没有遵循 conventional commits 格式的提交？
+            </p>
+          </div>
+        </div>
 
         {/* ── 练习 ── */}
         <ExerciseCard
